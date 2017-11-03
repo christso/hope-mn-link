@@ -15,17 +15,21 @@ var contractApp = new contractAppImport();
 var hdmdContract = contractApp.hdmdContract;
 
 // Get all account balances of HDMD token holders
-app.get("/hdmd/balances", function(req, res) {
-    
- 
+app.get("/api/hdmd/balances", function(req, res) {
+    var balances = [
+        { '0xA7Bb5D4d546067782Dd4B5356D9e9771deBB06a3': 2670.684995 },
+        { '0x114bcdDaB25dE00884755cf8643ED1ceA4093Fd1': 477.3448233 },
+        { '0x1dd0ef06bAe0226C8165f3507F13c2ad8493e1e3': 1288.831023 }
+    ]
+    res.json(balances);
 });
 
-app.get("/hdmd/mint", function(req, res) {
+app.get("/api/hdmd/mint", function(req, res) {
     // invoke mint() manually
     
 });
 
-app.get("/hdmd/totalsupply", function(req, res) {
+app.get("/api/hdmd/totalsupply", function(req, res) {
     // Return total supply. Should be 10000 if no tokens were minted
     res.send(hdmdContract.totalSupply.call());
 });

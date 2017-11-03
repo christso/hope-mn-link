@@ -2,7 +2,7 @@ const Web3 = require('web3');
 const getABI = require('./getABI');
 
 var abi = getABI.abi();
-var contractLocation = '0x4ec0260dab5c3d45791f480267a8fc003950e5f7';
+var contractLocation = '0x5b45cb92A968329A83Cd3f2FBFB1bF206043d70C';
 
 // set the Web3 to where we need to connect
 // TODO, variable perhaps?

@@ -22,3 +22,10 @@
 ## Questions
 
 - [ ] Do we need to send commands to DMD desktop wallet in order to send DMDs or will this be manual?
+
+# Troubleshooting
+
+### new BigNumber() not a base 16 number
+
+* Cause: The contract probably doesn't exist at the address.
+* Solution: Correct the address. You probably just need to uncomment the current address, and change the address for testRPC since another developer would use a different address.

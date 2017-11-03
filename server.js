@@ -12,7 +12,7 @@ app.use(bodyParser.urlencoded({extended: true}));
 // execute contract app
 var contractAppImport = require('./app.js');
 var contractApp = new contractAppImport();
-var contract = contractApp.hdmdContract;
+var hdmdContract = contractApp.hdmdContract;
 
 // Get all account balances of HDMD token holders
 app.get("/hdmd/balances", function(req, res) {
@@ -23,6 +23,11 @@ app.get("/hdmd/balances", function(req, res) {
 app.get("/hdmd/mint", function(req, res) {
     // invoke mint() manually
     
+});
+
+app.get("/hdmd/totalsupply", function(req, res) {
+    // Return total supply. Should be 10000 if no tokens were minted
+    res.send(hdmdContract.totalSupply.call());
 });
 
 app.listen(port, function() {

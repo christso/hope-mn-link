@@ -23,3 +23,5 @@ evntAll.watch(function(error, result) {
    console.log('listening for changes on the blockchain...');
    console.log(arguments);
 });
+
+module.exports = evntAll;

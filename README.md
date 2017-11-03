@@ -4,6 +4,7 @@
 
 - [x] Create web3 event listener on HDMD.
 - [ ] Store event log in MongoDB. Each event in HDMD will be a document. Each event in DMD will be another document. We need to link both documents and use the database to provide a reconciliation of both blockchains. The documents must store txnId.
+- [ ] Create RESTful API using Express so that we can call different functions via the web browser.
 
 ## Mint
 

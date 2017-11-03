@@ -1,4 +1,4 @@
-function abi() {
+module.exports = function() {
   return [
     {
       "constant": true,
@@ -494,4 +494,3 @@ function abi() {
     }
   ];
 }
-module.exports.abi = abi;

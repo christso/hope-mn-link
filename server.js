@@ -9,12 +9,15 @@ var port = 8080;
 
 app.use(bodyParser.urlencoded({extended: true}));
 
-// web3 event listener
-var evntAll = require('./app').evntAll;
+// execute contract app
+var contractAppImport = require('./app.js');
+var contractApp = new contractAppImport();
+var contract = contractApp.hdmdContract;
 
+// Get all account balances of HDMD token holders
 app.get("/hdmd/balances", function(req, res) {
-    // Get all account balances of HDMD token holders
     
+ 
 });
 
 app.get("/hdmd/mint", function(req, res) {

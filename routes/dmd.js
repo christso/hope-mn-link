@@ -13,19 +13,19 @@ const dmdUrl = config.cryptoidDmdUri;
 
 // CREATE DMD transaction
 router.post('/txn', function(req, res) {
-    var newTxn = {
-        hash: req.body.hash,
-        block: req.body.block,
-        amount: req.body.amount,
-        balance: req.body.balance
-    };
-    
-    // var newTxn =     {
-    //     hash: "15AF02476D9382FA7C70A5904B76294BFF3B0F4D134D5807C5A227AB5B2F6F2A",
-    //     block: 18759,
-    //     amount: 1.5275,
-    //     balance: 10003.055
+    // var newTxn = {
+    //     hash: req.body.hash,
+    //     block: req.body.block,
+    //     amount: req.body.amount,
+    //     balance: req.body.balance
     // };
+    
+    var newTxn =     {
+        hash: "15AF02476D9382FA7C70A5904B76294BFF3B0F4D134D5807C5A227AB5B2F6F2A",
+        block: 18759,
+        amount: 1.5275,
+        balance: 10003.055
+    };
 
     // Create new DMD txn and save to DB
     DmdTxns.create(newTxn, function(err, newlyCreated) {

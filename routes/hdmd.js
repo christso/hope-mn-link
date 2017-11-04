@@ -14,7 +14,7 @@ var accounts = require('../data/hdmdAccounts');
 
 // Get all account balances of HDMD token holders
 // TODO: Make this run faster. We should cache results.
-router.get('/api/hdmd/balances', function (req, res) {
+router.get('/balances', function (req, res) {
 
     let balances = accounts.map((account) => {
         let balance = hdmdContract.balanceOf(account);
@@ -24,17 +24,17 @@ router.get('/api/hdmd/balances', function (req, res) {
 });
 
 // List accounts that hold HDMD
-router.get('/api/hdmd/accounts', function (req, res) {
+router.get('/accounts', function (req, res) {
     res.json(accounts);
 });
 
-router.get('/api/hdmd/batchtransfer', function (req, res) {
+router.get('/batchtransfer', function (req, res) {
     // TODO: invoke batchTransfer()
 
 });
 
 // CREATE DMD transaction
-router.post('/api/hdmd/mint', function(req, res) {
+router.post('/mint', function(req, res) {
     // TODO: invoke mint(reward)
 
     var mint = {

@@ -1,10 +1,13 @@
+var config = require('../config');
 var express = require('express');
 var router = express.Router();
 var axios = require('axios').default;
 var mongoose = require('mongoose');
+var client = require('../client/dmdClient');
+var parseRawTxns = client.parseRawTxns;
 
 /*----  API for DMD ----*/
-const dmdUrl = 'https://chainz.cryptoid.info/explorer/address.summary.dws?coin=dmd&id=12829&r=25294&fmt.js';
+const dmdUrl = config.cryptoidDmdUri;
 
 // CREATE DMD transaction
 router.post('/:hash', function(req, res) {
@@ -16,19 +19,6 @@ router.post('/:hash', function(req, res) {
         }
     });
 });
-
-// Parse CryptoID query which lists all txns
-function parseRawTxns(rawTxns) {
-    let newTxns = rawTxns.map((rawTxn) => {
-        return {
-            hash: rawTxn[1],
-            block: rawTxn[2],
-            amount: rawTxn[4],
-            balance: rawTxn[5]
-        }
-    });
-    return newTxns;
-}
 
 // Get all txns
 router.get('/txns/all', function(req, res) {

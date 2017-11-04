@@ -16,7 +16,6 @@ var dmdRoutes = require('./routes/dmd');
 var hdmdRoutes = require('./routes/hdmd');
 
 // change the address on deployment
-// TODO: move mongodb address to a variable
 // NOTE: If you get an error connecting, reveiew https://github.com/Automattic/mongoose/issues/5399
 mongoose.connect(config.mongodbUri, { useMongoClient: true, promiseLibrary: global.Promise });
 var db = mongoose.connection;

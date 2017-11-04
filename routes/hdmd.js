@@ -12,17 +12,17 @@ var accounts = require('../data/hdmdAccounts');
 
 /*----  API for HDMD ----*/
 
-// TODO: get address of web3 wallet
-// what address is web3 using to invoke the contract?
-// we need to add this account via allowMinter
+// Get address of wallets on connected eth node
 router.get('/svr/accounts', function (req, res) {
     res.json(web3.eth.accounts);
 });
 
+// Get address of first wallet
 router.get('/svr/coinbase', function (req, res) {
     res.json(web3.eth.coinbase);
 });
 
+// Get address of wallet used for invoking the contract
 router.get('/svr/defaultaccount', function (req, res) {
     res.json(web3.eth.defaultAccount);
 });

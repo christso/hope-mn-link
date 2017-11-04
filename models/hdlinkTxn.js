@@ -1,2 +1,0 @@
-// TODO: have 2 fields each referencing the dmdTxn and hdmdTxn respectively so we have full audit trail
-// not sure if there's a better data model, such as simply adding a dmdTxnHas field into the HDMD Mongo DB.

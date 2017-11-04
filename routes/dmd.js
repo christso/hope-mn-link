@@ -11,11 +11,21 @@ var DmdTxns = require('../models/dmdTxn');
 /*----  API for DMD ----*/
 const dmdUrl = config.cryptoidDmdUri;
 
+// Get all txns
+router.get('/txns/all', function (req, res) {
+    axios.get(dmdUrl).then(function (response) {
+        let parsed = parseRawTxns(response.data.tx);
+        res.json(parsed);
+    }).catch(function (error) {
+        res.json({ ERROR: error });
+    });
+});
+
 // CREATE DMD transaction
 router.post('/txn', function (req, res) {
     var newTxn = {
-        hash: req.body.hash,
-        block: req.body.block,
+        txnHash: req.body.txnHash,
+        blockNumber: req.body.blockNumber,
         amount: req.body.amount,
         balance: req.body.balance
     };
@@ -31,42 +41,11 @@ router.post('/txn', function (req, res) {
 });
 
 // Post new DMD txns
-
-
-// Get all txns
-router.get('/txns/all', function (req, res) {
-    axios.get(dmdUrl).then(function (response) {
-        let parsed = parseRawTxns(response.data.tx);
-        res.json(parsed);
-    }).catch(function (error) {
-        res.json({ ERROR: error });
-    });
-});
-
-// Get the last txn
-router.get('/txns/last', function (req, res) {
-    axios.get(dmdUrl).then(function (response) {
-        let txns = response.data.tx;
-        let length = txns.length;
-        let rawTxn = response.data.tx[length - 1];
-        // TODO: we can reuse parseRawTxns
-        let txn = {
-            hash: rawTxn[1],
-            block: rawTxn[2],
-            amount: rawTxn[4],
-            balance: rawTxn[5]
-        };
-        res.json(txn);
-    }).catch(function (error) {
-        res.json({ ERROR: `ERROR READING ${dmdUrl}` });
-    });
-});
-
-// block is Number
+// blockNumber is Number
 router.post('/txns/new', function (req, res) {
     // TODO: get last block stored in MongoDB
     var newParams = {
-        block: req.body.block
+        blockNumber: req.body.blockNumber
     };
 
     // TODO: do not save DMD txns that are already in DB

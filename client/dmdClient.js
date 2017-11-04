@@ -15,8 +15,8 @@ var client = {
     parseRawTxns(rawTxns) {
         let newTxns = rawTxns.map((rawTxn) => {
             return {
-                hash: rawTxn[1],
-                block: rawTxn[2],
+                txnHash: rawTxn[1],
+                blockNumber: rawTxn[2],
                 amount: rawTxn[4],
                 balance: rawTxn[5]
             }
@@ -29,7 +29,7 @@ var client = {
 let watchInterval = 5000; // 5 seconds
 
 setInterval(function() {
-    let mint = { hash: '0x999', amount: 100 }; // TODO: get value from DMD blockchain
+    let mint = { txnHash: '0x999', amount: 100 }; // TODO: get value from DMD blockchain
     axios.post(`${config.apiUri}/api/hdmd/mint`, mint).then(function(response) {
         console.log("MINTED", response.data);
     }).catch(function(error) {

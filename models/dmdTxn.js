@@ -2,10 +2,11 @@ var mongoose = require("mongoose");
 
 // Schema setup
 var dmdTxnSchema = new mongoose.Schema({
-    hash: String,
-    block: Number,
+    txnHash: String,
+    blockNumber: Number,
     amount: Number,
-    balance: Number
+    balance: Number,
+    hdmd_txnHash: String // reference from DMD to HDMD
 });
 
 module.exports = mongoose.model("DmdTxn", dmdTxnSchema);

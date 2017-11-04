@@ -1,24 +1,21 @@
 # Task List
 
-## Issues
+## Persistent Storage
 
-- [ ] Cannot create MongoDB document with fields
-
-## Boilerplate
-
-- [x] Create web3 event listener on HDMD.
-- [ ] Store event log in MongoDB. Each event in HDMD will be a document. Each event in DMD will be another document. We need to link both documents and use the database to provide a reconciliation of both blockchains. The documents must store txnId.
-- [x] Create RESTful API using Express so that we can call different functions via the web browser.
+- [ ] Store each HDMD Mint and Burn event as a MongoDB document.
+- [ ] Determine whether a DMD transaction is new or old by comparing CryptoID with MongoDB. You can use the Block Number, so if there are blocks that don't exist in MongoDB, then add those to MongoDB.
+- [ ] Store each *new* DMD transaction as a MongoDB document.
+- [ ] Store reconciliation between DMD and HDMD in MongDB either using txnID in the corresponding blockchain, or storing both collections in a third collection containing 2 documents (DMD and HDMD).
 
 ## Mint
 
-- [ ] Watch for changes in DMD wallet on [cryptoID](https://chainz.cryptoid.info/dmd/address.dws?dH4bKCoyNj9BzLuyU4JvhwvhYs7cnogDVb.htm).
-- [ ] When the DMD wallet receives a staking reward, invoke mint(reward) on HDMD.
+- [X] Retrieve transasctions from DMD wallet on [cryptoID](https://chainz.cryptoid.info/dmd/address.dws?dH4bKCoyNj9BzLuyU4JvhwvhYs7cnogDVb.htm).
+- [ ] When the DMD wallet receives a staking reward (i.e. new staking transaction), invoke mint(reward) on HDMD.
 
 ## Burn
 
 - [ ] When a burn event is fired on HDMD blockchain, send DMD tokens to the address that wants to receive them.
-- [ ] Update MongoDB to reflect the decreased supply of DMD in the masternode, and HDMDs.
+- [ ] Update MongoDB to reflect the decreased supply of DMD in the masternode, and HDMDs. Store the confirmed txnIDs in MongoDB.
 
 ## Reporting
 
@@ -48,4 +45,4 @@ npm start
 ### Node app is frozen
 
 * Cause: testRPC or geth process is locked. This occassionally occurs on Windows 10.
-* Solution: You'll need to press any key in the console to unlock it.
+* Solution: You'll need to press any key in the Powershell console to unlock it. Alternatively, use CMD instead of Powershell.

@@ -8,9 +8,13 @@ var port = 8080;
 // TODO: move mongodb address to a variable
 // NOTE: If you get an error connecting, reveiew https://github.com/Automattic/mongoose/issues/5399
 mongoose.connect('mongodb://localhost:27017/hdmdlink', { useMongoClient: true, promiseLibrary: global.Promise });
+var db = mongoose.connection;
+db.on('error', console.error.bind(console, '# MongoDB - connection error: '));
 
 app.use(express.static('public'));
 app.use(bodyParser.urlencoded({extended: true}));
+
+var DmdTxns = require('./models/dmdTxn');
 
 // execute contract app
 var contractAppImport = require('./app.js');
@@ -19,6 +23,21 @@ var hdmdContract = contractApp.hdmdContract;
 var web3 = contractApp.web3;
 
 var accounts = require('./data/hdmdAccounts');
+
+/*----  API for DMD ----*/
+
+// CREATE DMD transaction
+app.post("/api/dmd/:hash", function(req, res) {
+    DmdTxns.create(req.body, function(err, newDmdTxn) {
+        if (err) {
+            res.json({ "Error": "ERROR CREATING DMD TRANSACTION"});
+        } else {
+            res.json(newDmdTxn);
+        }
+    });
+});
+
+/*----  API for HDMD ----*/
 
 // Get all account balances of HDMD token holders
 // TODO: Make this run faster. We should cache results.

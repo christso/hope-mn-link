@@ -10,6 +10,10 @@ var contractLocation = config.hdmdContractLocation;
 // set the Web3 to where we need to connect
 var web3 = new Web3(new Web3.providers.HttpProvider(ethNodeAddress));
 
+// set default account to use as msg.sender to contract
+// this account will need to be added via allowMinter to be able to invoke mint()
+web3.eth.defaultAccount = web3.eth.coinbase;
+
 // Set up a contract with interface
 var contract = web3.eth.contract(abi);
 // Instantiate contact so we can interact

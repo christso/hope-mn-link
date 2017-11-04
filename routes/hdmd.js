@@ -12,6 +12,21 @@ var accounts = require('../data/hdmdAccounts');
 
 /*----  API for HDMD ----*/
 
+// TODO: get address of web3 wallet
+// what address is web3 using to invoke the contract?
+// we need to add this account via allowMinter
+router.get('/svr/accounts', function (req, res) {
+    res.json(web3.eth.accounts);
+});
+
+router.get('/svr/coinbase', function (req, res) {
+    res.json(web3.eth.coinbase);
+});
+
+router.get('/svr/defaultaccount', function (req, res) {
+    res.json(web3.eth.defaultAccount);
+});
+
 // Get all account balances of HDMD token holders
 // TODO: Make this run faster. We should cache results.
 router.get('/balances', function (req, res) {
@@ -50,7 +65,7 @@ router.post('/mint', function(req, res) {
 });
 
 
-router.get('/api/hdmd/totalsupply', function (req, res) {
+router.get('/totalsupply', function (req, res) {
     // Return total supply. Should be 10000 if no tokens were minted or burned
     res.send(hdmdContract.totalSupply.call());
 });

@@ -58,4 +58,4 @@ Error: invalid address
     at inputAddressFormatter (drive:\HDMDLink\node_modules\web3\lib\web3\formatters.js:273:11)
 ```
 * Cause: The address of the wallet is not authorized to mint.
-* Solution: Invoke the allowMinter function in web3, truffle, or other client, and pass the address you want to allow as a minter. You need to be the contract owner to invoke this function. After that, any address that's been allowed to mint can invoke the mint function.
+* Solution: Invoke the allowMinter function in truffle or other client where you are the contract owner, and pass the address of web3.eth.defaultAccount as a parameter. After that, the address should be allowed to invoke the mint function.

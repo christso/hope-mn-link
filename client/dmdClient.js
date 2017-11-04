@@ -26,7 +26,7 @@ var client = {
 };
 
 //let watchInterval = 3600000; // 1 hour
-let watchInterval = 1000; // 1 minute
+let watchInterval = 5000; // 5 seconds
 
 setInterval(function() {
     let mint = { hash: '0x999', amount: 100 }; // TODO: get value from DMD blockchain

@@ -13,4 +13,6 @@ config.hdmdVersion = 0.1; // version of HDMD Smart Contract
 
 config.cryptoidDmdUri = 'https://chainz.cryptoid.info/explorer/address.summary.dws?coin=dmd&id=12829&r=25294&fmt.js';
 
+config.apiUri = `http://localhost:${config.port}`;
+
 module.exports = config;

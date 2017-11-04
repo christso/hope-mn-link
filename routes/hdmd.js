@@ -41,7 +41,7 @@ router.post('/mint', function(req, res) {
         hash: req.body.hash,
         amount: req.body.reward
     };
-
+    res.json({ amount: 200 }); // TODO: get amount from http request
     // TODO: create mongo document for each mint
     // TODO: link HDMD document with DMD document
 });

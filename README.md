@@ -35,6 +35,10 @@ mongod.exe
 npm start
 ```
 
+You can interact with the API using curl (for Linux) or Postman (for Windows). Ensure that you select "JSON (application/json) as the body format, otherwise the request body in Express will be empty.
+
+![Postman](https://i.imgur.com/pbCjsUK.png)
+
 # Troubleshooting
 
 ### new BigNumber() not a base 16 number

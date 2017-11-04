@@ -29,3 +29,8 @@
 
 * Cause: The contract probably doesn't exist at the address.
 * Solution: Correct the address. You probably just need to uncomment the current address, and change the address for testRPC since another developer would use a different address.
+
+### Node app is frozen
+
+* Cause: testRPC or geth process is locked. This occassionally occurs on Windows 10.
+* Solution: You'll need to press any key in the console to unlock it.

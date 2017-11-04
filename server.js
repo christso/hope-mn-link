@@ -7,12 +7,15 @@ var port = 8080;
 //uncomment below once we set up mongo
 //mongoose.connect("mongodb://localhost/hdmdlink");
 
+app.use(express.static('public'));
 app.use(bodyParser.urlencoded({extended: true}));
 
 // execute contract app
 var contractAppImport = require('./app.js');
 var contractApp = new contractAppImport();
 var hdmdContract = contractApp.hdmdContract;
+var web3 = contractApp.web3;
+var accounts = web3.eth.accounts;
 
 // Get all account balances of HDMD token holders
 app.get("/api/hdmd/balances", function(req, res) {
@@ -22,6 +25,11 @@ app.get("/api/hdmd/balances", function(req, res) {
         { '0x1dd0ef06bAe0226C8165f3507F13c2ad8493e1e3': 1288.831023 }
     ]
     res.json(balances);
+});
+
+// List accounts in the eth node
+app.get("/api/hdmd/accounts", function(req, res) {
+    res.json(accounts);
 });
 
 app.get("/api/hdmd/mint", function(req, res) {

@@ -2,8 +2,6 @@ var express = require('express');
 var router = express.Router();
 var mongoose = require('mongoose');
 
-var DmdTxns = require('../models/dmdTxn');
-
 // execute contract app
 var hdmdClientImp = require('../client/hdmdClient');
 var hdmdClient = new hdmdClientImp();

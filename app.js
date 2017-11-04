@@ -7,6 +7,9 @@ var axios = require('axios').default;
 var app = express();
 var port = config.port;
 
+// allows you to use req.body.field
+app.use(bodyParser.urlencoded({extended: true}));
+
 // Requiring Routes
 var dmdRoutes = require('./routes/dmd');
 var hdmdRoutes = require('./routes/hdmd');

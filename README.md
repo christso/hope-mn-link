@@ -1,5 +1,9 @@
 # Task List
 
+## Issues
+
+- [ ] Cannot create MongoDB document with fields
+
 ## Boilerplate
 
 - [x] Create web3 event listener on HDMD.

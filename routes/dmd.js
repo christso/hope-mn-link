@@ -6,16 +6,33 @@ var mongoose = require('mongoose');
 var client = require('../client/dmdClient');
 var parseRawTxns = client.parseRawTxns;
 
+var DmdTxns = require('../models/dmdTxn');
+
 /*----  API for DMD ----*/
 const dmdUrl = config.cryptoidDmdUri;
 
 // CREATE DMD transaction
-router.post('/:hash', function(req, res) {
-    DmdTxns.create(req.body, function(err, newDmdTxn) {
+router.post('/txn', function(req, res) {
+    var newTxn = {
+        hash: req.body.hash,
+        block: req.body.block,
+        amount: req.body.amount,
+        balance: req.body.balance
+    };
+    
+    // var newTxn =     {
+    //     hash: "15AF02476D9382FA7C70A5904B76294BFF3B0F4D134D5807C5A227AB5B2F6F2A",
+    //     block: 18759,
+    //     amount: 1.5275,
+    //     balance: 10003.055
+    // };
+
+    // Create new DMD txn and save to DB
+    DmdTxns.create(newTxn, function(err, newlyCreated) {
         if (err) {
             res.json({ 'Error': 'ERROR CREATING DMD TRANSACTION'});
         } else {
-            res.json(newDmdTxn);
+            res.json(newlyCreated);
         }
     });
 });

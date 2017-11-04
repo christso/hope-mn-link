@@ -40,7 +40,7 @@ var newTxn =     {
     balance: 10003.055
 };
 
-DmdTxns.create(newTxn, function(err, txn) {
+DmdTxns.create(txnData, function(err, txn) {
     if (err) {
         console.log("Error" + err);
     } else {

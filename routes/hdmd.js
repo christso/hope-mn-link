@@ -48,7 +48,7 @@ router.get('/batchtransfer', function (req, res) {
 
 });
 
-// CREATE DMD transaction
+// CREATE HDMD transaction
 router.post('/mint', function(req, res) {
     var mint = {
         hash: req.body.hash,

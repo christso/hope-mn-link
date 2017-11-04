@@ -50,3 +50,12 @@ You can interact with the API using curl (for Linux) or Postman (for Windows). E
 
 * Cause: testRPC or geth process is locked. This occassionally occurs on Windows 10.
 * Solution: You'll need to press any key in the Powershell console to unlock it. Alternatively, use CMD instead of Powershell.
+
+### Error when Minting
+
+```
+Error: invalid address
+    at inputAddressFormatter (drive:\HDMDLink\node_modules\web3\lib\web3\formatters.js:273:11)
+```
+* Cause: The address of the wallet is not authorized to mint.
+* Solution: Invoke the allowMinter function in web3, truffle, or other client, and pass the address you want to allow as a minter. You need to be the contract owner to invoke this function. After that, any address that's been allowed to mint can invoke the mint function.

@@ -31,7 +31,8 @@ if (hdmdVersionDeployed == hdmdVersion) {
 // List Balance: http://chainz.cryptoid.info/dmd/api.dws?q=getbalance&a=dH4bKCoyNj9BzLuyU4JvhwvhYs7cnogDVb
 // List Txns: https://chainz.cryptoid.info/explorer/address.summary.dws?coin=dmd&id=12829&r=25294&fmt.js
 
-// Create HDMD listener
+/*----- Create HDMD listener -----*/
+
 
 console.log(`Listening for changes on the blockchain on node ${ethNodeAddress}`);
 // Listen to all event that can occur, Mint/Burn

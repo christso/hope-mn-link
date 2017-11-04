@@ -1,6 +1,7 @@
 var express = require("express");
 var bodyParser = require("body-parser");
 var mongoose = require("mongoose");
+var axios = require("axios").default;
 var app = express();
 var port = 8080;
 
@@ -25,6 +26,7 @@ var web3 = contractApp.web3;
 var accounts = require('./data/hdmdAccounts');
 
 /*----  API for DMD ----*/
+const dmdUrl = "https://chainz.cryptoid.info/explorer/address.summary.dws?coin=dmd&id=12829&r=25294&fmt.js";
 
 // CREATE DMD transaction
 app.post("/api/dmd/:hash", function(req, res) {
@@ -34,6 +36,24 @@ app.post("/api/dmd/:hash", function(req, res) {
         } else {
             res.json(newDmdTxn);
         }
+    });
+});
+
+// Get the last txn
+app.get("/api/dmd/txns/last", function(req, res) {
+    axios.get(dmdUrl).then(function(response){
+        let txns = response.data.tx;
+        let length = txns.length;
+        let rawTxn = response.data.tx[length-1];
+        let txn = {
+            hash: rawTxn[1],
+            block: rawTxn[2],
+            amount: rawTxn[4],
+            balance: rawTxn[5]
+        };
+        res.json(txn);
+    }).catch(function(error){
+        res.json({ Error: `ERROR READING ${dmdUrl}`});
     });
 });
 

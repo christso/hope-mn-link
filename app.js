@@ -23,9 +23,11 @@ if (hdmdVersionDeployed == hdmdVersion) {
     console.log(`ERROR: HDMD contract version deployed is ${hdmdVersionDeployed} but app version is ${hdmdVersion}`);
 }
 
-// create accounts
+// TODO: Create DMD listener
+// we will call the API every hour
+// http://chainz.cryptoid.info/dmd/api.dws?q=getbalance&a=dH4bKCoyNj9BzLuyU4JvhwvhYs7cnogDVb
 
-//web3.eth.accounts.privateKeyToAccount('8f3916e61a5a2506c6e97325c93791b61938c701c6d5f0104b81a5fa22df337c');
+// Create HDMD listener
 
 console.log(`Listening for changes on the blockchain on node ${ethNodeAddress}`);
 // Listen to all event that can occur, Mint/Burn

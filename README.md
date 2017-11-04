@@ -8,6 +8,7 @@
 
 ## Mint
 
+- [ ] Watch for changes in DMD wallet on [cryptoID](https://chainz.cryptoid.info/dmd/address.dws?dH4bKCoyNj9BzLuyU4JvhwvhYs7cnogDVb.htm).
 - [ ] When the DMD wallet receives a staking reward, invoke mint(reward) on HDMD.
 
 ## Burn
@@ -18,10 +19,6 @@
 ## Reporting
 
 - [ ] List account balances of HDMD token holders.
-
-## Questions
-
-- [ ] Do we need to send commands to DMD desktop wallet in order to send DMDs or will this be manual?
 
 # Troubleshooting
 

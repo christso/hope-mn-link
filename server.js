@@ -15,21 +15,28 @@ var contractAppImport = require('./app.js');
 var contractApp = new contractAppImport();
 var hdmdContract = contractApp.hdmdContract;
 var web3 = contractApp.web3;
-var accounts = web3.eth.accounts;
+
+var accounts = require('./data/hdmdAccounts');
 
 // Get all account balances of HDMD token holders
+// TODO: Make this run faster. We should cache results.
 app.get("/api/hdmd/balances", function(req, res) {
-    var balances = [
-        { '0xA7Bb5D4d546067782Dd4B5356D9e9771deBB06a3': 2670.684995 },
-        { '0x114bcdDaB25dE00884755cf8643ED1ceA4093Fd1': 477.3448233 },
-        { '0x1dd0ef06bAe0226C8165f3507F13c2ad8493e1e3': 1288.831023 }
-    ]
+
+    let balances = accounts.map((account) => {
+        let balance = hdmdContract.balanceOf(account);
+        return { address: account, value: balance }
+    });
     res.json(balances);
 });
 
-// List accounts in the eth node
+// List accounts that hold HDMD
 app.get("/api/hdmd/accounts", function(req, res) {
     res.json(accounts);
+});
+
+app.get("/api/hdmd/batchtransfer", function(req, res) {
+    // invoke mint() manually
+    
 });
 
 app.get("/api/hdmd/mint", function(req, res) {

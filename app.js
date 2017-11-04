@@ -4,8 +4,8 @@ const abi = require('./hdmdABI')();
 const hdmdVersion = 0.1;
 const ethNodeAddress = 'http://localhost:8545';
 
-//var contractLocation = "0xc7ea471f6502d1b2d08cc6732e35b74ae850a100"; // testRPC
-var contractLocation = '0x5b45cb92A968329A83Cd3f2FBFB1bF206043d70C'; // rinkeby
+var contractLocation = "0xc7ea471f6502d1b2d08cc6732e35b74ae850a100"; // testRPC
+//var contractLocation = '0x5b45cb92A968329A83Cd3f2FBFB1bF206043d70C'; // rinkeby
 
 // set the Web3 to where we need to connect
 var web3 = new Web3(new Web3.providers.HttpProvider(ethNodeAddress));

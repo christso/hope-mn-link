@@ -35,14 +35,17 @@ router.get('/batchtransfer', function (req, res) {
 
 // CREATE DMD transaction
 router.post('/mint', function(req, res) {
-    // TODO: invoke mint(reward)
-
     var mint = {
         hash: req.body.hash,
-        amount: req.body.reward
+        amount: req.body.amount
     };
-    res.json({ amount: 200 }); // TODO: get amount from http request
+
+    let txnStatus = hdmdContract.mint(mint.amount);
+
+    res.json(mint);
+
     // TODO: create mongo document for each mint
+    
     // TODO: link HDMD document with DMD document
 });
 

@@ -29,7 +29,7 @@ var client = {
 let watchInterval = 1000; // 1 minute
 
 setInterval(function() {
-    let mint = { amount: 100 }; // TODO: get value from DMD blockchain
+    let mint = { hash: '0x999', amount: 100 }; // TODO: get value from DMD blockchain
     axios.post(`${config.apiUri}/api/hdmd/mint`, mint).then(function(response) {
         console.log("MINTED", response.data);
     }).catch(function(error) {

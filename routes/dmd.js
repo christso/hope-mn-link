@@ -22,16 +22,22 @@ router.get('/txns/all', function (req, res) {
 });
 
 // CREATE DMD transaction
-router.post('/txn', function (req, res) {
-    var newTxn = {
-        txnHash: req.body.txnHash,
-        blockNumber: req.body.blockNumber,
-        amount: req.body.amount,
-        balance: req.body.balance
-    };
+router.post('/txns', function (req, res) {
+    var newTxns = req.body;
+    if (req.body.constructor != Array) {
+        newTxns = [req.body];
+    }
+    newTxns = newTxns.map((txn) => {
+        return {
+            txnHash: txn.txnHash,
+            blockNumber: txn.blockNumber,
+            amount: txn.amount,
+            balance: txn.balance
+        };
+    });
 
     // Create new DMD txn and save to DB
-    DmdTxns.create(newTxn, function (err, newlyCreated) {
+    DmdTxns.create(newTxns, function (err, newlyCreated) {
         if (err) {
             res.json({ 'Error': 'ERROR CREATING DMD TRANSACTION' });
         } else {

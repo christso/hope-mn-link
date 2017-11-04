@@ -8,7 +8,8 @@ var hdmdTxnSchema = new mongoose.Schema({
     blockNumber: Number,
     amount: Number,
     balance: Number,
-    dmd_txnHash: String // reference from HDMD to DMD
+    dmd_txnHash: String, // reference from HDMD to DMD
+    dmdTxn: {type: mongoose.Schema.Types.ObjectId, ref: 'DmdTxn'}
 });
 
 module.exports = mongoose.model("HdmdTxn", hdmdTxnSchema);

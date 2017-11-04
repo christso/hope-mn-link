@@ -18,7 +18,7 @@
 
 ## Reporting
 
-- [ ] List account balances of HDMD token holders.
+- [x] List account balances of HDMD token holders.
 
 # Getting Started
 

@@ -48,7 +48,7 @@ router.post('/txns', function (req, res) {
 
 // Post new DMD txns
 // blockNumber is Number
-router.post('/txns/new', function (req, res) {
+router.post('/txns/sync', function (req, res) {
     // TODO: get last block stored in MongoDB
     var newParams = {
         blockNumber: req.body.blockNumber

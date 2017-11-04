@@ -4,8 +4,10 @@ var mongoose = require("mongoose");
 var app = express();
 var port = 8080;
 
-//uncomment below once we set up mongo
-//mongoose.connect("mongodb://localhost/hdmdlink");
+// change the address on deployment
+// TODO: move mongodb address to a variable
+// NOTE: If you get an error connecting, reveiew https://github.com/Automattic/mongoose/issues/5399
+mongoose.connect('mongodb://localhost:27017/hdmdlink', { useMongoClient: true, promiseLibrary: global.Promise });
 
 app.use(express.static('public'));
 app.use(bodyParser.urlencoded({extended: true}));

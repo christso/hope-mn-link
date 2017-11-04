@@ -20,6 +20,20 @@
 
 - [ ] List account balances of HDMD token holders.
 
+# Getting Started
+
+Start an ethereum node with ```testrpc``` or ```geth``` which listens on ```localhost:8585```.
+
+In this project, run the CLI commands below:
+```
+npm install
+
+cd "C:\Program Files\MongoDB\Server\3.4\bin\"
+mongod.exe
+
+npm start
+```
+
 # Troubleshooting
 
 ### new BigNumber() not a base 16 number

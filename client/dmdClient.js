@@ -33,14 +33,24 @@ var client = {
                 res.json(newlyCreated);
             }
         });
+    },
+    lastSavedTxn() {
+        // TODO: find last saved txn in MongoDB
+        // db.getCollection('dmdtxns').find().sort({blockNumber:-1}).limit(1)
+        // define index on blockNumber in MongoDB
     }
 };
+
 
 //let watchInterval = 3600000; // 1 hour
 let watchInterval = 5000; // 5 seconds
 
 setInterval(function() {
+    // TODO: get laste MongoDB dmdTxn
+
+
     let mint = { txnHash: '0x999', amount: 100 }; // TODO: get value from DMD blockchain when DMD wallet receives staking reward
+    
     // TODO: update MongoDB dmdTxn
 
     axios.post(`${config.apiUri}/api/hdmd/mint`, mint).then(function(response) {

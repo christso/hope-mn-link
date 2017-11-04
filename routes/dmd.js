@@ -17,6 +17,29 @@ router.post('/:hash', function(req, res) {
     });
 });
 
+// Parse CryptoID query which lists all txns
+function parseRawTxns(rawTxns) {
+    let newTxns = rawTxns.map((rawTxn) => {
+        return {
+            hash: rawTxn[1],
+            block: rawTxn[2],
+            amount: rawTxn[4],
+            balance: rawTxn[5]
+        }
+    });
+    return newTxns;
+}
+
+// Get all txns
+router.get('/txns/all', function(req, res) {
+    axios.get(dmdUrl).then(function(response){
+        let parsed = parseRawTxns(response.data.tx);
+        res.json(parsed);
+    }).catch(function(error) {
+        res.json({ ERROR: error});
+    });
+});
+
 // Get the last txn
 router.get('/txns/last', function(req, res) {
     axios.get(dmdUrl).then(function(response){
@@ -31,7 +54,7 @@ router.get('/txns/last', function(req, res) {
         };
         res.json(txn);
     }).catch(function(error){
-        res.json({ Error: `ERROR READING ${dmdUrl}`});
+        res.json({ ERROR: `ERROR READING ${dmdUrl}`});
     });
 });
 

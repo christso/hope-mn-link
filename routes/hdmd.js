@@ -31,17 +31,26 @@ router.get('/api/hdmd/accounts', function (req, res) {
 });
 
 router.get('/api/hdmd/batchtransfer', function (req, res) {
-    // invoke mint() manually
+    // TODO: invoke batchTransfer()
 
 });
 
-router.get('/api/hdmd/mint', function (req, res) {
-    // invoke mint() manually
+// CREATE DMD transaction
+router.post('/api/hdmd/mint', function(req, res) {
+    // TODO: invoke mint(reward)
 
+    var mint = {
+        hash: req.body.hash,
+        amount: req.body.reward
+    };
+
+    // TODO: create mongo document for each mint
+    // TODO: link HDMD document with DMD document
 });
+
 
 router.get('/api/hdmd/totalsupply', function (req, res) {
-    // Return total supply. Should be 10000 if no tokens were minted
+    // Return total supply. Should be 10000 if no tokens were minted or burned
     res.send(hdmdContract.totalSupply.call());
 });
 

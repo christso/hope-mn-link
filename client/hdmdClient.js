@@ -56,4 +56,8 @@ module.exports = function () {
     this.evntAll = evntAll;
     this.web3 = web3;
     this.hdmdContract = hdmdContract;
+    this.mint = (amount, dmdTxnHash) => {    
+        let txnHash = hdmdContract.mint(amount, dmdTxnHash);
+        return txnHash;
+    };
 }

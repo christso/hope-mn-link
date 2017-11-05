@@ -51,8 +51,7 @@ let watchInterval = 15000; // 15 seconds
 setInterval(function () {
     // TODO: get laste MongoDB dmdTxn
 
-
-    let mint = { txnHash: '0x999', amount: 100 }; // TODO: get value from DMD blockchain when DMD wallet receives staking reward
+    let mint = { dmdTxnHash: '0x999', amount: 100 }; // TODO: get value from DMD blockchain when DMD wallet receives staking reward
 
     // TODO: update MongoDB dmdTxn
 
@@ -62,5 +61,7 @@ setInterval(function () {
         console.log("ERROR MINTING", JSON.stringify(error));
     });
 }, watchInterval);
+
+
 
 module.exports = client;

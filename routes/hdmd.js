@@ -3,10 +3,10 @@ var router = express.Router();
 var mongoose = require('mongoose');
 
 // execute contract app
-var hdmdClientImp = require('../client/hdmdClient');
-var hdmdClient = new hdmdClientImp();
-var hdmdContract = hdmdClient.hdmdContract;
-var web3 = hdmdClient.web3;
+var hdmdClient = require('../client/hdmdClient');
+
+// var hdmdContract = hdmdClient.hdmdContract;
+// var web3 = hdmdClient.web3;
 
 var accounts = require('../data/hdmdAccounts');
 

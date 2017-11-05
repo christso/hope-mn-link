@@ -4,6 +4,8 @@ var router = express.Router();
 var axios = require('axios').default;
 var mongoose = require('mongoose');
 var client = require('../client/dmdClient');
+var hdmdClient = require('../client/hdmdClient');
+
 var parseRawTxns = client.parseRawTxns;
 
 var DmdTxns = require('../models/dmdTxn');
@@ -78,6 +80,10 @@ router.post('/txns/sync', function (req, res) {
                 res.json(newlyCreated);
             }
         });
+
+        // Invoke mint() where amount > 0
+        
+
     }).catch(function (error) {
         res.json({ ERROR: error });
     });

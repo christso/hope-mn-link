@@ -52,12 +52,21 @@ function parseTxInfo(arguments) {
     return parsed;
 }
 
-module.exports = function () {
-    this.evntAll = evntAll;
-    this.web3 = web3;
-    this.hdmdContract = hdmdContract;
-    this.mint = (amount, dmdTxnHash) => {    
+module.exports = {
+    evntAll: evntAll,
+    web3: web3,
+    hdmdContract: hdmdContract,
+    mint: (amount, dmdTxnHash) => {    
         let txnHash = hdmdContract.mint(amount, dmdTxnHash);
         return txnHash;
-    };
+    },
+    // mintParams: [{amount, dmdTxnHash}, {amount, dmdTxnHash}, ...]
+    batchMint: (mintParams) => {
+        if (mintParams != Array) {
+            mintParams = [mintParams];
+        }
+        mintParams.forEach(function(m) {
+           this.mint(m.amount, m.dmdTxnHash);
+        });
+    }
 }

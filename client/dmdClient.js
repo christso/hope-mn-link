@@ -3,13 +3,12 @@ var port = config.port;
 var axios = require('axios').default;
 var DmdTxns = require('../models/dmdTxn');
 
-/*----- TODO: Create DMD listener -----*/
+/*----- Create DMD listener -----*/
 
 // Call the API every hour. 
 // Create MongoDB document for each new DMD transaction, which stores the txn hash.
 // List Balance: http://chainz.cryptoid.info/dmd/api.dws?q=getbalance&a=dH4bKCoyNj9BzLuyU4JvhwvhYs7cnogDVb
 // List Txns: https://chainz.cryptoid.info/explorer/address.summary.dws?coin=dmd&id=12829&r=25294&fmt.js
-
 
 // Parse CryptoID query which lists all txns
 var client = {
@@ -44,21 +43,15 @@ var client = {
     }
 };
 
-
 //let watchInterval = 3600000; // 1 hour
 let watchInterval = 15000; // 15 seconds
 
 setInterval(function () {
-    // TODO: get laste MongoDB dmdTxn
-
-    let mint = { dmdTxnHash: '0x999', amount: 100 }; // TODO: get value from DMD blockchain when DMD wallet receives staking reward
-
-    // TODO: update MongoDB dmdTxn
-
-    axios.post(`${config.apiUri}/api/hdmd/mint`, mint).then(function (response) {
-        console.log("MINTED", response.data);
+    // Identify changes from DMD blockchain to save
+    axios.post(`${config.apiUri}/api/dmd/txns/sync`, {}).then(function(response) {
+        console.log("SYNCED DMD", response.data);
     }).catch(function (error) {
-        console.log("ERROR MINTING", JSON.stringify(error));
+        console.log("ERROR SYNCING DMD", JSON.stringify(error));
     });
 }, watchInterval);
 

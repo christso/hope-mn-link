@@ -1,6 +1,7 @@
 const Web3 = require('web3');
 const abi = require('./hdmdABI')();
 const config = require('../config');
+// const mongoose = require('mongoose');
 
 const hdmdVersion = config.hdmdVersion;
 const ethNodeAddress = config.ethNodeAddress;
@@ -32,10 +33,28 @@ if (hdmdVersionDeployed == hdmdVersion) {
 console.log(`Listening for changes on the blockchain on node ${ethNodeAddress}`);
 // Listen to all event that can occur, Mint/Burn
 var evntAll = hdmdContract.allEvents({}, { fromBlock: 0, toBlock: 'latest' });
-evntAll.watch(function(error, result) {
-   console.log('listening for changes on the blockchain...');
-   console.log(arguments);
+evntAll.watch(function (error, result) {
+    console.log('listening for changes on the blockchain...');
+    console.log(arguments);
+    //console.log(parseTxInfo(arguments));
 });
+
+function parseTxInfo(arguments) {
+    var parsed = {
+        address = arguments[1].address,
+        blockNr = arguments[1].blockNumber,
+        eventType = arguments[1].event,
+        reward = arguments[1]._reward.c,
+        tx = arguments[1].transactionHash,
+        hdmdTx = arguments[1].transactionHash,
+        dmdTx = "Fake_For_Now"
+    };
+
+    return parsed;
+
+}
+
+
 
 module.exports = function () {
     this.evntAll = evntAll;

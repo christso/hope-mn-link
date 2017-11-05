@@ -26,7 +26,7 @@ You can interact with the API using curl (for Linux) or Postman (for Windows). E
 ### Node app is frozen
 
 * Cause: testRPC or geth process is locked. This occassionally occurs on Windows 10.
-* Solution: You'll need to press any key in the Powershell console to unlock it. Alternatively, use CMD instead of Powershell.
+* Solution: You'll need to press any key in the Powershell console to unlock it. Alternatively, use CMD or VS Code Integrated Terminal.
 
 ### Error when Minting
 

@@ -47,7 +47,7 @@ var client = {
 let watchInterval = 15000; // 15 seconds
 
 setInterval(function () {
-    // Identify changes from DMD blockchain to save
+    // Call the DMD Txn Sync API on each interval
     axios.post(`${config.apiUri}/api/dmd/txns/sync`, {}).then(function(response) {
         console.log("SYNCED DMD", response.data);
     }).catch(function (error) {

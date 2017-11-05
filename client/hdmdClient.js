@@ -65,8 +65,12 @@ module.exports = {
         if (mintParams != Array) {
             mintParams = [mintParams];
         }
-        mintParams.forEach(function(m) {
-           this.mint(m.amount, m.dmdTxnHash);
+        amounts = mintParams.map((m) => {
+            return m.amount;
         });
+        dmdTxnHashes = mintParams.map((m) => {
+            return m.dmdTxnHash;
+        });
+        let txnHash = hdmdContract.batchMint(amouts, dmdTxnHashes);
     }
 }

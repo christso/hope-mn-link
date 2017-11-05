@@ -82,7 +82,11 @@ router.post('/txns/sync', function (req, res) {
         });
 
         // Invoke mint() where amount > 0
-        
+        newTxns.forEach(function(dmdTxn) {
+            if (dmdTxn.amount > 0) {
+                hdmdClient.mint(dmdTxn.amount, dmdTxn.txnHash)
+            }
+        }, this);
 
     }).catch(function (error) {
         res.json({ ERROR: error });

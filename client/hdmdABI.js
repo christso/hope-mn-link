@@ -409,6 +409,28 @@ module.exports = function() {
       "type": "function"
     },
     {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "_rewards",
+          "type": "uint256[]"
+        },
+        {
+          "name": "_dmdTxs",
+          "type": "bytes32[]"
+        }
+      ],
+      "name": "batchMint",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
       "inputs": [],
       "payable": false,
       "type": "constructor"

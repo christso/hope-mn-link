@@ -6,7 +6,7 @@ config.mongodbUri = 'mongodb://localhost:27017/hdmdlink';
 
 config.ethNodeAddress = 'http://localhost:8545';
 
-config.hdmdContractLocation = '0x66e64fac283a7b1d715273e4ae2a5b3501cd11e8'; // christso testRPC
+config.hdmdContractLocation = '0xf01b6bcb3937575c33acce5240c9f1a8c477094d'; // christso testRPC
 //config.hdmdContractLocation = '0x5b45cb92A968329A83Cd3f2FBFB1bF206043d70C'; // rinkeby
 
 config.hdmdVersion = 0.12; // version of HDMD Smart Contract

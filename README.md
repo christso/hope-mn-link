@@ -1,26 +1,3 @@
-# Task List
-
-## Persistent Storage
-
-- [ ] Store each HDMD Mint and Burn event as a MongoDB document.
-- [ ] Determine whether a DMD transaction is new or old by comparing CryptoID with MongoDB. You can use the Block Number, so if there are blocks that don't exist in MongoDB, then add those to MongoDB.
-- [ ] Store each *new* DMD transaction as a MongoDB document.
-- [ ] Store reconciliation between DMD and HDMD in MongDB either using txnID in the corresponding blockchain, or storing both collections in a third collection containing 2 documents (DMD and HDMD).
-
-## Mint
-
-- [X] Retrieve transasctions from DMD wallet on [cryptoID](https://chainz.cryptoid.info/dmd/address.dws?dH4bKCoyNj9BzLuyU4JvhwvhYs7cnogDVb.htm).
-- [ ] When the DMD wallet receives a staking reward (i.e. new staking transaction), invoke mint(reward) on HDMD.
-
-## Burn
-
-- [ ] When a burn event is fired on HDMD blockchain, send DMD tokens to the address that wants to receive them.
-- [ ] Update MongoDB to reflect the decreased supply of DMD in the masternode, and HDMDs. Store the confirmed txnIDs in MongoDB.
-
-## Reporting
-
-- [x] List account balances of HDMD token holders.
-
 # Getting Started
 
 Start an ethereum node with ```testrpc``` or ```geth``` which listens on ```localhost:8585```.

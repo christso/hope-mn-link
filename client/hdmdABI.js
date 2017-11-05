@@ -54,6 +54,28 @@ module.exports = function() {
       "type": "function"
     },
     {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "_reward",
+          "type": "uint256"
+        },
+        {
+          "name": "_dmdTx",
+          "type": "bytes32"
+        }
+      ],
+      "name": "mint",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
       "constant": true,
       "inputs": [],
       "name": "totalSupply",
@@ -267,24 +289,6 @@ module.exports = function() {
       "constant": false,
       "inputs": [
         {
-          "name": "_reward",
-          "type": "uint256"
-        }
-      ],
-      "name": "mint",
-      "outputs": [
-        {
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
           "name": "_from",
           "type": "address"
         },
@@ -443,6 +447,11 @@ module.exports = function() {
           "indexed": false,
           "name": "_reward",
           "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "_dmdTx",
+          "type": "bytes32"
         }
       ],
       "name": "Mint",

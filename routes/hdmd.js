@@ -51,12 +51,12 @@ router.get('/batchtransfer', function (req, res) {
 // CREATE HDMD transaction
 router.post('/mint', function(req, res) {
     var mint = {
-        hash: req.body.hash,
+        txnHash: null,
+        dmdTxnHash: req.body.txnHash,
         amount: req.body.amount
     };
 
-    let txnStatus = hdmdContract.mint(mint.amount);
-
+    mint.txnHash = hdmdContract.mint(mint.amount, mint.txnHash);
     res.json(mint);
 
     // TODO: create mongo document for each mint

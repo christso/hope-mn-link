@@ -41,20 +41,16 @@ evntAll.watch(function (error, result) {
 
 function parseTxInfo(arguments) {
     var parsed = {
-        address = arguments[1].address,
-        blockNr = arguments[1].blockNumber,
-        eventType = arguments[1].event,
-        reward = arguments[1]._reward.c,
-        tx = arguments[1].transactionHash,
-        hdmdTx = arguments[1].transactionHash,
-        dmdTx = "Fake_For_Now"
+        address: arguments[1].address,
+        blockNr: arguments[1].blockNumber,
+        eventType: arguments[1].event,
+        reward: arguments[1]._reward.c,
+        tx: arguments[1].transactionHash,
+        hdmdTx: arguments[1].transactionHash,
+        dmdTx: "Fake_For_Now"
     };
-
     return parsed;
-
 }
-
-
 
 module.exports = function () {
     this.evntAll = evntAll;

@@ -34,7 +34,7 @@ var client = {
             }
         });
     },
-    lastSavedTxn(callback) {
+    getLastSavedTxn(callback) {
         // TODO: find last saved txn in MongoDB
         // db.getCollection('dmdtxns').find().sort({blockNumber:-1}).limit(1)
         // define index on blockNumber in MongoDB
@@ -46,7 +46,7 @@ var client = {
 
 
 //let watchInterval = 3600000; // 1 hour
-let watchInterval = 5000; // 5 seconds
+let watchInterval = 15000; // 15 seconds
 
 setInterval(function () {
     // TODO: get laste MongoDB dmdTxn

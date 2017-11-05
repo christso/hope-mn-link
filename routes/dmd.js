@@ -49,16 +49,28 @@ router.post('/txns', function (req, res) {
 // Post new DMD txns
 // blockNumber is Number
 router.post('/txns/sync', function (req, res) {
-    // TODO: get last block stored in MongoDB
-    var newParams = {
-        blockNumber: req.body.blockNumber
-    };
+    // Get last block stored in MongoDB
+    // then create txns that are after that block
+    client.getLastSavedTxn(function(err, docs) {
+        if (err) {
+            res.json({ ERROR: err});
+        } else {
+            let lastBlockNumber = 0;
+            if (docs.length > 0) {
+                lastBlockNumber = docs[0].blockNumber;
+            }
+            createTxns(lastBlockNumber);
+        }
+    });
+    // Create txns with block after lastBlockNumber
+    let createTxns = (lastBlockNumber) => axios.get(dmdUrl).then(function (response) {
+        // Parse CryptoID txns
+        let parsedTxns = parseRawTxns(response.data.tx);
+        let newTxns = parsedTxns.filter((txn) => {
+            return txn.blockNumber > lastBlockNumber;
+        });
 
-    // TODO: do not save DMD txns that are already in DB
-    axios.get(dmdUrl).then(function (response) {
-        let newTxns = parseRawTxns(response.data.tx);
-
-        // Create new DMD txn and save to DB
+        // Create new DMD txn in MongoDB
         DmdTxns.create(newTxns, function (err, newlyCreated) {
             if (err) {
                 res.json({ 'Error': 'ERROR CREATING DMD TRANSACTIONS' });

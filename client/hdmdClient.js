@@ -1,7 +1,7 @@
 const Web3 = require('web3');
 const abi = require('./hdmdABI')();
 const config = require('../config');
-// const mongoose = require('mongoose');
+var hdmdTxns = require('../models/hdmdTxn');
 
 const hdmdVersion = config.hdmdVersion;
 const ethNodeAddress = config.ethNodeAddress;
@@ -36,27 +36,45 @@ var evntAll = hdmdContract.allEvents({}, { fromBlock: 0, toBlock: 'latest' });
 evntAll.watch(function (error, result) {
     console.log('listening for changes on the blockchain...');
     console.log(arguments);
-    //console.log(parseTxInfo(arguments));
+    saveTxns(parseTxInfo(arguments));
 });
 
+
+
+function saveTxns(newTxns) {
+    // Create new DMD txn and save to DB
+    var newTransaction = hdmdTxns({
+        txnHash: newTxns[0],
+        blockNumber: newTxns[1],
+        amount: newTxns[2]
+    });
+
+    newTransaction.save().then((doc) => {
+        console.log('saved', doc)
+    }, (err) => {
+        console.log('Unable to save data')
+    });
+}
+
+
+// Pass this info to saveTxns so it can be put in to Mongo
 function parseTxInfo(arguments) {
-    var parsed = {
-        address: arguments[1].address,
-        blockNr: arguments[1].blockNumber,
-        eventType: arguments[1].event,
-        reward: arguments[1]._reward.c,
-        tx: arguments[1].transactionHash,
-        hdmdTx: arguments[1].transactionHash,
-        dmdTx: "Fake_For_Now"
+    return {
+        txnHash: arguments[1].transactionHash,
+        blockNumber: arguments[1].blockNumber,
+        amount: arguments[1].args._reward.c[0]
+        // address: arguments[1].address,
+        // eventType: arguments[1].event,
+        // hdmdTx: arguments[1].transactionHash,
+        // dmdTx: "Fake_For_Now"
     };
-    return parsed;
 }
 
 module.exports = {
     evntAll: evntAll,
     web3: web3,
     hdmdContract: hdmdContract,
-    mint: (amount, dmdTxnHash) => {    
+    mint: (amount, dmdTxnHash) => {
         let txnHash = hdmdContract.mint(amount, dmdTxnHash);
         return txnHash;
     },

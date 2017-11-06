@@ -60,5 +60,8 @@ router.post('/txns/sync', function (req, res) {
     })
 });
 
+router.post('/sendtoaddress', function (req, res) {
+
+});
 
 module.exports = router;

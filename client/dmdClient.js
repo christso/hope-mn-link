@@ -37,9 +37,8 @@ var client = {
         });
     },
     getLastSavedTxn(callback) {
-        // TODO: find last saved txn in MongoDB
+        // Find last saved txn in MongoDB
         // db.getCollection('dmdtxns').find().sort({blockNumber:-1}).limit(1)
-        // define index on blockNumber in MongoDB
         dmdTxns.find().sort({ blockNumber: -1 }).limit(1).exec(function (err, docs) {
             callback(err, docs);
         });
@@ -54,6 +53,7 @@ var client = {
             if (err) {
                 callback(err);
             } else {
+                // format value
                 let lastBlockNumber = 0;
                 if (docs.length > 0) {
                     lastBlockNumber = docs[0].blockNumber;
@@ -87,9 +87,7 @@ var client = {
                         }
                     });
                 } else if (dmdTxn.amount < 0) {
-                    // TODO: Burn
-                    // reduce supply of HDMD
-
+                    // Do nothing. Leave this as unmatched txn.
                 }
             }, this);
 

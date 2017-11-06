@@ -85,7 +85,11 @@ var client = {
                         if (err) {
                             console.log("ERROR MINTING", err);
                         }
-                    })
+                    });
+                } else if (dmdTxn.amount < 0) {
+                    // TODO: Burn
+                    // reduce supply of HDMD
+                    
                 }
             }, this);
 

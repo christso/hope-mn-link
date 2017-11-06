@@ -3,6 +3,7 @@ var config = require('./config');
 var express = require('express');
 var bodyParser = require('body-parser');
 var mongoose = require('mongoose');
+mongoose.Promise = global.Promise;
 var axios = require('axios').default;
 var app = express();
 var port = config.port;

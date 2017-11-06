@@ -79,9 +79,13 @@ module.exports = {
     evntAll: evntAll,
     web3: web3,
     hdmdContract: hdmdContract,
-    mint: (amount, dmdTxnHash) => {
-        let txnHash = hdmdContract.mint(amount, dmdTxnHash);
-        return txnHash;
+    mint: (amount, dmdTxnHash, callback) => {    
+        try {
+            let txnHash = hdmdContract.mint(amount, dmdTxnHash);
+            callback(null, txnHash);
+        } catch (err) {
+            callback(err, null);
+        }
     },
     // mintParams: [{amount, dmdTxnHash}, {amount, dmdTxnHash}, ...]
     batchMint: (mintParams) => {
@@ -94,6 +98,11 @@ module.exports = {
         dmdTxnHashes = mintParams.map((m) => {
             return m.dmdTxnHash;
         });
-        let txnHash = hdmdContract.batchMint(amouts, dmdTxnHashes);
+        try {
+            let txnHash = hdmdContract.batchMint(amouts, dmdTxnHashes);
+            callback(null, txnHash);
+        } catch (err) {
+            callback(err, null);
+        }
     }
 }

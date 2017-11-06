@@ -128,6 +128,28 @@ module.exports = function() {
       "type": "function"
     },
     {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "_reward",
+          "type": "uint256"
+        },
+        {
+          "name": "_dmdTx",
+          "type": "bytes32"
+        }
+      ],
+      "name": "unmint",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
       "constant": true,
       "inputs": [],
       "name": "version",
@@ -477,6 +499,28 @@ module.exports = function() {
         }
       ],
       "name": "Mint",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "name": "_address",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "_reward",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "_dmdTx",
+          "type": "bytes32"
+        }
+      ],
+      "name": "Unmint",
       "type": "event"
     },
     {

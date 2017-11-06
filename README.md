@@ -1,8 +1,29 @@
 # Getting Started
 
-Start an ethereum node with ```testrpc``` or ```geth``` which listens on ```localhost:8585```.
+Start an ethereum node with ```testrpc``` or ```geth --rpc``` which listens on ```localhost:8585```.
 
-In this project, run the CLI commands below:
+In HDMDLink project, run the CLI commands below:
+```
+truffle compile
+truffle migrate
+truffle console
+```
+
+In truffle, run this to allow the default account to invoke `mint()`.
+```
+HDMDToken.deployed().then(function(instance){hdmd=instance});
+hdmd.allowMinter(web3.eth.accounts[0]);
+```
+
+Then run this to get the contract address:
+```
+hdmd.address;
+```
+
+In this project, change the `hdmdContractLocation` in `config.js`.
+
+Then run the CLI commands below:
+
 ```
 npm install
 
@@ -11,8 +32,7 @@ mongod.exe
 
 npm start
 ```
-
-You can interact with the API using curl (for Linux) or Postman (for Windows). Ensure that you select "JSON (application/json) as the body format, otherwise the request body in Express will be empty.
+You can interact with the API using curl (for Linux) or Postman (for Windows). Ensure that you select `JSON (application/json)` as the body format.
 
 ![Postman](https://i.imgur.com/pbCjsUK.png)
 
@@ -26,7 +46,7 @@ You can interact with the API using curl (for Linux) or Postman (for Windows). E
 ### Node app is frozen
 
 * Cause: testRPC or geth process is locked. This occassionally occurs on Windows 10.
-* Solution: You'll need to press any key in the Powershell console to unlock it. Alternatively, use CMD instead of Powershell.
+* Solution: You'll need to press any key in the Powershell console to unlock it. Alternatively, use CMD or VS Code Integrated Terminal.
 
 ### Error when Minting
 

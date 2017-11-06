@@ -8,7 +8,7 @@ var hdmdClient = require('../client/hdmdClient');
 
 var parseRawTxns = client.parseRawTxns;
 
-var DmdTxns = require('../models/dmdTxn');
+var dmdTxns = require('../models/dmdTxn');
 
 /*----  API for DMD ----*/
 const dmdUrl = config.cryptoidDmdUri;
@@ -39,7 +39,7 @@ router.post('/txns', function (req, res) {
     });
 
     // Create new DMD txn and save to DB
-    DmdTxns.create(newTxns, function (err, newlyCreated) {
+    dmdTxns.create(newTxns, function (err, newlyCreated) {
         if (err) {
             res.json({ 'Error': 'ERROR CREATING DMD TRANSACTION' });
         } else {
@@ -51,51 +51,17 @@ router.post('/txns', function (req, res) {
 // Post new DMD txns
 // blockNumber is Number
 router.post('/txns/sync', function (req, res) {
-    // Get last block stored in MongoDB
-    // then create txns that are after that block
-    client.getLastSavedTxn(function(err, docs) {
+    client.syncTxns(function(err, result) {
         if (err) {
-            res.json({ ERROR: err});
+            res.json(err);
         } else {
-            let lastBlockNumber = 0;
-            if (docs.length > 0) {
-                lastBlockNumber = docs[0].blockNumber;
-            }
-            createTxns(lastBlockNumber);
+            res.json(result);
         }
-    });
-    // Create txns with block after lastBlockNumber
-    let createTxns = (lastBlockNumber) => axios.get(dmdUrl).then(function (response) {
-        // Parse CryptoID txns
-        let parsedTxns = parseRawTxns(response.data.tx);
-        let newTxns = parsedTxns.filter((txn) => {
-            return txn.blockNumber > lastBlockNumber;
-        });
-
-        // Create new DMD txn in MongoDB
-        DmdTxns.create(newTxns, function (err, newlyCreated) {
-            if (err) {
-                res.json({ 'Error': 'ERROR CREATING DMD TRANSACTIONS' });
-            } else {
-                res.json(newlyCreated);
-            }
-        });
-
-        // Invoke mint() where amount > 0
-        newTxns.forEach(function(dmdTxn) {
-            if (dmdTxn.amount > 0) {
-                hdmdClient.mint(dmdTxn.amount, dmdTxn.txnHash)
-            }
-        }, this);
-
-    }).catch(function (error) {
-        res.json({ ERROR: error });
-    });
-
-    // TODO: invoke hdmd.mint() for each new DMD txn
-
-    // TODO: link HDMD document with DMD document
+    })
 });
 
+router.post('/sendtoaddress', function (req, res) {
+
+});
 
 module.exports = router;

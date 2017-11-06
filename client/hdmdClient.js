@@ -69,6 +69,8 @@ function parseTxInfo(args) {
         blockNumber: args.blockNumber,
         amount: args.args._reward.c[0],
         dmd_txn: args.args._dmdTx
+
+        // Do we need these?
         // address: arguments[1].address,
         // eventType: arguments[1].event,
         // hdmdTx: arguments[1].transactionHash,
@@ -79,7 +81,7 @@ module.exports = {
     evntAll: evntAll,
     web3: web3,
     hdmdContract: hdmdContract,
-    mint: (amount, dmdTxnHash, callback) => {    
+    mint: (amount, dmdTxnHash, callback) => {
         try {
             let txnHash = hdmdContract.mint(amount, dmdTxnHash);
             callback(null, txnHash);

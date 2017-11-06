@@ -45,8 +45,8 @@ var client = {
         });
     },
     syncTxns(callback) {
-        getLastSavedTxn = client.getLastSavedTxn;
-        parseRawTxns = client.parseRawTxns;
+        let getLastSavedTxn = client.getLastSavedTxn;
+        let parseRawTxns = client.parseRawTxns;
 
         // Get last block stored in MongoDB
         // then create txns that are after that block
@@ -89,7 +89,7 @@ var client = {
                 } else if (dmdTxn.amount < 0) {
                     // TODO: Burn
                     // reduce supply of HDMD
-                    
+
                 }
             }, this);
 

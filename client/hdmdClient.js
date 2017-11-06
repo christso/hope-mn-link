@@ -35,18 +35,20 @@ console.log(`Listening for changes on the blockchain on node ${ethNodeAddress}`)
 var evntAll = hdmdContract.allEvents({}, { fromBlock: 0, toBlock: 'latest' });
 evntAll.watch(function (error, result) {
     console.log('listening for changes on the blockchain...');
-    console.log(arguments);
-    saveTxns(parseTxInfo(arguments));
+    console.log(arguments[1]); // for Debugging
+    saveTxns(parseTxInfo(arguments[1]));
 });
 
 
 
 function saveTxns(newTxns) {
+    console.log(newTxns);
     // Create new DMD txn and save to DB
     var newTransaction = hdmdTxns({
-        txnHash: newTxns[0],
-        blockNumber: newTxns[1],
-        amount: newTxns[2]
+        txnHash: newTxns.txnHash,
+        blockNumber: newTxns.blockNumber,
+        amount: newTxns.amount,
+        dmd_txnHash: newTxns.dmd_txn
     });
 
     newTransaction.save().then((doc) => {
@@ -58,15 +60,18 @@ function saveTxns(newTxns) {
 
 
 // Pass this info to saveTxns so it can be put in to Mongo
-function parseTxInfo(arguments) {
+// This is a bit messy to be honest but it gets the DMD Txn.
+// Play around with it for a bit. your map solution looks nice to. but i dont know
+// if that would work here, @Christso looks like you made a mapper further down.
+function parseTxInfo(args) {
     return {
-        txnHash: arguments[1].transactionHash,
-        blockNumber: arguments[1].blockNumber,
-        amount: arguments[1].args._reward.c[0]
+        txnHash: args.transactionHash,
+        blockNumber: args.blockNumber,
+        amount: args.args._reward.c[0],
+        dmd_txn: args.args._dmdTx
         // address: arguments[1].address,
         // eventType: arguments[1].event,
         // hdmdTx: arguments[1].transactionHash,
-        // dmdTx: "Fake_For_Now"
     };
 }
 

@@ -1,7 +1,10 @@
 var config = require('../config');
 var port = config.port;
 var axios = require('axios').default;
-var DmdTxns = require('../models/dmdTxn');
+var dmdTxns = require('../models/dmdTxn');
+var mongoose = require('mongoose');
+const dmdUrl = config.cryptoidDmdUri;
+var hdmdClient = require('../client/hdmdClient');
 
 /*----- Create DMD listener -----*/
 
@@ -25,11 +28,11 @@ var client = {
     },
     saveTxns(newTxns, callback) {
         // Create new DMD txn and save to DB
-        DmdTxns.create(newTxns, function (err, newlyCreated) {
+        dmdTxns.create(newTxns, function (err, newlyCreated) {
             if (err) {
-                callback({ 'Error': 'ERROR CREATING DMD TRANSACTIONS' });
+                callback(err, null);
             } else {
-                callback(newlyCreated);
+                callback(null, newlyCreated);
             }
         });
     },
@@ -37,10 +40,59 @@ var client = {
         // TODO: find last saved txn in MongoDB
         // db.getCollection('dmdtxns').find().sort({blockNumber:-1}).limit(1)
         // define index on blockNumber in MongoDB
-        DmdTxns.find().sort({ blockNumber: -1 }).limit(1).exec(function (err, docs) {
+        dmdTxns.find().sort({ blockNumber: -1 }).limit(1).exec(function (err, docs) {
             callback(err, docs);
         });
-    }
+    },
+    syncTxns(callback) {
+        getLastSavedTxn = client.getLastSavedTxn;
+        parseRawTxns = client.parseRawTxns;
+
+        // Get last block stored in MongoDB
+        // then create txns that are after that block
+        getLastSavedTxn(function (err, docs) {
+            if (err) {
+                callback(err);
+            } else {
+                let lastBlockNumber = 0;
+                if (docs.length > 0) {
+                    lastBlockNumber = docs[0].blockNumber;
+                }
+                createTxns(lastBlockNumber);
+            }
+        });
+        // Create txns with block after lastBlockNumber
+        let createTxns = (lastBlockNumber) => axios.get(dmdUrl).then(function (response) {
+            // Parse CryptoID txns
+            let parsedTxns = parseRawTxns(response.data.tx);
+            let newTxns = parsedTxns.filter((txn) => {
+                return txn.blockNumber > lastBlockNumber;
+            });
+
+            // Create new DMD txn in MongoDB
+            dmdTxns.create(newTxns, function (err, newlyCreated) {
+                if (err) {
+                    callback(err);
+                } else {
+                    callback(newlyCreated);
+                }
+            });
+
+            // Invoke mint() where amount > 0
+            newTxns.forEach(function (dmdTxn) {
+                if (dmdTxn.amount > 0) {
+                    hdmdClient.mint(dmdTxn.amount, dmdTxn.txnHash, function (err, txnHash) {
+                        if (err) {
+                            console.log("ERROR MINTING", err);
+                        }
+                    })
+                }
+            }, this);
+
+        }).catch(function (error) {
+            callback(error);
+        });
+    }    
 };
 
 //let watchInterval = 3600000; // 1 hour
@@ -48,7 +100,7 @@ let watchInterval = 15000; // 15 seconds
 
 setInterval(function () {
     // Call the DMD Txn Sync API on each interval
-    axios.post(`${config.apiUri}/api/dmd/txns/sync`, {}).then(function(response) {
+    axios.post(`${config.apiUri}/api/dmd/txns/sync`, {}).then(function (response) {
         console.log("SYNCED DMD", response.data);
     }).catch(function (error) {
         console.log("ERROR SYNCING DMD", JSON.stringify(error));

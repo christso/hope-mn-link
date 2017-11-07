@@ -15,4 +15,9 @@ config.cryptoidDmdUri = 'https://chainz.cryptoid.info/explorer/address.summary.d
 
 config.apiUri = `http://localhost:${config.port}`;
 
+config.dmdWalletHost = '127.0.0.1';
+config.dmdWalletPort = 17772;
+config.dmdWalletUser = 'testuser';
+config.dmdWalletPass = 'hope2017';
+
 module.exports = config;

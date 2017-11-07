@@ -46,7 +46,6 @@ evntAll.watch(function (error, result) {
 function saveTxns(newTxns) {
     // Create new DMD txn and save to DB
     if (newTxns.event === 'Mint') {
-        // let parsedEvent = parseMint(newTxns);
         var newTransaction = hdmdTxns({
             // txnHash: parsedEvent.txnHash,
             // blockNumber: parsedEvent.blockNumber,
@@ -60,9 +59,6 @@ function saveTxns(newTxns) {
         saveToMongo(newTransaction);
     }
     if (newTxns.event === 'Burn') {
-        console.log('Burn baby Burn!');
-        console.log(newTxns);
-        // let parsedEvent = parseBurn(newTxns);
         var newTransaction = hdmdBurn({
             burner: newTxns.args.burner,
             dmdAddress: newTxns.args.dmdAddress,
@@ -74,9 +70,6 @@ function saveTxns(newTxns) {
         saveToMongo(newTransaction);
     }
 
-
-
-
 }
 function saveToMongo(event) {
     event.save().then((doc) => {
@@ -86,36 +79,6 @@ function saveToMongo(event) {
     });
 }
 
-// Pass this info to saveTxns so it can be put in to Mongo
-// This is a bit messy to be honest but it gets the DMD Txn.
-// Play around with it for a bit. your map solution looks nice to. but i dont know
-// if that would work here, @Christso looks like you made a mapper further down.
-function parseMint(args) {
-    return {
-        txnHash: args.transactionHash,
-        blockNumber: args.blockNumber,
-        amount: args.args._reward.c[0],
-        dmd_txn: args.args._dmdTx
-
-        // Do we need these?
-        // address: arguments[1].address,
-        // eventType: arguments[1].event,
-        // hdmdTx: arguments[1].transactionHash,
-    };
-}
-function parseBurn(args) {
-    return {
-        txnHash: args.transactionHash,
-        blockNumber: args.blockNumber,
-        amount: args.args._reward.c[0],
-        dmd_txn: args.args._dmdTx
-
-        // Do we need these?
-        // address: arguments[1].address,
-        // eventType: arguments[1].event,
-        // hdmdTx: arguments[1].transactionHash,
-    };
-}
 
 module.exports = {
     evntAll: evntAll,

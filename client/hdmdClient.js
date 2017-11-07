@@ -54,8 +54,8 @@ function saveTxns(newTxns) {
             // dmd_txnHash: parsedEvent.dmd_txn
             txnHash: newTxns.args.transactionHash,
             blockNumber: newTxns.args.blockNumber,
-            amount: newTxns.args.args._reward.c[0],
-            dmd_txnHash: newTxns.args.args._dmdTx
+            amount: newTxns.args._reward.c[0],
+            dmd_txnHash: newTxns.args._dmdTx
         });
         saveToMongo(newTransaction);
     }

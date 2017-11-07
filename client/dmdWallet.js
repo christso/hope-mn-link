@@ -1,3 +1,5 @@
+// This will interact with the DMD wallet
+
 var bitcoin = require('bitcoin');
 
 var client = new bitcoin.Client({
@@ -21,6 +23,7 @@ client.getBalance('*', 6, function (err, balance) {
     console.log('Balance:', balance);
 });
 
+// params = ["dQmpKBcneq1ZF27iuJsUm8dQ2QkUriKWy3", 0.1, "donation", "seans outpost"]
 client.sendToAddress('dQmpKBcneq1ZF27iuJsUm8dQ2QkUriKWy3', 0.1, function (err, difficulty) {
     if (err) {
         return console.error(err);

@@ -27,10 +27,5 @@ var hdmdContract = contract.at(contractLocation);
 
 var filter=web3.eth.filter({fromBlock: 0, toBlock: 9999999, address: contractLocation});
 filter.get(function(error, log) {
-  console.log(log);
   console.log('decoded', abiDecoder.decodeLogs(log));
 });
-
-
-
-//filter.stopWatching(); 

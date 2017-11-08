@@ -49,7 +49,7 @@ router.post('/batchtransfer', function (req, res) {
     // TODO: invoke batchTransfer()
     let addresses = req.body.addresses;
     let values = req.body.values;
-    hdmdContract.batchTransfer(addresses, values, function (err, tfrResult) {
+    hdmdClient.batchTransfer(addresses, values, function (err, tfrResult) {
         if (err) {
             res.json({ error: err });
         } else {

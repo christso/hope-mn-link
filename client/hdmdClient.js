@@ -99,8 +99,10 @@ function getBalances(callback) {
             hdmdContract.balanceOf(accounts[i], (err, value) => {
                 let account = accounts[i];
                 // push to array
-                if (!err) {
-                    values.push(value);
+                if (err || !value.c) {
+                    values.push(0);
+                } else {
+                    values.push(value.c[0]);
                 }
                 accounts_processed = accounts_processed + 1;
                 // when done
@@ -127,9 +129,9 @@ function apportion(amount, fundingAddress, callback) {
             return el.address;
         });
         let oldAmounts = balances.map((el) => {
-            return el.value === null ? 0 : el.value;
+            return el.value;
         });
-        let oldTotal = oldAmounts.reduce((a,b) => a+b, 0);
+        let oldTotal = oldAmounts.reduce((a,b) => a + b, 0);
     
         // subtract value so we get balance before minting
         balances[fundingAddress] -= amount; 
@@ -141,10 +143,13 @@ function apportion(amount, fundingAddress, callback) {
         console.log('calling batchTransfer');
         console.log('addresses', JSON.stringify(addresses));
         console.log('values', JSON.stringify(addValues));
-    
-        // TODO: fix Error: VM Exception while processing transaction: out of gas
-        hdmdContract.batchTransfer(addresses, addValues, {gas: gasLimit}, callback);
+
+        batchTransfer(addresses, addValues, callback);
     });
+}
+
+function batchTransfer(addresses, values, callback) {
+    hdmdContract.batchTransfer(addresses, values, {gas: gasLimit}, callback);
 }
 
 module.exports = {
@@ -152,6 +157,7 @@ module.exports = {
     web3: web3,
     hdmdContract: hdmdContract,
     getBalances: getBalances,
+    batchTransfer: batchTransfer,
     mint: (amount, dmdTxnHash, callback) => {
         try {
             let txnHash = hdmdContract.mint(amount, dmdTxnHash);

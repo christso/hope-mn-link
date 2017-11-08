@@ -7,6 +7,7 @@ var hdmdClient = require('../client/hdmdClient');
 
 var hdmdContract = hdmdClient.hdmdContract;
 var web3 = hdmdClient.web3;
+var getBalances = hdmdClient.getBalances;
 
 var accounts = require('../data/hdmdAccounts');
 
@@ -30,12 +31,13 @@ router.get('/svr/defaultaccount', function (req, res) {
 // Get all account balances of HDMD token holders
 // TODO: This is blocking the entire node app. Need to use async.
 router.get('/balances', function (req, res) {
-
-    let balances = accounts.map((account) => {
-        let balance = hdmdContract.balanceOf(account);
-        return { address: account, value: balance }
-    });
-    res.json(balances);
+    getBalances(function (err, balances) {
+        if (err) {
+            res.json({ error: err });
+        } else {
+            res.json(balances);
+        }
+    })
 });
 
 // List accounts that hold HDMD
@@ -46,18 +48,18 @@ router.get('/accounts', function (req, res) {
 router.post('/batchtransfer', function (req, res) {
     // TODO: invoke batchTransfer()
     let addresses = req.body.addresses;
-    let values =  req.body.values;
-    hdmdContract.batchTransfer(addresses, values, function(err, res) {
+    let values = req.body.values;
+    hdmdContract.batchTransfer(addresses, values, function (err, tfrResult) {
         if (err) {
-            res.json({error: err});
+            res.json({ error: err });
         } else {
-            res.json(res);
+            res.json(tfrResult);
         }
     });
 });
 
 // CREATE HDMD transaction
-router.post('/mint', function(req, res) {
+router.post('/mint', function (req, res) {
     var mint = {
         txnHash: null,
         dmdTxnHash: req.body.dmdTxnHash,
@@ -68,7 +70,7 @@ router.post('/mint', function(req, res) {
     res.json(mint);
 
     // TODO: create mongo document for each mint
-    
+
     // TODO: link HDMD document with DMD document
 });
 

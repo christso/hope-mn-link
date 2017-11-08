@@ -3,6 +3,7 @@ const abi = require('./hdmdABI')();
 const config = require('../config');
 var hdmdTxns = require('../models/hdmdTxn');
 var hdmdBurn = require('../models/hdmdBurn');
+var accounts = require('../data/hdmdAccounts');
 
 const hdmdVersion = config.hdmdVersion;
 const ethNodeAddress = config.ethNodeAddress;
@@ -58,6 +59,7 @@ function saveTxns(newTxns) {
             dmd_txnHash: newTxns.args._dmdTx
         });
         saveToMongo(newTransaction);
+        // TODO: fix Error: VM Exception while processing transaction: out of gas
         apportion(newTransaction.amount, defaultAccount, function(err, res) {
             if (err) {
                 console.log('Unable to apportion tokens', err);
@@ -87,47 +89,68 @@ function saveToMongo(event) {
     });
 }
 
-// TODO: use caching
-function getBalances() {
-    let accounts = web3.eth.accounts;
-    let balances = accounts.map((account) => {
-        let balance = hdmdContract.balanceOf(account);
-        return { address: account, value: balance }
-    });
-    return balances;
+function getBalances(callback) {
+    let accounts_processed = 0;
+    let total = accounts.length;
+    let values = [];
+    try {
+        for (var i = 0, len = accounts.length; i < len; i++) {
+            hdmdContract.balanceOf(accounts[i], (err, value) => {
+                let account = accounts[i];
+                // push to array
+                if (!err) {
+                    values.push(value);
+                }
+                accounts_processed = accounts_processed + 1;
+                // when done
+                let balances = [];
+                if (accounts_processed === total) {
+                    for (var i = 0; i < accounts.length; i++) {
+                        balances.push({ address: accounts[i], value: values[i] });
+                    }
+                    callback(null, balances);
+                    return;
+                }
+            });
+        }
+    } catch (err) {
+        callback(err);
+    }
 }
 
 // Used to distribute the minted amount to addresses in proportion to their balances
 // fundingAddress should be the account that did the minting = web3.eth.defaultAccount
 function apportion(amount, fundingAddress, callback) {
-    let balances = getBalances();
-    let addresses = balances.map((el) => {
-        return el.address;
+    getBalances(function(err, balances) {
+        let addresses = balances.map((el) => {
+            return el.address;
+        });
+        let oldAmounts = balances.map((el) => {
+            return el.value === null ? 0 : el.value;
+        });
+        let oldTotal = oldAmounts.reduce((a,b) => a+b, 0);
+    
+        // subtract value so we get balance before minting
+        balances[fundingAddress] -= amount; 
+    
+        let addValues = oldAmounts.map((oldValue) => {
+            return oldValue / oldTotal * amount;
+        });
+    
+        console.log('calling batchTransfer');
+        console.log('addresses', JSON.stringify(addresses));
+        console.log('values', JSON.stringify(addValues));
+    
+        // TODO: fix Error: VM Exception while processing transaction: out of gas
+        hdmdContract.batchTransfer(addresses, addValues, callback);
     });
-    let oldAmounts = balances.map((el) => {
-        return el.value;
-    });
-    let oldTotal = oldAmounts.reduce((a,b) => a+b, 0);
-
-    // subtract value so we get balance before minting
-    balances[fundingAddress] -= amount; 
-
-    let addValues = oldAmounts.map((oldValue) => {
-        return oldValue / oldTotal * amount;
-    });
-
-    console.log('calling batchTransfer');
-    console.log('addresses', JSON.stringify(addresses));
-    console.log('values', JSON.stringify(addValues));
-
-    // TODO: fix Error: VM Exception while processing transaction: out of gas
-    hdmdContract.batchTransfer(addresses, addValues, callback);
 }
 
 module.exports = {
     evntAll: evntAll,
     web3: web3,
     hdmdContract: hdmdContract,
+    getBalances: getBalances,
     mint: (amount, dmdTxnHash, callback) => {
         try {
             let txnHash = hdmdContract.mint(amount, dmdTxnHash);

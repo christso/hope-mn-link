@@ -10,6 +10,7 @@ const ethNodeAddress = config.ethNodeAddress;
 
 var contractLocation = config.hdmdContractLocation;
 var gasLimit = config.ethGasLimit;
+var decimals = config.hdmdDecimals;
 
 // set the Web3 to where we need to connect
 var web3 = new Web3(new Web3.providers.HttpProvider(ethNodeAddress));
@@ -61,7 +62,7 @@ function saveTxns(newTxns) {
         });
         saveToMongo(newTransaction);
         // TODO: fix Error: VM Exception while processing transaction: out of gas
-        apportion(newTransaction.amount, defaultAccount, function(err, res) {
+        apportion(getRawValue(newTransaction.amount), defaultAccount, function(err, res) {
             if (err) {
                 console.log('Unable to apportion tokens', err);
             } else {
@@ -152,12 +153,21 @@ function batchTransfer(addresses, values, callback) {
     hdmdContract.batchTransfer(addresses, values, {gas: gasLimit}, callback);
 }
 
+function getFormattedValue(value) {
+    return value / (10**decimals);
+}
+
+function getRawValue(value) {
+    return value * 10**decimals;
+}
+
 module.exports = {
     evntAll: evntAll,
     web3: web3,
     hdmdContract: hdmdContract,
     getBalances: getBalances,
     batchTransfer: batchTransfer,
+    getFormattedValue: getFormattedValue,
     mint: (amount, dmdTxnHash, callback) => {
         try {
             let txnHash = hdmdContract.mint(amount, dmdTxnHash);

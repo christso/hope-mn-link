@@ -9,6 +9,7 @@ const hdmdVersion = config.hdmdVersion;
 const ethNodeAddress = config.ethNodeAddress;
 
 var contractLocation = config.hdmdContractLocation;
+var gasLimit = config.ethGasLimit;
 
 // set the Web3 to where we need to connect
 var web3 = new Web3(new Web3.providers.HttpProvider(ethNodeAddress));
@@ -142,7 +143,7 @@ function apportion(amount, fundingAddress, callback) {
         console.log('values', JSON.stringify(addValues));
     
         // TODO: fix Error: VM Exception while processing transaction: out of gas
-        hdmdContract.batchTransfer(addresses, addValues, callback);
+        hdmdContract.batchTransfer(addresses, addValues, {gas: gasLimit}, callback);
     });
 }
 

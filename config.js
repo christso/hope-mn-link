@@ -11,6 +11,8 @@ config.hdmdContractLocation = '0x367c921cce0021d87a7d63c84cfcd3ea70d685f9'; // c
 
 config.hdmdVersion = 0.13; // version of HDMD Smart Contract
 
+config.ethGasLimit = 300000;
+
 config.cryptoidDmdUri = 'https://chainz.cryptoid.info/explorer/address.summary.dws?coin=dmd&id=12829&r=25294&fmt.js';
 
 config.apiUri = `http://localhost:${config.port}`;

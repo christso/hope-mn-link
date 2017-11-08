@@ -36,6 +36,13 @@ You can interact with the API using curl (for Linux) or Postman (for Windows). E
 
 ![Postman](https://i.imgur.com/pbCjsUK.png)
 
+# Unit Testing
+
+We use Jest as our unit-testing framework. To install, run the CLI command:
+```
+npm install -g --save-dev jest
+```
+
 # Troubleshooting
 
 ### new BigNumber() not a base 16 number

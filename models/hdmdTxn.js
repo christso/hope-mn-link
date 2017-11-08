@@ -1,6 +1,5 @@
-// TODO: schema for HDMD goes here.
-
 var mongoose = require("mongoose");
+mongoose.Promise = global.Promise;
 
 // Schema setup
 var hdmdTxnSchema = new mongoose.Schema({

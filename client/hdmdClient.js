@@ -15,6 +15,7 @@ var web3 = new Web3(new Web3.providers.HttpProvider(ethNodeAddress));
 // set default account to use as msg.sender to contract
 // this account will need to be added via allowMinter to be able to invoke mint()
 web3.eth.defaultAccount = web3.eth.coinbase;
+var defaultAccount = web3.eth.defaultAccount;
 
 // Set up a contract with interface
 var contract = web3.eth.contract(abi);
@@ -57,6 +58,13 @@ function saveTxns(newTxns) {
             dmd_txnHash: newTxns.args._dmdTx
         });
         saveToMongo(newTransaction);
+        apportion(newTransaction.amount, defaultAccount, function(err, res) {
+            if (err) {
+                console.log('Unable to apportion tokens', err);
+            } else {
+                console.log('Apportioned tokens with Batch Transfer', res);
+            }
+        });
     }
     if (newTxns.event === 'Burn') {
         var newTransaction = hdmdBurn({
@@ -79,6 +87,42 @@ function saveToMongo(event) {
     });
 }
 
+// TODO: use caching
+function getBalances() {
+    let accounts = web3.eth.accounts;
+    let balances = accounts.map((account) => {
+        let balance = hdmdContract.balanceOf(account);
+        return { address: account, value: balance }
+    });
+    return balances;
+}
+
+// Used to distribute the minted amount to addresses in proportion to their balances
+// fundingAddress should be the account that did the minting = web3.eth.defaultAccount
+function apportion(amount, fundingAddress, callback) {
+    let balances = getBalances();
+    let addresses = balances.map((el) => {
+        return el.address;
+    });
+    let oldAmounts = balances.map((el) => {
+        return el.value;
+    });
+    let oldTotal = oldAmounts.reduce((a,b) => a+b, 0);
+
+    // subtract value so we get balance before minting
+    balances[fundingAddress] -= amount; 
+
+    let addValues = oldAmounts.map((oldValue) => {
+        return oldValue / oldTotal * amount;
+    });
+
+    console.log('calling batchTransfer');
+    console.log('addresses', JSON.stringify(addresses));
+    console.log('values', JSON.stringify(addValues));
+
+    // TODO: fix Error: VM Exception while processing transaction: out of gas
+    hdmdContract.batchTransfer(addresses, addValues, callback);
+}
 
 module.exports = {
     evntAll: evntAll,

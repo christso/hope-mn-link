@@ -5,8 +5,8 @@ var mongoose = require('mongoose');
 // execute contract app
 var hdmdClient = require('../client/hdmdClient');
 
-// var hdmdContract = hdmdClient.hdmdContract;
-// var web3 = hdmdClient.web3;
+var hdmdContract = hdmdClient.hdmdContract;
+var web3 = hdmdClient.web3;
 
 var accounts = require('../data/hdmdAccounts');
 
@@ -28,7 +28,7 @@ router.get('/svr/defaultaccount', function (req, res) {
 });
 
 // Get all account balances of HDMD token holders
-// TODO: Make this run faster. We should cache results.
+// TODO: This is blocking the entire node app. Need to use async.
 router.get('/balances', function (req, res) {
 
     let balances = accounts.map((account) => {
@@ -43,9 +43,17 @@ router.get('/accounts', function (req, res) {
     res.json(accounts);
 });
 
-router.get('/batchtransfer', function (req, res) {
+router.post('/batchtransfer', function (req, res) {
     // TODO: invoke batchTransfer()
-
+    let addresses = req.body.addresses;
+    let values =  req.body.values;
+    hdmdContract.batchTransfer(addresses, values, function(err, res) {
+        if (err) {
+            res.json({error: err});
+        } else {
+            res.json(res);
+        }
+    });
 });
 
 // CREATE HDMD transaction

@@ -18,10 +18,10 @@ var client = new bitcoin.Client({
 // params = ["dQmpKBcneq1ZF27iuJsUm8dQ2QkUriKWy3", 0.1, "donation", "seans outpost"]
 
 module.exports = {
-    /* callback can return
-    
+    /* callback(error) can return
     { Error: Insufficient funds }
 
+    use callback(error, response)
     */
     sendToAddress(dmdAddress, value, callback) {
         client.sendToAddress(dmdAddress, value, callback);

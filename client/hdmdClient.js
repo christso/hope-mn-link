@@ -69,13 +69,18 @@ function saveTxns(newTxns) {
         var newTransaction = hdmdBurn({
             burner: newTxns.args.burner,
             dmdAddress: newTxns.args.dmdAddress,
-            txnHash: newTxns.txnHash,
+            txnHash: newTxns.transactionHash,
             blockNumber: newTxns.blockNumber,
-            amount: newTxns.amount,
-            txnHash: newTxns.dmd_txn
+            amount: newTxns.args.value.c[0]
         });
         saveToMongo(newTransaction);
-        wallet.sendToAddress(newTxns.args.dmdAddress, newTxns.amount);
+        wallet.sendToAddress(newTransaction.dmdAddress, newTransaction.amount, function(error, result) {
+            if (error) {
+                console.log(error);
+            } else {
+                console.log(result);
+            }
+        });
     }
 
 }

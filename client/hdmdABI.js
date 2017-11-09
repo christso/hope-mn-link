@@ -54,28 +54,6 @@ module.exports = function() {
       "type": "function"
     },
     {
-      "constant": false,
-      "inputs": [
-        {
-          "name": "_reward",
-          "type": "uint256"
-        },
-        {
-          "name": "_dmdTx",
-          "type": "bytes32"
-        }
-      ],
-      "name": "mint",
-      "outputs": [
-        {
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "type": "function"
-    },
-    {
       "constant": true,
       "inputs": [],
       "name": "totalSupply",
@@ -128,28 +106,6 @@ module.exports = function() {
       "type": "function"
     },
     {
-      "constant": false,
-      "inputs": [
-        {
-          "name": "_reward",
-          "type": "uint256"
-        },
-        {
-          "name": "_dmdTx",
-          "type": "bytes32"
-        }
-      ],
-      "name": "unmint",
-      "outputs": [
-        {
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "type": "function"
-    },
-    {
       "constant": true,
       "inputs": [],
       "name": "version",
@@ -193,6 +149,50 @@ module.exports = function() {
         }
       ],
       "name": "reverseBatchTransfer",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "_value",
+          "type": "uint256"
+        },
+        {
+          "name": "_dmdAddress",
+          "type": "string"
+        }
+      ],
+      "name": "burn",
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "_reward",
+          "type": "uint256"
+        },
+        {
+          "name": "_dmdTx",
+          "type": "string"
+        }
+      ],
+      "name": "mint",
       "outputs": [
         {
           "name": "",
@@ -256,6 +256,19 @@ module.exports = function() {
       "type": "function"
     },
     {
+      "constant": true,
+      "inputs": [],
+      "name": "symbol",
+      "outputs": [
+        {
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "payable": false,
+      "type": "function"
+    },
+    {
       "constant": false,
       "inputs": [
         {
@@ -268,7 +281,7 @@ module.exports = function() {
         },
         {
           "name": "_dmdAddress",
-          "type": "bytes32"
+          "type": "string"
         }
       ],
       "name": "burnFrom",
@@ -276,19 +289,6 @@ module.exports = function() {
         {
           "name": "",
           "type": "bool"
-        }
-      ],
-      "payable": false,
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "symbol",
-      "outputs": [
-        {
-          "name": "",
-          "type": "string"
         }
       ],
       "payable": false,
@@ -337,15 +337,15 @@ module.exports = function() {
       "constant": false,
       "inputs": [
         {
-          "name": "_to",
-          "type": "address"
+          "name": "_reward",
+          "type": "uint256"
         },
         {
-          "name": "_value",
-          "type": "uint256"
+          "name": "_dmdTx",
+          "type": "string"
         }
       ],
-      "name": "transfer",
+      "name": "unmint",
       "outputs": [
         {
           "name": "",
@@ -359,15 +359,15 @@ module.exports = function() {
       "constant": false,
       "inputs": [
         {
-          "name": "_value",
-          "type": "uint256"
+          "name": "_to",
+          "type": "address"
         },
         {
-          "name": "_dmdAddress",
-          "type": "bytes32"
+          "name": "_value",
+          "type": "uint256"
         }
       ],
-      "name": "burn",
+      "name": "transfer",
       "outputs": [
         {
           "name": "",
@@ -431,28 +431,6 @@ module.exports = function() {
       "type": "function"
     },
     {
-      "constant": false,
-      "inputs": [
-        {
-          "name": "_rewards",
-          "type": "uint256[]"
-        },
-        {
-          "name": "_dmdTxs",
-          "type": "bytes32[]"
-        }
-      ],
-      "name": "batchMint",
-      "outputs": [
-        {
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "type": "function"
-    },
-    {
       "inputs": [],
       "payable": false,
       "type": "constructor"
@@ -468,7 +446,7 @@ module.exports = function() {
         {
           "indexed": false,
           "name": "dmdAddress",
-          "type": "bytes32"
+          "type": "string"
         },
         {
           "indexed": false,
@@ -495,7 +473,7 @@ module.exports = function() {
         {
           "indexed": false,
           "name": "_dmdTx",
-          "type": "bytes32"
+          "type": "string"
         }
       ],
       "name": "Mint",
@@ -517,7 +495,7 @@ module.exports = function() {
         {
           "indexed": false,
           "name": "_dmdTx",
-          "type": "bytes32"
+          "type": "string"
         }
       ],
       "name": "Unmint",

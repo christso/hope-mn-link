@@ -80,13 +80,14 @@ var client = {
 
             // Invoke mint() where amount > 0
             newTxns.forEach(function (dmdTxn) {
-                if (dmdTxn.amount > 0) {
-                    hdmdClient.mint(dmdTxn.amount, dmdTxn.txnHash, function (err, txnHash) {
+                let amount = hdmdClient.getRawValue(dmdTxn.amount);
+                if (amount > 0) {
+                    hdmdClient.mint(amount, dmdTxn.txnHash, function (err, txnHash) {
                         if (err) {
                             console.log("ERROR MINTING", err);
                         }
                     });
-                } else if (dmdTxn.amount < 0) {
+                } else if (amount < 0) {
                     // Do nothing. Leave this as unmatched txn.
                 }
             }, this);

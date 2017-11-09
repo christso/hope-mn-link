@@ -44,8 +44,6 @@ evntAll.watch(function (error, result) {
     saveTxns(arguments[1]);
 });
 
-
-
 function saveTxns(newTxns) {
     // Create new DMD txn and save to DB
     if (newTxns.event === 'Mint') {
@@ -55,9 +53,10 @@ function saveTxns(newTxns) {
             amount: newTxns.args._reward.c[0],
             dmd_txnHash: newTxns.args._dmdTx
         });
+
         saveToMongo(newTransaction);
-        // TODO: fix Error: VM Exception while processing transaction: out of gas
-        apportion(getRawValue(newTransaction.amount), defaultAccount, function (err, res) {
+
+        apportion(newTransaction.amount, defaultAccount, function (err, res) {
             if (err) {
                 console.log('Unable to apportion tokens', err);
             } else {
@@ -74,7 +73,7 @@ function saveTxns(newTxns) {
             amount: newTxns.args.value.c[0]
         });
         saveToMongo(newTransaction);
-        wallet.sendToAddress(newTransaction.dmdAddress, newTransaction.amount, function(error, result) {
+        wallet.sendToAddress(newTransaction.dmdAddress, newTransaction.amount, function (error, result) {
             if (error) {
                 console.log(error);
             } else {
@@ -139,12 +138,12 @@ function apportion(amount, fundingAddress, callback) {
         balances[fundingAddress] -= amount;
 
         let addValues = oldAmounts.map((oldValue) => {
-            return oldValue / oldTotal * amount;
+            return Math.floor(oldValue * amount / oldTotal);
         });
 
-        console.log('calling batchTransfer');
-        console.log('addresses', JSON.stringify(addresses));
-        console.log('values', JSON.stringify(addValues));
+        // console.log('calling batchTransfer');
+        // console.log('addresses', JSON.stringify(addresses));
+        // console.log('values', JSON.stringify(addValues));
 
         batchTransfer(addresses, addValues, callback);
     });
@@ -159,7 +158,17 @@ function getFormattedValue(value) {
 }
 
 function getRawValue(value) {
-    return value * 10 ** decimals;
+    return value * (10 ** decimals);
+}
+
+function mint(amount, dmdTxnHash, callback) {
+    try {
+        // TODO: use hdmdClient.mint instead
+        let txnHash = hdmdContract.mint(amount, dmdTxnHash);
+        callback(null, txnHash);
+    } catch (err) {
+        callback(err, null);
+    }
 }
 
 module.exports = {
@@ -169,30 +178,6 @@ module.exports = {
     getBalances: getBalances,
     batchTransfer: batchTransfer,
     getFormattedValue: getFormattedValue,
-    mint: (amount, dmdTxnHash, callback) => {
-        try {
-            let txnHash = hdmdContract.mint(amount, dmdTxnHash);
-            callback(null, txnHash);
-        } catch (err) {
-            callback(err, null);
-        }
-    },
-    // mintParams: [{amount, dmdTxnHash}, {amount, dmdTxnHash}, ...]
-    batchMint: (mintParams) => {
-        if (mintParams != Array) {
-            mintParams = [mintParams];
-        }
-        amounts = mintParams.map((m) => {
-            return m.amount;
-        });
-        dmdTxnHashes = mintParams.map((m) => {
-            return m.dmdTxnHash;
-        });
-        try {
-            let txnHash = hdmdContract.batchMint(amouts, dmdTxnHashes);
-            callback(null, txnHash);
-        } catch (err) {
-            callback(err, null);
-        }
-    }
+    getRawValue: getRawValue,
+    mint: mint
 }

@@ -1,9 +1,10 @@
 const Web3 = require('web3');
 const abi = require('./hdmdABI')();
 const config = require('../config');
-var hdmdTxns = require('../models/hdmdTxn');
-var hdmdBurn = require('../models/hdmdBurn');
-var accounts = require('../data/hdmdAccounts');
+const hdmdTxns = require('../models/hdmdTxn');
+const hdmdBurn = require('../models/hdmdBurn');
+const accounts = require('../data/hdmdAccounts');
+const wallet = require('../client/dmdWallet');
 
 const hdmdVersion = config.hdmdVersion;
 const ethNodeAddress = config.ethNodeAddress;
@@ -40,8 +41,6 @@ console.log(`Listening for changes on the blockchain on node ${ethNodeAddress}`)
 var evntAll = hdmdContract.allEvents({}, { fromBlock: 0, toBlock: 'latest' });
 evntAll.watch(function (error, result) {
     console.log('listening for changes on the blockchain...');
-    console.log('Debugging', arguments[1]); // for Debugging
-    // saveTxns(parseTxInfo(arguments[1]));
     saveTxns(arguments[1]);
 });
 
@@ -51,10 +50,6 @@ function saveTxns(newTxns) {
     // Create new DMD txn and save to DB
     if (newTxns.event === 'Mint') {
         var newTransaction = hdmdTxns({
-            // txnHash: parsedEvent.txnHash,
-            // blockNumber: parsedEvent.blockNumber,
-            // amount: parsedEvent.amount,
-            // dmd_txnHash: parsedEvent.dmd_txn
             txnHash: newTxns.args.transactionHash,
             blockNumber: newTxns.args.blockNumber,
             amount: newTxns.args._reward.c[0],
@@ -62,7 +57,7 @@ function saveTxns(newTxns) {
         });
         saveToMongo(newTransaction);
         // TODO: fix Error: VM Exception while processing transaction: out of gas
-        apportion(getRawValue(newTransaction.amount), defaultAccount, function(err, res) {
+        apportion(getRawValue(newTransaction.amount), defaultAccount, function (err, res) {
             if (err) {
                 console.log('Unable to apportion tokens', err);
             } else {
@@ -80,6 +75,7 @@ function saveTxns(newTxns) {
             txnHash: newTxns.dmd_txn
         });
         saveToMongo(newTransaction);
+        wallet.sendToAddress(newTxns.args.dmdAddress, newTxns.amount);
     }
 
 }
@@ -125,22 +121,22 @@ function getBalances(callback) {
 // Used to distribute the minted amount to addresses in proportion to their balances
 // fundingAddress should be the account that did the minting = web3.eth.defaultAccount
 function apportion(amount, fundingAddress, callback) {
-    getBalances(function(err, balances) {
+    getBalances(function (err, balances) {
         let addresses = balances.map((el) => {
             return el.address;
         });
         let oldAmounts = balances.map((el) => {
             return el.value;
         });
-        let oldTotal = oldAmounts.reduce((a,b) => a + b, 0);
-    
+        let oldTotal = oldAmounts.reduce((a, b) => a + b, 0);
+
         // subtract value so we get balance before minting
-        balances[fundingAddress] -= amount; 
-    
+        balances[fundingAddress] -= amount;
+
         let addValues = oldAmounts.map((oldValue) => {
             return oldValue / oldTotal * amount;
         });
-    
+
         console.log('calling batchTransfer');
         console.log('addresses', JSON.stringify(addresses));
         console.log('values', JSON.stringify(addValues));
@@ -150,15 +146,15 @@ function apportion(amount, fundingAddress, callback) {
 }
 
 function batchTransfer(addresses, values, callback) {
-    hdmdContract.batchTransfer(addresses, values, {gas: gasLimit}, callback);
+    hdmdContract.batchTransfer(addresses, values, { gas: gasLimit }, callback);
 }
 
 function getFormattedValue(value) {
-    return value / (10**decimals);
+    return value / (10 ** decimals);
 }
 
 function getRawValue(value) {
-    return value * 10**decimals;
+    return value * 10 ** decimals;
 }
 
 module.exports = {

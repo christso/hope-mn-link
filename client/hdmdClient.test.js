@@ -5,3 +5,8 @@
 test('BatchTransfer will decrease owner balance and increase recipient balances', () => {
     
 });
+
+// Apportion
+test('Apportion calculation is correct', () => {
+    
+});

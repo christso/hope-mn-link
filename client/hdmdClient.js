@@ -162,13 +162,7 @@ function getRawValue(value) {
 }
 
 function mint(amount, dmdTxnHash, callback) {
-    try {
-        // TODO: use hdmdClient.mint instead
-        let txnHash = hdmdContract.mint(amount, dmdTxnHash);
-        callback(null, txnHash);
-    } catch (err) {
-        callback(err, null);
-    }
+    hdmdContract.mint(amount, dmdTxnHash, callback);
 }
 
 module.exports = {

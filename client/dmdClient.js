@@ -98,15 +98,17 @@ var client = {
     }    
 };
 
-//let watchInterval = 3600000; // 1 hour
-let watchInterval = 15000; // 15 seconds
+let watchInterval = config.dmdWatchInterval
 
 setInterval(function () {
-    // Call the DMD Txn Sync API on each interval
-    axios.post(`${config.apiUri}/api/dmd/txns/sync`, {}).then(function (response) {
-        console.log("SYNCED DMD", response.data);
-    }).catch(function (error) {
-        console.log("ERROR SYNCING DMD", JSON.stringify(error));
+    client.syncTxns(function(err, result) {
+        if (err) {
+            console.log('Error syncing with DMD CryptoID', err);
+        } else if (!result) {
+            console.log('Synced with DMD CryptoID - no changes');
+        } else {
+            console.log('Synced with DMD CryptoID', result);
+        }
     });
 }, watchInterval);
 

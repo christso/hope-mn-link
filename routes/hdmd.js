@@ -30,13 +30,9 @@ router.get('/svr/defaultaccount', function (req, res) {
 
 // Get all account balances of HDMD token holders
 router.get('/balances', function (req, res) {
-    getBalances().then(function (err, balances) {
-        if (err) {
-            res.json({ error: err });
-        } else {
-            res.json(balances);
-        }
-    })
+    getBalances()
+    .then(balances => res.json(balances))
+    .catch(err => res.json({error: err}));
 });
 
 // List accounts that hold HDMD
@@ -45,16 +41,11 @@ router.get('/accounts', function (req, res) {
 });
 
 router.post('/batchtransfer', function (req, res) {
-    // TODO: invoke batchTransfer()
     let addresses = req.body.addresses;
     let values = req.body.values;
-    hdmdClient.batchTransfer(addresses, values, function (err, tfrResult) {
-        if (err) {
-            res.json({ error: err });
-        } else {
-            res.json(tfrResult);
-        }
-    });
+    hdmdClient.batchTransfer(addresses, values)
+        .then(tfrResult => res.json(tfrResult))
+        .catch(err => res.json({ error: err }));
 });
 
 // CREATE HDMD transaction
@@ -65,7 +56,7 @@ router.post('/mint', function (req, res) {
         amount: req.body.amount
     };
 
-    hdmdClient.mint(mint.amount, mint.dmdTxnHash, function(err, txnHash) {
+    hdmdClient.mint(mint.amount, mint.dmdTxnHash, function (err, txnHash) {
         if (err) {
             res.json(min);
         } else {

@@ -31,7 +31,7 @@ router.get('/svr/defaultaccount', function (req, res) {
 // Get all account balances of HDMD token holders
 // TODO: This is blocking the entire node app. Need to use async.
 router.get('/balances', function (req, res) {
-    getBalances(function (err, balances) {
+    getBalances().then(function (err, balances) {
         if (err) {
             res.json({ error: err });
         } else {

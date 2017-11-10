@@ -44,7 +44,7 @@ evntAll.watch(function (error, result) {
     saveTxns(arguments[1]);
 });
 
-async function saveTxns(newTxns) {
+function saveTxns(newTxns) {
     // Create new DMD txn and save to DB
     if (newTxns.event === 'Mint') {
         var newTransaction = hdmdTxns({

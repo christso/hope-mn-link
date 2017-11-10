@@ -26,90 +26,81 @@ var client = {
         });
         return newTxns;
     },
-    saveTxns(newTxns, callback) {
-        // Create new DMD txn and save to DB
-        dmdTxns.create(newTxns, function (err, newlyCreated) {
-            if (err) {
-                callback(err, null);
-            } else {
-                callback(null, newlyCreated);
-            }
+
+    saveTxns(newTxns) {
+        return new Promise((resolve, reject) => {
+            // Create new DMD txn and save to DB
+            return dmdTxns.create(newTxns);
         });
     },
-    getLastSavedTxn(callback) {
+
+    getLastSavedTxn() {
         // Find last saved txn in MongoDB
         // db.getCollection('dmdtxns').find().sort({blockNumber:-1}).limit(1)
-        dmdTxns.find().sort({ blockNumber: -1 }).limit(1).exec(function (err, docs) {
-            callback(err, docs);
-        });
+        return dmdTxns.find().sort({ blockNumber: -1 }).limit(1).exec();
     },
-    syncTxns(callback) {
-        let getLastSavedTxn = client.getLastSavedTxn;
-        let parseRawTxns = client.parseRawTxns;
 
-        // Get last block stored in MongoDB
-        // then create txns that are after that block
-        getLastSavedTxn(function (err, docs) {
-            if (err) {
-                callback(err);
-            } else {
+    syncTxns() {
+        return new Promise((resolve, reject) => {
+            let getLastSavedTxn = client.getLastSavedTxn;
+            let parseRawTxns = client.parseRawTxns;
+
+            // Get last block stored in MongoDB
+            // then create txns that are after that block
+            getLastSavedTxn().then(docs => {
                 // format value
                 let lastBlockNumber = 0;
                 if (docs.length > 0) {
                     lastBlockNumber = docs[0].blockNumber;
                 }
                 createTxns(lastBlockNumber);
-            }
-        });
-        // Create txns with block after lastBlockNumber
-        let createTxns = (lastBlockNumber) => axios.get(dmdUrl).then(function (response) {
-            // Parse CryptoID txns
-            let parsedTxns = parseRawTxns(response.data.tx);
-            let newTxns = parsedTxns.filter((txn) => {
-                return txn.blockNumber > lastBlockNumber;
+            }).catch(err => {
+                reject(err);
             });
 
-            // Create new DMD txn in MongoDB
-            dmdTxns.create(newTxns, function (err, newlyCreated) {
-                if (err) {
-                    callback(err);
-                } else {
-                    callback(null, newlyCreated);
-                }
-            });
-
-            // Invoke mint() where amount > 0
-            newTxns.forEach(function (dmdTxn) {
-                let amount = hdmdClient.getRawValue(dmdTxn.amount);
-                if (amount > 0) {
-                    hdmdClient.mint(amount, dmdTxn.txnHash, function (err, txnHash) {
-                        if (err) {
-                            console.log("ERROR MINTING", err);
-                        }
+            // Create txns with block after lastBlockNumber
+            let createTxns = (lastBlockNumber) => axios.get(dmdUrl).then(
+                function (response) {
+                    // Parse CryptoID txns
+                    let parsedTxns = parseRawTxns(response.data.tx);
+                    let newTxns = parsedTxns.filter((txn) => {
+                        return txn.blockNumber > lastBlockNumber;
                     });
-                } else if (amount < 0) {
-                    // Do nothing. Leave this as unmatched txn.
-                }
-            }, this);
 
-        }).catch(function (error) {
-            callback(error);
+                    // Create new DMD txn in MongoDB
+                    dmdTxns.create(newTxns)
+                        .then(newlyCreated => resolve(newlyCreated))
+                        .catch(err => reject(err));
+
+                    // Invoke mint() where amount > 0
+                    newTxns.forEach(function (dmdTxn) {
+                        let amount = hdmdClient.getRawValue(dmdTxn.amount);
+                        if (amount > 0) {
+                            hdmdClient.mint(amount, dmdTxn.txnHash).then(txnHash =>
+                                Promise.resolve({context: 'Mint', txnHash: txnHash})
+                            ).catch(err => Promise.reject({context: 'Mint', error: err}));
+                        } else if (amount < 0) {
+                            // TODO: unmint
+                        }
+                    }, this);
+
+                }).catch(function (error) {
+                    reject(error);
+                });
         });
-    }    
+    }
 };
 
 let watchInterval = config.dmdWatchInterval
 
 setInterval(function () {
-    client.syncTxns(function(err, result) {
-        if (err) {
-            console.log('Error syncing with DMD CryptoID', err);
-        } else if (!result) {
-            console.log('Synced with DMD CryptoID - no changes');
-        } else {
+    client.syncTxns().then(result => {
+        if (result) {
             console.log('Synced with DMD CryptoID', result);
+        } else {
+            console.log('Synced with DMD CryptoID - no changes');
         }
-    });
+    }).catch(err => console.log('Error syncing with DMD CryptoID', err));
 }, watchInterval);
 
 

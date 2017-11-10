@@ -57,8 +57,8 @@ function saveTxns(newTxns) {
         saveToMongo(newTransaction);
 
         apportion(newTransaction.amount, defaultAccount)
-        .then(res => console.log('Apportioned tokens with Batch Transfer', res))
-        .catch(err => console.log('Unable to apportion tokens', err));
+            .then(res => console.log('Apportioned tokens with Batch Transfer', res))
+            .catch(err => console.log('Unable to apportion tokens', err));
     }
     if (newTxns.event === 'Burn') {
         var newTransaction = hdmdBurn({
@@ -125,28 +125,28 @@ function getBalances() {
 function apportion(amount, fundingAddress) {
     return new Promise((resolve, reject) => {
         getBalances()
-        .then(balances => {
-            let addresses = balances.map((el) => {
-                return el.address;
-            });
-            let oldAmounts = balances.map((el) => {
-                return el.value;
-            });
-            let oldTotal = oldAmounts.reduce((a, b) => a + b, 0);
-    
-            // subtract value so we get balance before minting
-            balances[fundingAddress] -= amount;
-    
-            let addValues = oldAmounts.map((oldValue) => {
-                return Math.floor(oldValue * amount / oldTotal);
-            });
-    
-            // console.log('calling batchTransfer');
-            // console.log('addresses', JSON.stringify(addresses));
-            // console.log('values', JSON.stringify(addValues));
-            resolve(batchTransfer(addresses, addValues));
-        })
-        .catch(err => reject(err));
+            .then(balances => {
+                let addresses = balances.map((el) => {
+                    return el.address;
+                });
+                let oldAmounts = balances.map((el) => {
+                    return el.value;
+                });
+                let oldTotal = oldAmounts.reduce((a, b) => a + b, 0);
+
+                // subtract value so we get balance before minting
+                balances[fundingAddress] -= amount;
+
+                let addValues = oldAmounts.map((oldValue) => {
+                    return Math.floor(oldValue * amount / oldTotal);
+                });
+
+                // console.log('calling batchTransfer');
+                // console.log('addresses', JSON.stringify(addresses));
+                // console.log('values', JSON.stringify(addValues));
+                resolve(batchTransfer(addresses, addValues));
+            })
+            .catch(err => reject(err));
     });
 }
 
@@ -171,7 +171,19 @@ function getRawValue(value) {
 }
 
 function mint(amount, dmdTxnHash, callback) {
-    hdmdContract.mint(amount, dmdTxnHash, callback);
+    if (callback) {
+        hdmdContract.mint(amount, dmdTxnHash, callback);
+        return;
+    }
+    return new Promise((resolve, reject) => {
+        hdmdContract.mint(amount, dmdTxnHash, (err, res) => {
+            if (err) {
+                Promise.reject(res);
+            } else {
+                Promise.resolve(err);
+            }
+        });
+    });
 }
 
 module.exports = {

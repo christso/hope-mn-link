@@ -44,7 +44,7 @@ evntAll.watch(function (error, result) {
     saveTxns(arguments[1]);
 });
 
-function saveTxns(newTxns) {
+async function saveTxns(newTxns) {
     // Create new DMD txn and save to DB
     if (newTxns.event === 'Mint') {
         var newTransaction = hdmdTxns({
@@ -56,13 +56,12 @@ function saveTxns(newTxns) {
 
         saveToMongo(newTransaction);
 
-        apportion(newTransaction.amount, defaultAccount, function (err, res) {
-            if (err) {
-                console.log('Unable to apportion tokens', err);
-            } else {
-                console.log('Apportioned tokens with Batch Transfer', res);
-            }
-        });
+        try {
+            let res = await apportion(newTransaction.amount, defaultAccount);
+            console.log('Apportioned tokens with Batch Transfer', res);
+        } catch(err) {
+            console.log('Unable to apportion tokens', err);
+        }
     }
     if (newTxns.event === 'Burn') {
         var newTransaction = hdmdBurn({
@@ -73,13 +72,10 @@ function saveTxns(newTxns) {
             amount: newTxns.args.value.c[0]
         });
         saveToMongo(newTransaction);
-        wallet.sendToAddress(newTransaction.dmdAddress, newTransaction.amount, function (error, result) {
-            if (error) {
-                console.log(error);
-            } else {
-                console.log(result);
-            }
-        });
+
+        wallet.sendToAddress(newTransaction.dmdAddress, newTransaction.amount)
+        .then(result => console.log(result))
+        .catch(err => console.log(err));
     }
 
 }
@@ -115,15 +111,15 @@ function getBalances(callback) {
     }
 
     try {
-        for (var i = 0, len = accounts.length; i < len; i++) {
-            hdmdContract.balanceOf(accounts[i], (err, value) => {
+        accounts.forEach(account => {
+            hdmdContract.balanceOf(account, (err, value) => {
                 let done = () => accounts_processed === totalAccounts;
                 appendBalance(err, value);
                 if (done()) {
                     createMapping(accounts);
                 }
             });
-        }
+        });
     } catch (err) {
         callback(err);
     }
@@ -131,7 +127,7 @@ function getBalances(callback) {
 
 // Used to distribute the minted amount to addresses in proportion to their balances
 // fundingAddress should be the account that did the minting = web3.eth.defaultAccount
-function apportion(amount, fundingAddress, callback) {
+async function apportion(amount, fundingAddress) {
     getBalances(function (err, balances) {
         let addresses = balances.map((el) => {
             return el.address;
@@ -151,22 +147,17 @@ function apportion(amount, fundingAddress, callback) {
         // console.log('calling batchTransfer');
         // console.log('addresses', JSON.stringify(addresses));
         // console.log('values', JSON.stringify(addValues));
-
-        batchTransfer(addresses, addValues)
-        .then(error => callback(error))
-        .catch(result => callback(null, result));
+        return batchTransfer(addresses, addValues);
     });
 }
 
-function batchTransfer(addresses, values) {
-    return new Promise(function(resolve, reject) {
-        hdmdContract.batchTransfer(addresses, values, { gas: gasLimit }, (error, result) => {
-            if (error) {
-                reject(error);
-            } else {
-                resolve(result);
-            }
-        });
+async function batchTransfer(addresses, values) {
+    hdmdContract.batchTransfer(addresses, values, { gas: gasLimit }, (error, result) => {
+        if (error) {
+            return { error: error };
+        } else {
+            return result;
+        }
     });
 }
 

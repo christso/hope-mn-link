@@ -23,7 +23,15 @@ module.exports = {
 
     use callback(error, response)
     */
-    sendToAddress(dmdAddress, value, callback) {
-        client.sendToAddress(dmdAddress, value, callback);
+    sendToAddress(dmdAddress, value) {
+        return new Promise(function(resolve, reject) {
+            client.sendToAddress(dmdAddress, value, (err, res) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(res);
+                }
+            }); 
+        });
     }
 }

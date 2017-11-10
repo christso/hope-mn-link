@@ -93,27 +93,34 @@ function saveToMongo(event) {
 
 function getBalances(callback) {
     let accounts_processed = 0;
-    let total = accounts.length;
+    let totalAccounts = accounts.length;
     let values = [];
+
+    let appendBalance = (err, value) => {
+        if (err || !value.c) {
+            values.push(0);
+        } else {
+            values.push(value.c[0]);
+        }
+        accounts_processed = accounts_processed + 1;
+    }
+
+    let balances = [];
+    let createMapping = (accounts) => {
+        for (var i = 0; i < accounts.length; i++) {
+            balances.push({ address: accounts[i], value: values[i] });
+        }
+        callback(null, balances);
+        return;
+    }
+
     try {
         for (var i = 0, len = accounts.length; i < len; i++) {
             hdmdContract.balanceOf(accounts[i], (err, value) => {
-                let account = accounts[i];
-                // push to array
-                if (err || !value.c) {
-                    values.push(0);
-                } else {
-                    values.push(value.c[0]);
-                }
-                accounts_processed = accounts_processed + 1;
-                // when done
-                let balances = [];
-                if (accounts_processed === total) {
-                    for (var i = 0; i < accounts.length; i++) {
-                        balances.push({ address: accounts[i], value: values[i] });
-                    }
-                    callback(null, balances);
-                    return;
+                let done = () => accounts_processed === totalAccounts;
+                appendBalance(err, value);
+                if (done()) {
+                    createMapping(accounts);
                 }
             });
         }

@@ -66,12 +66,13 @@ router.post('/mint', function (req, res) {
         amount: req.body.amount
     };
 
-    mint.txnHash = hdmdClient.mint(mint.amount, mint.dmdTxnHash);
-    res.json(mint);
-
-    // TODO: create mongo document for each mint
-
-    // TODO: link HDMD document with DMD document
+    hdmdClient.mint(mint.amount, mint.dmdTxnHash, function(err, txnHash) {
+        if (err) {
+            res.json(min);
+        } else {
+            mint.txnHash = txnHash;
+        }
+    });
 });
 
 

@@ -74,7 +74,7 @@ var client = {
                 if (err) {
                     callback(err);
                 } else {
-                    callback(newlyCreated);
+                    callback(null, newlyCreated);
                 }
             });
 

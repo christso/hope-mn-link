@@ -152,12 +152,22 @@ function apportion(amount, fundingAddress, callback) {
         // console.log('addresses', JSON.stringify(addresses));
         // console.log('values', JSON.stringify(addValues));
 
-        batchTransfer(addresses, addValues, callback);
+        batchTransfer(addresses, addValues)
+        .then(error => callback(error))
+        .catch(result => callback(null, result));
     });
 }
 
-function batchTransfer(addresses, values, callback) {
-    hdmdContract.batchTransfer(addresses, values, { gas: gasLimit }, callback);
+function batchTransfer(addresses, values) {
+    return new Promise(function(resolve, reject) {
+        hdmdContract.batchTransfer(addresses, values, { gas: gasLimit }, (error, result) => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve(result);
+            }
+        });
+    });
 }
 
 function getFormattedValue(value) {

@@ -6,6 +6,10 @@ const hdmdBurn = require('../models/hdmdBurn');
 const accounts = require('../data/hdmdAccounts');
 const wallet = require('../client/dmdWallet');
 
+const abiDecoder = require('abi-decoder');
+
+abiDecoder.addABI(abi);
+
 const hdmdVersion = config.hdmdVersion;
 const ethNodeAddress = config.ethNodeAddress;
 
@@ -36,15 +40,55 @@ if (hdmdVersionDeployed == hdmdVersion) {
 
 /*----- Create HDMD listener -----*/
 
-// Retrieve event log
+function downloadTxns() {
+    // TODO: get the latest block instead of hardcoding 7000
+    return filterEventsGet(7000).then(eventLog => {
+        //console.log('--- DMD Txn Log ---', eventLog);
+        return eventLog;
+    }).then((eventLog) =>
+        parseEventLog(eventLog))
+    //TODO: fix eventLog == undefined
+    .catch(error => console.log('--- Error downloading DMD Txn Log ---', error)
+    )
+}
 
-/*
-var filter=web3.eth.filter({fromBlock: 0, toBlock: 'latest', address: contractAddress, topics: []});
-filter.get(function(error, log) {
-  console.log(JSON.stringify(log));
-});
-filter.stopWatching();
-*/
+var filter;
+function filterEventsGet(fromBlock) {
+    return new Promise((resolve, reject) => {
+        filter = web3.eth.filter({ fromBlock: fromBlock, toBlock: 'latest', address: contractAddress });
+        filter.get(function (error, result) {
+            if (error) {
+                reject(error);
+            } else {
+                resolve(result);
+            }
+        });
+    });
+}
+
+function parseEventLog(eventLog) {
+    let decodedLog = abiDecoder.decodeLogs(eventLog);
+    for (var i = 0; i < eventLog.length; i++) {
+        let event = eventLog[i];
+        let decoded = decodedLog[i];
+        let eventName = decoded.name;
+        let newTxn = {
+            txnHash: event.transactionHash,
+            blockNumber: event.blockNumber,
+            eventName: eventName
+        };
+        if (eventName === 'Mint') {
+            newTxn.sender = decoded.events[0].value;
+            newTxn.amount = decoded.events[1].value;
+            newTxn.dmdTxn = decoded.events[2].value;
+        } else if (eventName === 'Burn') {
+            newTxn.sender = decoded.events[0].value;
+            newTxn.dmdAddres = decoded.events[1].value;
+            newTxn.value = decoded.events[2].value;
+        }
+        console.log('Parsed HDMD Txn', newTxn);
+    }
+}
 
 // TODO: saveTxns(arguments[1]);
 
@@ -199,6 +243,6 @@ module.exports = {
     batchTransfer: batchTransfer,
     getFormattedValue: getFormattedValue,
     getRawValue: getRawValue,
-    mint: mint
-    //saveTxns: saveTxns
+    mint: mint,
+    downloadTxns: downloadTxns
 }

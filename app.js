@@ -27,8 +27,15 @@ function downloadDmdTxns() {
 }
 
 function downloadHdmdTxns() {
-    // TODO
-    //hdmdClient.downloadTxns();
+    return hdmdClient.downloadTxns().then(result => {
+        if (result) {
+            console.log('Downloaded HDMD Transactions from Ethereum network', result);
+        } else {
+            console.log('Downloaded HDMD Transactions from Ethereum network - no changes found');
+        }
+    }).catch(err => {
+        console.log('Error downloading HDMD Transactions from Ethereum network and saving to DB', err);
+    });
 }
 
 function downloadTxns() {

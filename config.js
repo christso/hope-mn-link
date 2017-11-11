@@ -25,6 +25,7 @@ config.dmdWalletUser = 'testuser';
 config.dmdWalletPass = 'hope2017';
 
 //config.dmdWatchInterval = 3600000; // 1 hour
-config.dmdWatchInterval = 15000; // 15 seconds
+//config.dmdWatchInterval = 15000; // 15 seconds
+config.dmdWatchInterval = 2000; // 2 seconds
 
 module.exports = config;

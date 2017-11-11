@@ -42,14 +42,15 @@ if (hdmdVersionDeployed == hdmdVersion) {
 
 function downloadTxns() {
     // TODO: get the latest block instead of hardcoding 7000
+    console.log(web3.eth.blockNumber)// <- This gets last block on local chain as set up now.
     return filterEventsGet(7000).then(eventLog => {
         //console.log('--- DMD Txn Log ---', eventLog);
         return eventLog;
     }).then((eventLog) =>
         parseEventLog(eventLog))
-    //TODO: fix eventLog == undefined
-    .catch(error => console.log('--- Error downloading DMD Txn Log ---', error)
-    )
+        //TODO: fix eventLog == undefined
+        .catch(error => console.log('--- Error downloading DMD Txn Log ---', error)
+        )
 }
 
 var filter;
@@ -67,6 +68,7 @@ function filterEventsGet(fromBlock) {
 }
 
 function parseEventLog(eventLog) {
+    console.log(eventLog)
     let decodedLog = abiDecoder.decodeLogs(eventLog);
     for (var i = 0; i < eventLog.length; i++) {
         let event = eventLog[i];
@@ -125,6 +127,7 @@ function saveTxns(newTxns) {
     }
 
 }
+*/
 function saveToMongo(event) {
     event.save().then((doc) => {
         console.log('saved', doc)
@@ -132,7 +135,7 @@ function saveToMongo(event) {
         console.log('Unable to save data')
     });
 }
-*/
+
 
 function getBalances() {
     return new Promise((resolve, reject) => {
@@ -228,9 +231,9 @@ function mint(amount, dmdTxnHash, callback) {
     return new Promise((resolve, reject) => {
         hdmdContract.mint(amount, dmdTxnHash, (err, res) => {
             if (err) {
-                Promise.reject(res);
+                reject(res);
             } else {
-                Promise.resolve(err);
+                resolve(err);
             }
         });
     });

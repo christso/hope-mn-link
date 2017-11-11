@@ -73,6 +73,7 @@ var client = {
                         .catch(err => reject(err));
 
                     // Invoke mint() where amount > 0
+                    /*
                     newTxns.forEach(function (dmdTxn) {
                         let amount = hdmdClient.getRawValue(dmdTxn.amount);
                         if (amount > 0) {
@@ -83,7 +84,7 @@ var client = {
                             // TODO: unmint
                         }
                     }, this);
-
+                    */
                 }).catch(function (error) {
                     reject(error);
                 });

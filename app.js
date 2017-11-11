@@ -38,15 +38,39 @@ function downloadHdmdTxns() {
     });
 }
 
-function downloadTxns() {
+function reconcileTxns() {
+    // download txns
     downloadDmdTxns();
     downloadHdmdTxns();
+
+    // wait for downloads to complete,
+    // then find unmatched dmdTxns into hdmdTxns in MongDB,
+    // then invoke mint and unmint on HDMD eth smart contract
+    Promise.all([downloadDmdTxns, downloadHdmdTxns]).then((res) => {
+        getUnmatchedDmdTxn().then(txns =>
+            pullDmdTxns(txns))
+    }).catch(err => console.log('Error reconciling trasactions', err));
 }
 
-setInterval(() => downloadTxns(), watchInterval);
+// get DMD Txns that don't exist in HDMD Txns MongoDB
+function getUnmatchedDmdTxn() {
+    return new Promise((resolve, reject) => {
+        let txns = []; // get from Mongo
+        resolve(txns);
+    });
+}
+
+// pull new DMD Txns into HDMD Txns
+function pullDmdTxns(txns) {
+    return new Promise((resolve, reject) => {
+        resolve('success');
+    });
+}
+
+setInterval(() => reconcileTxns(), watchInterval);
 
 // allows you to parse JSON into req.body.field
-app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 // Requiring Routes
@@ -60,7 +84,7 @@ var db = mongoose.connection;
 db.on('error', console.error.bind(console, '# MongoDB - connection error: '));
 
 app.use(express.static('public'));
-app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use('/api/dmd', dmdRoutes);
 app.use('/api/hdmd', hdmdRoutes);

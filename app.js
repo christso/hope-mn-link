@@ -8,6 +8,23 @@ var axios = require('axios').default;
 var app = express();
 var port = config.port;
 
+// Pull DmdTxns
+
+let dmdClient = require('./client/dmdClient');
+let watchInterval = config.dmdWatchInterval;
+
+setInterval(function () {
+    dmdClient.syncTxns().then(result => {
+        if (result) {
+            console.log('Synced with DMD CryptoID', result);
+        } else {
+            console.log('Synced with DMD CryptoID - no changes');
+        }
+    }).catch(err => {
+        console.log('Error syncing with DMD CryptoID', err);
+    });
+}, watchInterval);
+
 // allows you to parse JSON into req.body.field
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());

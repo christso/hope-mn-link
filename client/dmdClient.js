@@ -91,18 +91,4 @@ var client = {
     }
 };
 
-let watchInterval = config.dmdWatchInterval
-
-setInterval(function () {
-    client.syncTxns().then(result => {
-        if (result) {
-            console.log('Synced with DMD CryptoID', result);
-        } else {
-            console.log('Synced with DMD CryptoID - no changes');
-        }
-    }).catch(err => console.log('Error syncing with DMD CryptoID', err));
-}, watchInterval);
-
-
-
 module.exports = client;

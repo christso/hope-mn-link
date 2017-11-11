@@ -8,6 +8,7 @@ var hdmdTxnSchema = new mongoose.Schema({
     amount: Number,
     balance: Number,
     dmd_txnHash: String, // reference from HDMD to DMD
+    eventName: String
 });
 
 module.exports = mongoose.model("HdmdTxn", hdmdTxnSchema);

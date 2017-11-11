@@ -85,3 +85,12 @@ var req2 = {
 })();
 
 // Mint
+
+
+// apportion(newTransaction.amount, defaultAccount)
+// .then(res => console.log('Apportioned tokens with Batch Transfer', res))
+// .catch(err => console.log('Unable to apportion tokens', err));
+
+// wallet.sendToAddress(newTransaction.dmdAddress, newTransaction.amount)
+// .then(result => console.log(result))
+// .catch(err => console.log(err));

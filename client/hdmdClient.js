@@ -38,25 +38,35 @@ if (hdmdVersionDeployed == hdmdVersion) {
     console.log(`ERROR: HDMD contract version deployed is ${hdmdVersionDeployed} but app version is ${hdmdVersion}`);
 }
 
-/*----- Create HDMD listener -----*/
+// TODO: If there are 1000+ transactions in the event log filter
+// then downloadTxns will take a very long time to finish executing.
 
 function downloadTxns() {
-    // TODO: get the latest block instead of hardcoding 7000
-    console.log(web3.eth.blockNumber)// <- This gets last block on local chain as set up now.
-    return filterEventsGet(7000).then(eventLog => {
-        //console.log('--- DMD Txn Log ---', eventLog);
-        return eventLog;
-    }).then((eventLog) =>
-        parseEventLog(eventLog))
-        //TODO: fix eventLog == undefined
-        .catch(error => console.log('--- Error downloading DMD Txn Log ---', error)
-        )
+    return getLastSavedTxn().then((docs) => {
+        // get last block number that was saved in MongoDB
+        let lastSavedBlockNumber = 0;
+        if (docs.length > 0) {
+            lastSavedBlockNumber = docs[0].blockNumber;
+        }
+        return lastSavedBlockNumber;
+    }).then((lastSavedBlockNumber) => 
+        // get event logs after the last block number that we saved
+        filterEventsGet(lastSavedBlockNumber).then(eventLog => eventLog).then((eventLog) =>
+        // parse the event log
+        parseEventLog(eventLog)
+    ).then((newTxns) =>
+        // save the newTxns into MongoDB
+        saveTxns(newTxns)
+    ).catch(error => 
+        console.log('--- Error downloading DMD Txn Log ---', error)
+    ));
 }
 
 var filter;
 function filterEventsGet(fromBlock) {
     return new Promise((resolve, reject) => {
-        filter = web3.eth.filter({ fromBlock: fromBlock, toBlock: 'latest', address: contractAddress });
+        // fromBlock needs to be greater than the last saved block
+        filter = web3.eth.filter({ fromBlock: fromBlock + 1, toBlock: 'latest', address: contractAddress });
         filter.get(function (error, result) {
             if (error) {
                 reject(error);
@@ -68,6 +78,7 @@ function filterEventsGet(fromBlock) {
 }
 
 function parseEventLog(eventLog) {
+<<<<<<< HEAD
     console.log(eventLog)
     let decodedLog = abiDecoder.decodeLogs(eventLog);
     for (var i = 0; i < eventLog.length; i++) {
@@ -87,9 +98,46 @@ function parseEventLog(eventLog) {
             newTxn.sender = decoded.events[0].value;
             newTxn.dmdAddres = decoded.events[1].value;
             newTxn.value = decoded.events[2].value;
+=======
+    return new Promise((resolve, reject) => {
+        let decodedLog = abiDecoder.decodeLogs(eventLog);
+        let newTxns = [];
+        newTxns.length = eventLog.length;
+        for (var i = 0; i < eventLog.length; i++) {
+            let event = eventLog[i];
+            let decoded = decodedLog[i];
+            let eventName = decoded.name;
+            let newTxn = {
+                txnHash: event.transactionHash,
+                blockNumber: event.blockNumber,
+                eventName: eventName
+            };
+            if (eventName === 'Mint') {
+                newTxn.sender = decoded.events[0].value;
+                newTxn.amount = decoded.events[1].value;
+                newTxn.dmdTxn = decoded.events[2].value;
+            } else if (eventName === 'Burn') {
+                newTxn.sender = decoded.events[0].value;
+                newTxn.dmdAddress = decoded.events[1].value;
+                newTxn.amount = decoded.events[2].value;
+            } else if (eventName === 'Transfer') {
+                // TODO: add logic here
+            }
+            newTxns[i] = newTxn;
+            console.log('Parsed HDMD Txn', newTxn);
+>>>>>>> 5bab295a465503f0871faa8500c011359b95c37e
         }
-        console.log('Parsed HDMD Txn', newTxn);
-    }
+        resolve(newTxns);
+    });
+}
+
+function getLastSavedTxn() {
+    // TODO: instead of hardcoding number, get the last block from MongoDB
+    return hdmdTxns.find().sort({ blockNumber: -1 }).limit(1).exec();
+}
+
+function saveTxns(newTxns) {
+    return hdmdTxns.create(newTxns);
 }
 
 // TODO: saveTxns(arguments[1]);

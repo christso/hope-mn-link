@@ -6,7 +6,7 @@ config.mongodbUri = 'mongodb://localhost:27017/hdmdlink';
 
 config.ethNodeAddress = 'http://localhost:8545';
 
-config.hdmdContractAddress = '0xa50f04e8bf5d0333198f364a91ae23aee4134cce'; // christso testRPC
+config.hdmdContractAddress = '0x98b0e73a02bc33dda7cd336ca6ce3cf89dfb94ff'; // christso testRPC
 //config.hdmdContractAddress = '0x5b45cb92A968329A83Cd3f2FBFB1bF206043d70C'; // rinkeby
 
 config.hdmdDecimals = 8;
@@ -26,6 +26,6 @@ config.dmdWalletPass = 'hope2017';
 
 //config.dmdWatchInterval = 3600000; // 1 hour
 //config.dmdWatchInterval = 15000; // 15 seconds
-config.dmdWatchInterval = 2000; // 2 seconds
+config.dmdWatchInterval = 5000; // 5 seconds
 
 module.exports = config;

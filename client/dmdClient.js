@@ -40,7 +40,7 @@ var client = {
         return dmdTxns.find().sort({ blockNumber: -1 }).limit(1).exec();
     },
 
-    syncTxns() {
+    downloadTxns() {
         return new Promise((resolve, reject) => {
             let getLastSavedTxn = client.getLastSavedTxn;
             let parseRawTxns = client.parseRawTxns;

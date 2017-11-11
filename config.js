@@ -6,8 +6,8 @@ config.mongodbUri = 'mongodb://localhost:27017/hdmdlink';
 
 config.ethNodeAddress = 'http://localhost:8545';
 
-config.hdmdContractLocation = '0xa50f04e8bf5d0333198f364a91ae23aee4134cce'; // christso testRPC
-//config.hdmdContractLocation = '0x5b45cb92A968329A83Cd3f2FBFB1bF206043d70C'; // rinkeby
+config.hdmdContractAddress = '0xa50f04e8bf5d0333198f364a91ae23aee4134cce'; // christso testRPC
+//config.hdmdContractAddress = '0x5b45cb92A968329A83Cd3f2FBFB1bF206043d70C'; // rinkeby
 
 config.hdmdDecimals = 8;
 

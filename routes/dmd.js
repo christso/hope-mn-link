@@ -3,10 +3,10 @@ var express = require('express');
 var router = express.Router();
 var axios = require('axios').default;
 var mongoose = require('mongoose');
-var client = require('../client/dmdClient');
+var dmdClient = require('../client/dmdClient');
 var hdmdClient = require('../client/hdmdClient');
 
-var parseRawTxns = client.parseRawTxns;
+var parseRawTxns = dmdClient.parseRawTxns;
 
 var dmdTxns = require('../models/dmdTxn');
 
@@ -51,13 +51,15 @@ router.post('/txns', function (req, res) {
 // Post new DMD txns
 // blockNumber is Number
 router.post('/txns/sync', function (req, res) {
-    client.syncTxns(function(err, result) {
-        if (err) {
-            res.json(err);
+    dmdClient.downloadTxns().then(result => {
+        if (result) {
+            console.log('Synced with DMD CryptoID', result);
         } else {
-            res.json(result);
+            console.log('Synced with DMD CryptoID - no changes');
         }
-    })
+    }).catch(err => {
+        console.log('Error syncing with DMD CryptoID', err);
+    });
 });
 
 router.post('/sendtoaddress', function (req, res) {

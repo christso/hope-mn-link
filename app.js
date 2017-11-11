@@ -8,22 +8,35 @@ var axios = require('axios').default;
 var app = express();
 var port = config.port;
 
-// Pull DmdTxns
+// Pull DmdTxns and HdmdTxns
 
 let dmdClient = require('./client/dmdClient');
+let hdmdClient = require('./client/hdmdClient');
 let watchInterval = config.dmdWatchInterval;
 
-setInterval(function () {
-    dmdClient.syncTxns().then(result => {
+function downloadDmdTxns() {
+    return dmdClient.downloadTxns().then(result => {
         if (result) {
-            console.log('Synced with DMD CryptoID', result);
+            console.log('Downloaded DMD Transactions from CryptoID', result);
         } else {
-            console.log('Synced with DMD CryptoID - no changes');
+            console.log('Downloaded DMD Transactions from CryptoID - no changes found');
         }
     }).catch(err => {
-        console.log('Error syncing with DMD CryptoID', err);
+        console.log('Error downloading from DMD CryptoID and saving to DB', err);
     });
-}, watchInterval);
+}
+
+function downloadHdmdTxns() {
+    // TODO
+    //hdmdClient.downloadTxns();
+}
+
+function downloadTxns() {
+    downloadDmdTxns();
+    downloadHdmdTxns();
+}
+
+setInterval(() => downloadTxns(), watchInterval);
 
 // allows you to parse JSON into req.body.field
 app.use(bodyParser.urlencoded({extended: true}));

@@ -20,7 +20,7 @@ Then run this to get the contract address:
 hdmd.address;
 ```
 
-In this project, change the `hdmdContractLocation` in `config.js`.
+In this project, change the `hdmdContractAddress` in `config.js`.
 
 Then run the CLI commands below:
 

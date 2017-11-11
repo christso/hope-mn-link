@@ -7,7 +7,7 @@ var hdmdBurn = require('../models/hdmdBurn');
 const hdmdVersion = config.hdmdVersion;
 const ethNodeAddress = config.ethNodeAddress;
 
-var contractLocation = config.hdmdContractLocation;
+var contractLocation = config.hdmdContractAddress;
 
 // set the Web3 to where we need to connect
 var web3 = new Web3(new Web3.providers.HttpProvider(ethNodeAddress));

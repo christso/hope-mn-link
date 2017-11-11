@@ -9,7 +9,7 @@ const wallet = require('../client/dmdWallet');
 const hdmdVersion = config.hdmdVersion;
 const ethNodeAddress = config.ethNodeAddress;
 
-var contractLocation = config.hdmdContractLocation;
+var contractAddress = config.hdmdContractAddress;
 var gasLimit = config.ethGasLimit;
 var decimals = config.hdmdDecimals;
 
@@ -24,7 +24,7 @@ var defaultAccount = web3.eth.defaultAccount;
 // Set up a contract with interface
 var contract = web3.eth.contract(abi);
 // Instantiate contact so we can interact
-var hdmdContract = contract.at(contractLocation);
+var hdmdContract = contract.at(contractAddress);
 
 // Check that version of app matches deployed contract
 var hdmdVersionDeployed = hdmdContract.version.call();
@@ -36,14 +36,19 @@ if (hdmdVersionDeployed == hdmdVersion) {
 
 /*----- Create HDMD listener -----*/
 
-console.log(`Listening for changes on the blockchain on node ${ethNodeAddress}`);
-// Listen to all event that can occur, Mint/Burn
-var evntAll = hdmdContract.allEvents({}, { fromBlock: 0, toBlock: 'latest' });
-evntAll.watch(function (error, result) {
-    console.log('listening for changes on the blockchain...');
-    saveTxns(arguments[1]);
-});
+// Retrieve event log
 
+/*
+var filter=web3.eth.filter({fromBlock: 0, toBlock: 'latest', address: contractAddress, topics: []});
+filter.get(function(error, log) {
+  console.log(JSON.stringify(log));
+});
+filter.stopWatching();
+*/
+
+// TODO: saveTxns(arguments[1]);
+
+/*
 function saveTxns(newTxns) {
     // Create new DMD txn and save to DB
     if (newTxns.event === 'Mint') {
@@ -83,6 +88,7 @@ function saveToMongo(event) {
         console.log('Unable to save data')
     });
 }
+*/
 
 function getBalances() {
     return new Promise((resolve, reject) => {
@@ -187,7 +193,6 @@ function mint(amount, dmdTxnHash, callback) {
 }
 
 module.exports = {
-    evntAll: evntAll,
     web3: web3,
     hdmdContract: hdmdContract,
     getBalances: getBalances,
@@ -195,4 +200,5 @@ module.exports = {
     getFormattedValue: getFormattedValue,
     getRawValue: getRawValue,
     mint: mint
+    //saveTxns: saveTxns
 }

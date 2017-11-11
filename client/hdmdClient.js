@@ -78,6 +78,27 @@ function filterEventsGet(fromBlock) {
 }
 
 function parseEventLog(eventLog) {
+<<<<<<< HEAD
+    console.log(eventLog)
+    let decodedLog = abiDecoder.decodeLogs(eventLog);
+    for (var i = 0; i < eventLog.length; i++) {
+        let event = eventLog[i];
+        let decoded = decodedLog[i];
+        let eventName = decoded.name;
+        let newTxn = {
+            txnHash: event.transactionHash,
+            blockNumber: event.blockNumber,
+            eventName: eventName
+        };
+        if (eventName === 'Mint') {
+            newTxn.sender = decoded.events[0].value;
+            newTxn.amount = decoded.events[1].value;
+            newTxn.dmdTxn = decoded.events[2].value;
+        } else if (eventName === 'Burn') {
+            newTxn.sender = decoded.events[0].value;
+            newTxn.dmdAddres = decoded.events[1].value;
+            newTxn.value = decoded.events[2].value;
+=======
     return new Promise((resolve, reject) => {
         let decodedLog = abiDecoder.decodeLogs(eventLog);
         let newTxns = [];
@@ -104,6 +125,7 @@ function parseEventLog(eventLog) {
             }
             newTxns[i] = newTxn;
             console.log('Parsed HDMD Txn', newTxn);
+>>>>>>> 5bab295a465503f0871faa8500c011359b95c37e
         }
         resolve(newTxns);
     });
@@ -153,6 +175,7 @@ function saveTxns(newTxns) {
     }
 
 }
+*/
 function saveToMongo(event) {
     event.save().then((doc) => {
         console.log('saved', doc)
@@ -160,7 +183,7 @@ function saveToMongo(event) {
         console.log('Unable to save data')
     });
 }
-*/
+
 
 function getBalances() {
     return new Promise((resolve, reject) => {
@@ -256,9 +279,9 @@ function mint(amount, dmdTxnHash, callback) {
     return new Promise((resolve, reject) => {
         hdmdContract.mint(amount, dmdTxnHash, (err, res) => {
             if (err) {
-                Promise.reject(res);
+                reject(res);
             } else {
-                Promise.resolve(err);
+                resolve(err);
             }
         });
     });

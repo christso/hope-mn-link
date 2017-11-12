@@ -94,7 +94,7 @@ function parseEventLog(eventLog) {
             if (eventName === 'Mint') {
                 newTxn.sender = decoded.events[0].value;
                 newTxn.amount = decoded.events[1].value;
-                newTxn.dmdTxn = decoded.events[2].value;
+                newTxn.dmd_txnHash = decoded.events[2].value;
             } else if (eventName === 'Burn') {
                 newTxn.sender = decoded.events[0].value;
                 newTxn.dmdAddress = decoded.events[1].value;

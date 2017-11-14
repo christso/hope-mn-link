@@ -61,26 +61,24 @@ function reconcileTxns() {
    // wait for downloads to complete,
    // then find unmatched dmdTxns into hdmdTxns in MongDB,
    // then invoke mint and unmint on HDMD eth smart contract
+   let getUnmatchedDmds = dmdClient.getUnmatchedTxns;
    Promise.all([downloadDmdTxns, downloadHdmdTxns])
       .then(res => {
-         getUnmatchedDmdTxns().then(txns => pullDmdTxns(txns));
+         getUnmatchedDmds().then(txns => pullDmdTxns(txns));
       })
       .catch(err => console.log('Error reconciling trasactions', err));
 }
 
-// get DMD Txns that don't exist in HDMD Txns MongoDB
-function getUnmatchedDmdTxns() {
-   return new Promise((resolve, reject) => {
-      let txns = []; // get from Mongo
-      resolve(txns);
-   });
-}
+function saveMints(mints) {}
 
-function getUnmatchedHdmdTxns() {
-   return new Promise((resolve, reject) => {
-      let txns = []; // get from Mongo
-      resolve(txns);
-   });
+// invoke mint, then save to MongoDB
+function mintTxns(txns) {
+   let mints = [];
+   let getUnmatchedDmds = dmdClient.getUnmatchedTxns;
+
+   getUnmatchedDmds().then(txns => console.log('resolved getUnmatchedDmds'));
+
+   //          hdmdClient.mint(amount, dmdTxn.txnHash).then(hdmdTxnHash => {});
 }
 
 // pull new DMD Txns into HDMD Txns

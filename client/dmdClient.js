@@ -27,10 +27,6 @@ function parseRawTxns(rawTxns) {
    return newTxns;
 }
 
-function saveTxns(newTxns) {
-   return dmdTxns.create(newTxns);
-}
-
 // Find last saved txn in MongoDB
 function getLastSavedTxn() {
    return dmdTxns
@@ -60,41 +56,33 @@ function getParsedTxns() {
    });
 }
 
-function saveTxns(lastBlockNumber) {
+function getNewTxns(lastBlockNumber) {
    return getParsedTxns().then(parsedTxns => {
       let newTxns = parsedTxns.filter(txn => {
          return txn.blockNumber > lastBlockNumber;
       });
-
-      return dmdTxns.create(newTxns);
+      return newTxns;
    });
 }
 
-function mintTxns() {
-   // Invoke mint() where amount > 0
-   //   newTxns.forEach(function(dmdTxn) {
-   //      let amount = hdmdClient.getRawValue(dmdTxn.amount);
-   //      if (amount > 0) {
-   //         hdmdClient
-   //            .mint(amount, dmdTxn.txnHash)
-   //            .then(txnHash =>
-   //               Promise.resolve({ context: 'Mint', txnHash: txnHash })
-   //            )
-   //            .catch(err => Promise.reject({ context: 'Mint', error: err }));
-   //      } else if (amount < 0) {
-   //         // TODO: unmint
-   //      }
-   //   }, this);
+function saveTxns(newTxns) {
+   return dmdTxns.create(newTxns);
 }
 
 function downloadTxns() {
-   return getLastSavedBlockNumber().then(lastBlockNumber =>
-      saveTxns(lastBlockNumber)
-   );
+   return getLastSavedBlockNumber()
+      .then(lastBlockNumber => getNewTxns(lastBlockNumber))
+      .then(txns => saveTxns(txns));
+}
+
+// get DMD Txns that don't exist in HDMD Txns MongoDB
+function getUnmatchedTxns() {
+   return dmdTxns.find({}); // TODO: lookup reconTxns
 }
 
 var client = {
-   downloadTxns: downloadTxns
+   downloadTxns: downloadTxns,
+   getUnmatchedTxns: getUnmatchedTxns
 };
 
 module.exports = client;

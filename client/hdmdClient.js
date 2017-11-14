@@ -320,6 +320,13 @@ function mint(amount, dmdTxnHash, callback) {
    });
 }
 
+function getUnmatchedTxns() {
+   return new Promise((resolve, reject) => {
+      let txns = []; // get from Mongo
+      resolve(txns);
+   });
+}
+
 module.exports = {
    web3: web3,
    hdmdContract: hdmdContract,
@@ -329,5 +336,6 @@ module.exports = {
    getRawValue: getRawValue,
    mint: mintTxns,
    downloadTxns: downloadTxns,
-   getTotalSupplySaved: getTotalSupplySaved
+   getTotalSupplySaved: getTotalSupplySaved,
+   getUnmatchedTxns: getUnmatchedTxns
 };

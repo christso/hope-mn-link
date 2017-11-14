@@ -321,10 +321,7 @@ function mint(amount, dmdTxnHash, callback) {
 }
 
 function getUnmatchedTxns() {
-   return new Promise((resolve, reject) => {
-      let txns = []; // get from Mongo
-      resolve(txns);
-   });
+   return hdmdTxns.find({}); // TODO: lookup reconTxns
 }
 
 module.exports = {

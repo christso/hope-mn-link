@@ -1,4 +1,5 @@
 var config = require('./config');
+var port = config.port;
 
 var express = require('express');
 var bodyParser = require('body-parser');
@@ -6,7 +7,13 @@ var mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 var axios = require('axios').default;
 var app = express();
-var port = config.port;
+var reconClient = require('./client/reconClient');
+var reconcileTxns = reconClient.reconcileTxns;
+
+// reconcile transactions at each interval
+let watchInterval = config.dmdWatchInterval;
+
+setInterval(() => reconcileTxns(), watchInterval);
 
 // allows you to parse JSON into req.body.field
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -31,6 +38,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use('/api/dmd', dmdRoutes);
 app.use('/api/hdmd', hdmdRoutes);
+app.use('/api/recon', dmdRoutes);
 
 app.listen(port, function() {
    console.log(`HTTP Server is listening on http://localhost:${port}`);

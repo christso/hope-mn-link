@@ -31,9 +31,8 @@ function saveTxns(newTxns) {
    return dmdTxns.create(newTxns);
 }
 
+// Find last saved txn in MongoDB
 function getLastSavedTxn() {
-   // Find last saved txn in MongoDB
-   // db.getCollection('dmdtxns').find().sort({blockNumber:-1}).limit(1)
    return dmdTxns
       .find()
       .sort({ blockNumber: -1 })
@@ -42,53 +41,50 @@ function getLastSavedTxn() {
 }
 
 function getLastSavedBlockNumber() {
-   return getLastSavedTxn()
-      .then(docs => {
-         // format value
-         let result = formatSavedBlockNumber(docs);
-         return Promise.resolve(result);
-      })
-      .catch(err => Promise.reject(err));
+   return getLastSavedTxn().then(docs => formatSavedBlockNumber(docs));
 }
 
 function formatSavedBlockNumber(docs) {
    // format value
-   let lastBlockNumber = 0;
+   let blockNumber = 0;
    if (docs.length > 0) {
-      lastBlockNumber = docs[0].blockNumber;
+      blockNumber = docs[0].blockNumber;
    }
-   return lastBlockNumber;
+   return blockNumber;
+}
+
+function getParsedTxns() {
+   return axios.get(dmdUrl).then(function(response) {
+      // Parse CryptoID txns
+      return parseRawTxns(response.data.tx);
+   });
 }
 
 function saveTxns(lastBlockNumber) {
-   return axios.get(dmdUrl).then(function(response) {
-      // Parse CryptoID txns
-      let parsedTxns = parseRawTxns(response.data.tx);
+   return getParsedTxns().then(parsedTxns => {
       let newTxns = parsedTxns.filter(txn => {
          return txn.blockNumber > lastBlockNumber;
       });
 
-      // Create new DMD txn in MongoDB
-      dmdTxns
-         .create(newTxns)
-         .then(newlyCreated => Promise.resolve(newlyCreated));
-
-      // Invoke mint() where amount > 0
-
-      //   newTxns.forEach(function(dmdTxn) {
-      //      let amount = hdmdClient.getRawValue(dmdTxn.amount);
-      //      if (amount > 0) {
-      //         hdmdClient
-      //            .mint(amount, dmdTxn.txnHash)
-      //            .then(txnHash =>
-      //               Promise.resolve({ context: 'Mint', txnHash: txnHash })
-      //            )
-      //            .catch(err => Promise.reject({ context: 'Mint', error: err }));
-      //      } else if (amount < 0) {
-      //         // TODO: unmint
-      //      }
-      //   }, this);
+      return dmdTxns.create(newTxns);
    });
+}
+
+function mintTxns() {
+   // Invoke mint() where amount > 0
+   //   newTxns.forEach(function(dmdTxn) {
+   //      let amount = hdmdClient.getRawValue(dmdTxn.amount);
+   //      if (amount > 0) {
+   //         hdmdClient
+   //            .mint(amount, dmdTxn.txnHash)
+   //            .then(txnHash =>
+   //               Promise.resolve({ context: 'Mint', txnHash: txnHash })
+   //            )
+   //            .catch(err => Promise.reject({ context: 'Mint', error: err }));
+   //      } else if (amount < 0) {
+   //         // TODO: unmint
+   //      }
+   //   }, this);
 }
 
 function downloadTxns() {

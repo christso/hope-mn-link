@@ -92,3 +92,7 @@ function pullDmdTxns(txns) {
 }
 
 setInterval(() => reconcileTxns(), watchInterval);
+
+router.post('/reconcile', function(req, res) {});
+
+module.exports = router;

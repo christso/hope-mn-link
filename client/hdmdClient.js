@@ -2,7 +2,8 @@ const Web3 = require('web3');
 const abi = require('./hdmdABI')();
 const config = require('../config');
 const hdmdTxns = require('../models/hdmdTxn');
-const hdmdBurn = require('../models/hdmdBurn');
+const burnTxns = require('../models/burn');
+const mintTxns = require('../models/mint');
 const accounts = require('../data/hdmdAccounts');
 const wallet = require('../client/dmdWallet');
 
@@ -231,6 +232,23 @@ function getTotalSupplySaved() {
    });
 }
 
+function getUnmatchedTxns() {
+   return new Promise((resolve, reject) => {
+      hdmdTxns.aggregate([
+         {
+            $group: {
+               $lookup: {
+                  from: 'reconTxns',
+                  localField: 'txnHash',
+                  foreignField: 'hdmdTxnHash',
+                  as: 'reconTxns'
+               }
+            }
+         }
+      ]);
+   });
+}
+
 // Used to distribute the minted amount to addresses in proportion to their balances
 // fundingAddress should be the account that did the minting = web3.eth.defaultAccount
 function apportion(amount, fundingAddress) {
@@ -309,7 +327,7 @@ module.exports = {
    batchTransfer: batchTransfer,
    getFormattedValue: getFormattedValue,
    getRawValue: getRawValue,
-   mint: mint,
+   mint: mintTxns,
    downloadTxns: downloadTxns,
    getTotalSupplySaved: getTotalSupplySaved
 };

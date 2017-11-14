@@ -14,61 +14,63 @@ var dmdTxns = require('../models/dmdTxn');
 const dmdUrl = config.cryptoidDmdUri;
 
 // Get all txns
-router.get('/txns/all', function (req, res) {
-    axios.get(dmdUrl).then(function (response) {
-        let parsed = parseRawTxns(response.data.tx);
-        res.json(parsed);
-    }).catch(function (error) {
-        res.json({ ERROR: error });
-    });
+router.get('/txns/all', function(req, res) {
+   axios
+      .get(dmdUrl)
+      .then(function(response) {
+         let parsed = parseRawTxns(response.data.tx);
+         res.json(parsed);
+      })
+      .catch(function(error) {
+         res.json({ ERROR: error });
+      });
 });
 
 // CREATE DMD transaction
-router.post('/txns', function (req, res) {
-    var newTxns = req.body;
-    if (req.body.constructor != Array) {
-        newTxns = [req.body];
-    }
-    newTxns = newTxns.map((txn) => {
-        return {
-            txnHash: txn.txnHash,
-            blockNumber: txn.blockNumber,
-            amount: txn.amount,
-            balance: txn.balance
-        };
-    });
+router.post('/txns', function(req, res) {
+   var newTxns = req.body;
+   if (req.body.constructor != Array) {
+      newTxns = [req.body];
+   }
+   newTxns = newTxns.map(txn => {
+      return {
+         txnHash: txn.txnHash,
+         blockNumber: txn.blockNumber,
+         amount: txn.amount,
+         balance: txn.balance
+      };
+   });
 
-    // Create new DMD txn and save to DB
-    dmdTxns.create(newTxns, function (err, newlyCreated) {
-        if (err) {
-            res.json({ 'Error': 'ERROR CREATING DMD TRANSACTION' });
-        } else {
-            res.json(newlyCreated);
-        }
-    });
+   // Create new DMD txn and save to DB
+   dmdTxns.create(newTxns, function(err, newlyCreated) {
+      if (err) {
+         res.json({ Error: 'ERROR CREATING DMD TRANSACTION' });
+      } else {
+         res.json(newlyCreated);
+      }
+   });
 });
 
 // Post new DMD txns
 // blockNumber is Number
-router.post('/txns/sync', function (req, res) {
-    dmdClient.downloadTxns().then(result => {
-        if (result) {
+router.post('/txns/sync', function(req, res) {
+   dmdClient
+      .downloadTxns()
+      .then(result => {
+         if (result) {
             console.log('Synced with DMD CryptoID', result);
-        } else {
+         } else {
             console.log('Synced with DMD CryptoID - no changes');
-        }
-    }).catch(err => {
-        console.log('Error syncing with DMD CryptoID', err);
-    });
+         }
+      })
+      .catch(err => {
+         console.log('Error syncing with DMD CryptoID', err);
+      });
 });
 
-router.post('/sendtoaddress', function (req, res) {
-
-});
+router.post('/sendtoaddress', function(req, res) {});
 
 // list dmds not matched to hdmds
-router.post('/recon/', function (req, res) {
-    
-});
+router.get('/txns/unmatched', function(req, res) {});
 
 module.exports = router;

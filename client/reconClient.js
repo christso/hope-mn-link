@@ -65,7 +65,8 @@ function reconcileTxns() {
          console.log('Error retrieving unmatched transactions from MongoDB')
       )
       .then(([dmds, hdmds]) => mintDmds(dmds, hdmds))
-      .then(txn => console.log(txn));
+      .catch(err => console.log(`Error minting: ${err}`))
+      .then(txn => console.log(`Mint txnHash = ${txn}`));
 }
 
 /**
@@ -75,16 +76,15 @@ function reconcileTxns() {
 * @return {BigNumber} amount that needs to be minted
 */
 function getNeedsMintingAmount(dmds, hdmds) {
-   let dmdTotal = dmds
-      .map(txn => new BigNumber(txn.amount ? txn.amount : 0))
-      .reduce((a, b) => a.add(b));
+   dmdTotal = new BigNumber(0);
+   dmds.forEach(txn => {
+      dmdTotal = dmdTotal.add(txn.amount);
+   });
 
-   let hdmdTotal = hdmds
-      .map(txn => {
-         let amount = new BigNumber(txn.amount ? txn.amount : 0);
-         return amount;
-      })
-      .reduce((a, b) => a.add(b));
+   hdmdTotal = new BigNumber(0);
+   hdmds.forEach(txn => {
+      hdmdTotal = hdmdTotal.add(txn.amount);
+   });
 
    return dmdTotal.sub(hdmdTotal);
 }

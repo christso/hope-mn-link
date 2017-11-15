@@ -1,3 +1,4 @@
+const BigNumber = require('bignumber.js');
 const Web3 = require('web3');
 const abi = require('./hdmdABI')();
 const config = require('../config');
@@ -40,9 +41,6 @@ if (hdmdVersionDeployed == hdmdVersion) {
       `ERROR: HDMD contract version deployed is ${hdmdVersionDeployed} but app version is ${hdmdVersion}`
    );
 }
-
-// TODO: If there are 1000+ transactions in the event log filter
-// then downloadTxns will take a very long time to finish executing.
 
 function downloadTxns() {
    return getLastSavedTxn()
@@ -105,17 +103,18 @@ function parseEventLog(eventLog) {
             blockNumber: event.blockNumber,
             eventName: eventName
          };
+         let amount;
          if (eventName === 'Mint') {
             newTxn.sender = decoded.events[0].value;
-            newTxn.amount = decoded.events[1].value;
-            newTxn.dmd_txnHash = decoded.events[2].value;
+            amount = decoded.events[1].value;
          } else if (eventName === 'Burn') {
             newTxn.sender = decoded.events[0].value;
             newTxn.dmdAddress = decoded.events[1].value;
-            newTxn.amount = decoded.events[2].value;
+            amount = decoded.events[2].value;
          } else if (eventName === 'Transfer') {
             // TODO: add logic here
          }
+         newTxn.amount = getParsedNumber(new BigNumber(amount ? amount : 0));
          newTxns[i] = newTxn;
          console.log('Parsed HDMD Txn', newTxn);
       }
@@ -135,50 +134,6 @@ function getLastSavedTxn() {
 function saveTxns(newTxns) {
    return hdmdTxns.create(newTxns);
 }
-
-// TODO: saveTxns(arguments[1]);
-
-/*
-function saveTxns(newTxns) {
-    // Create new DMD txn and save to DB
-    if (newTxns.event === 'Mint') {
-        var newTransaction = hdmdTxns({
-            txnHash: newTxns.args.transactionHash,
-            blockNumber: newTxns.args.blockNumber,
-            amount: newTxns.args._reward.c[0],
-            dmd_txnHash: newTxns.args._dmdTx
-        });
-
-        saveToMongo(newTransaction);
-
-        apportion(newTransaction.amount, defaultAccount)
-            .then(res => console.log('Apportioned tokens with Batch Transfer', res))
-            .catch(err => console.log('Unable to apportion tokens', err));
-    }
-    if (newTxns.event === 'Burn') {
-        var newTransaction = hdmdBurn({
-            burner: newTxns.args.burner,
-            dmdAddress: newTxns.args.dmdAddress,
-            txnHash: newTxns.transactionHash,
-            blockNumber: newTxns.blockNumber,
-            amount: newTxns.args.value.c[0]
-        });
-        saveToMongo(newTransaction);
-
-        wallet.sendToAddress(newTransaction.dmdAddress, newTransaction.amount)
-            .then(result => console.log(result))
-            .catch(err => console.log(err));
-    }
-
-}
-function saveToMongo(event) {
-    event.save().then((doc) => {
-        console.log('saved', doc)
-    }, (err) => {
-        console.log('Unable to save data')
-    });
-}
-*/
 
 function getBalances() {
    return new Promise((resolve, reject) => {
@@ -279,25 +234,72 @@ function batchTransfer(addresses, values) {
    });
 }
 
-function getFormattedValue(value) {
-   return value / 10 ** decimals;
+/**
+* Converts the parsed value to the underlying uint value used by smart contract
+* @param {BigNumber} value - parsed value
+* @return {BigNumber} - original units
+*/
+function getParsedNumber(value) {
+   let divider = new BigNumber(10);
+   divider = divider.pow(decimals);
+   return value.div(divider);
 }
 
-function getRawValue(value) {
-   return value * 10 ** decimals;
+/**
+* Converts to underlying uint value used by smart contract
+* @param {BigNumber} value - parsed value
+* @return {BigNumber} - original units
+*/
+function getRawNumber(value) {
+   let multiplier = new BigNumber(10);
+   multiplier = multiplier.pow(decimals);
+   console.log(`multiplier = ${multiplier}`);
+   return value.mul(multiplier);
 }
 
-function mint(amount, dmdTxnHash, callback) {
+/**
+* Mint amounts on HDMD smart contract
+* @param {BigNumber} amount - amount in BigNumber
+* @param {requestCallback} callback - The callback that handles the response.
+* @return {Promise} return value of the smart contract function
+*/
+function mint(amount, callback) {
+   let rawAmount = getRawNumber(amount).toNumber();
    if (callback) {
-      hdmdContract.mint(amount, dmdTxnHash, callback);
+      hdmdContract.mint(rawAmount, callback);
       return;
    }
    return new Promise((resolve, reject) => {
-      hdmdContract.mint(amount, dmdTxnHash, (err, res) => {
+      hdmdContract.mint(rawAmount, (err, res) => {
          if (err) {
-            Promise.reject(res);
+            reject(err);
          } else {
-            Promise.resolve(err);
+            resolve(res);
+         }
+      });
+   });
+}
+
+/**
+* Unmints amounts on HDMD smart contract
+* @param {BigNumber} amount - amount in BigNumber
+* @param {requestCallback} callback - The callback that handles the response.
+* @return {Promise} return value of the smart contract function
+*/
+function unmint(amount, callback) {
+   let rawAmount = getRawNumber(amount)
+      .mul(-1)
+      .toNumber();
+   if (callback) {
+      hdmdContract.unmint(rawAmount, callback);
+      return;
+   }
+   return new Promise((resolve, reject) => {
+      hdmdContract.unmint(rawAmount, (err, res) => {
+         if (err) {
+            reject(err);
+         } else {
+            resolve(res);
          }
       });
    });
@@ -343,9 +345,8 @@ module.exports = {
    hdmdContract: hdmdContract,
    getBalances: getBalances,
    batchTransfer: batchTransfer,
-   getFormattedValue: getFormattedValue,
-   getRawValue: getRawValue,
-   mint: mintTxns,
+   mint: mint,
+   unmint: unmint,
    downloadTxns: downloadTxns,
    getTotalSupplySaved: getTotalSupplySaved,
    getUnmatchedTxns: getUnmatchedTxns

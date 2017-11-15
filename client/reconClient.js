@@ -2,6 +2,7 @@
 
 var config = require('../config');
 var mongoose = require('mongoose');
+var BigNumber = require('bignumber.js');
 
 var port = config.port;
 
@@ -35,10 +36,7 @@ function downloadHdmdTxns() {
       .downloadTxns()
       .then(result => {
          if (result) {
-            console.log(
-               'Downloaded HDMD Transactions from Ethereum network',
-               result
-            );
+            console.log('Downloaded HDMD Transactions from Ethereum network');
          } else {
             console.log(
                'Downloaded HDMD Transactions from Ethereum network - no changes found'
@@ -66,30 +64,51 @@ function reconcileTxns() {
       .catch(() =>
          console.log('Error retrieving unmatched transactions from MongoDB')
       )
-      .then(([dmds, hdmds]) => {
-         // TODO: sum up the totals on MongoDB side instead of getting it on client side
-         console.log([dmds, hdmds]);
-         //return mintNewDmds();
-      });
+      .then(([dmds, hdmds]) => mintDmds(dmds, hdmds))
+      .then(txn => console.log(txn));
 }
 
-// invoke mint, then save to MongoDB
-function mintNewDmds() {}
+/**
+* Get amount that needs to be minted
+* @param {Object[]} dmds - DMD transactions that needs to be matched
+* @param {Object[]} hdmds - HDMD transactions that needs to be matched
+* @return {BigNumber} amount that needs to be minted
+*/
+function getNeedsMintingAmount(dmds, hdmds) {
+   let dmdTotal = dmds
+      .map(txn => new BigNumber(txn.amount ? txn.amount : 0))
+      .reduce((a, b) => a.add(b));
 
-function mintDmds(txns) {
-   let mints = [];
+   let hdmdTotal = hdmds
+      .map(txn => {
+         let amount = new BigNumber(txn.amount ? txn.amount : 0);
+         return amount;
+      })
+      .reduce((a, b) => a.add(b));
 
-   //          hdmdClient.mint(amount, dmdTxn.txnHash).then(hdmdTxnHash => {});
+   return dmdTotal.sub(hdmdTotal);
+}
+
+/**
+* Invoke mint on HDMD smart contract and reconcile with DMDs
+* @param {Object[]} dmds - DMD transactions to be matched
+* @param {Object[]} hdmds - HDMD transactions to be matched
+* @return {Promise} result of the promise
+*/
+function mintDmds(dmds, hdmds) {
+   let amount = getNeedsMintingAmount(dmds, hdmds);
+   if (amount.gt(0)) {
+      return hdmdClient.mint(amount);
+   } else if (amount.lt(0)) {
+      return hdmdClient.unmint(amount);
+   }
+   return Promise.resolve('nothing to mint');
 }
 
 function saveMints(mints) {}
 
-// pull new DMD Txns into HDMD Txns
-function pullDmdTxns(txns) {
-   return new Promise((resolve, reject) => {
-      resolve('success');
-   });
-}
+// invoke mint, then save to MongoDB
+function mintNewDmds() {}
 
 module.exports = {
    reconcileTxns: reconcileTxns

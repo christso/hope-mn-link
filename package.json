@@ -13,6 +13,7 @@
       "abi-decoder": "^1.0.9",
       "async": "^2.6.0",
       "axios": "^0.17.0",
+      "bignumber.js": "^4.1.0",
       "bitcoin": "^3.0.1",
       "body-parser": "^1.18.2",
       "express": "^4.16.2",

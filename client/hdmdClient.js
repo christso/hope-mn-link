@@ -232,23 +232,6 @@ function getTotalSupplySaved() {
    });
 }
 
-function getUnmatchedTxns() {
-   return new Promise((resolve, reject) => {
-      hdmdTxns.aggregate([
-         {
-            $group: {
-               $lookup: {
-                  from: 'reconTxns',
-                  localField: 'txnHash',
-                  foreignField: 'hdmdTxnHash',
-                  as: 'reconTxns'
-               }
-            }
-         }
-      ]);
-   });
-}
-
 // Used to distribute the minted amount to addresses in proportion to their balances
 // fundingAddress should be the account that did the minting = web3.eth.defaultAccount
 function apportion(amount, fundingAddress) {
@@ -320,8 +303,39 @@ function mint(amount, dmdTxnHash, callback) {
    });
 }
 
+var unmatchedTxnsQueryDef = [
+   {
+      $lookup: {
+         from: 'recontxns',
+         localField: 'txnHash',
+         foreignField: 'hdmdTxnHash',
+         as: 'recontxns'
+      }
+   },
+   {
+      $match: {
+         recontxns: { $eq: [] }
+      }
+   }
+];
+
+var groupQuery = {
+   $group: {
+      _id: null,
+      totalAmount: { $sum: '$amount' },
+      count: { $sum: 1 }
+   }
+};
+
+function getUnmatchedTxnsTotal() {
+   let queryDef = unmatchedTxnsQueryDef;
+   queryDef.push(groupQuery);
+   return hdmdTxns.aggregate(queryDef);
+}
+
 function getUnmatchedTxns() {
-   return hdmdTxns.find({}); // TODO: lookup reconTxns
+   let queryDef = unmatchedTxnsQueryDef;
+   return hdmdTxns.aggregate(queryDef);
 }
 
 module.exports = {

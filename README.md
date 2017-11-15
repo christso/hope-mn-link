@@ -63,3 +63,8 @@ Error: invalid address
 ```
 * Cause: The address of the wallet is not authorized to mint.
 * Solution: Invoke the allowMinter function in truffle or other client where you are the contract owner, and pass the address of web3.eth.defaultAccount as a parameter. After that, the address should be allowed to invoke the mint function.
+
+### MongoDB query returns empty result
+
+* Cause: Object names are case-sensitive in MongoDB, but the Moongoose package changes your collection names to lowercase.
+* Solution: Check your casing.

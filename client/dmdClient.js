@@ -75,9 +75,39 @@ function downloadTxns() {
       .then(txns => saveTxns(txns));
 }
 
+var unmatchedTxnsQueryDef = [
+   {
+      $lookup: {
+         from: 'recontxns',
+         localField: 'txnHash',
+         foreignField: 'hdmdTxnHash',
+         as: 'recontxns'
+      }
+   },
+   {
+      $match: {
+         recontxns: { $eq: [] }
+      }
+   }
+];
+
+var groupQuery = {
+   $group: {
+      _id: null,
+      totalAmount: { $sum: '$amount' },
+      count: { $sum: 1 }
+   }
+};
+
 // get DMD Txns that don't exist in HDMD Txns MongoDB
 function getUnmatchedTxns() {
-   return dmdTxns.find({}); // TODO: lookup reconTxns
+   return dmdTxns.aggregate(unmatchedTxnsQueryDef);
+}
+
+function getUnmatchedTxnsTotal() {
+   let queryDef = unmatchedTxnsQueryDef;
+   queryDef.push(groupQuery);
+   return dmdTxns.aggregate(queryDef);
 }
 
 var client = {

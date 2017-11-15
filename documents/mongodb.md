@@ -10,10 +10,10 @@ Join from dmdTxns to hdmdTxns using condition dmdTxns.txnHash == hdmdTxns.dmdTxn
 ```
 db.getCollection('dmdtxns').aggregate({$lookup: 
     {
-        from: 'hdmdTxns',
+        from: 'hdmdtxns',
         localField: 'txnHash',
         foreignField: 'dmdTxnHash',
-        as: 'hdmdDocs'
+        as: 'hdmddocs'
     }
 })
 ```

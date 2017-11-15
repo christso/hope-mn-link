@@ -11,4 +11,4 @@ var reconTxn = new mongoose.Schema({
    mint: { type: mongoose.Schema.Types.ObjectId, ref: 'Mint' }
 });
 
-module.exports = mongoose.model('reconTxn', dmdTxnSchema);
+module.exports = mongoose.model('ReconTxn', dmdTxnSchema);

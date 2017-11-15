@@ -66,7 +66,11 @@ function reconcileTxns() {
       .catch(() =>
          console.log('Error retrieving unmatched transactions from MongoDB')
       )
-      .then(() => mintNewDmds());
+      .then(([dmds, hdmds]) => {
+         // TODO: sum up the totals on MongoDB side instead of getting it on client side
+         console.log([dmds, hdmds]);
+         //return mintNewDmds();
+      });
 }
 
 // invoke mint, then save to MongoDB
@@ -74,7 +78,6 @@ function mintNewDmds() {}
 
 function mintDmds(txns) {
    let mints = [];
-   let getUnmatchedDmds = dmdClient.getUnmatchedTxns;
 
    //          hdmdClient.mint(amount, dmdTxn.txnHash).then(hdmdTxnHash => {});
 }

@@ -29,6 +29,11 @@ router.get('/svr/defaultaccount', function(req, res) {
    res.json(web3.eth.defaultAccount);
 });
 
+router.get('/owner', function(req, res) {
+   // Return total supply. Should be 10000 if no tokens were minted or burned
+   hdmdClient.getContractOwner().then(owner => res.json({ owner: owner }));
+});
+
 // Get all account balances of HDMD token holders
 router.get('/balances', function(req, res) {
    getBalances()

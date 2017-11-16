@@ -144,6 +144,10 @@ function mintDmds(dmds, hdmds) {
    });
 }
 
+function saveMint(txn) {
+   return mintDocs.create(txn);
+}
+
 function synchronizeAll() {
    // wait for downloads to complete,
    // then find unmatched dmdTxns into hdmdTxns in MongDB,
@@ -175,8 +179,15 @@ function synchronizeAll() {
       .catch(err => console.log(`Error minting: ${err}`));
 }
 
-function saveMint(txn) {
-   return mintDocs.create(txn);
+/**
+* Gets HDMD account balances from DMD blockNumber by totalling from block 0
+* @param {Number} blockNumber - DMD blockNumber to get the balance for
+* @return {{Object, Object}[]}  - { addresses[], balances[] }
+*/
+function getBalancesDmdToHdmd(blockNumber) {
+   // reconId = from dmdtxns left join recontxns on recontxns.dmdTxnHash = dmdtxns.txnHash
+   // blockNumber = max(recontxns.blockNumber) where hdmdTxnHasn != null
+   // get balances from hdmdtxns collection
 }
 
 module.exports = {

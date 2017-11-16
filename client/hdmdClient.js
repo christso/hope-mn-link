@@ -50,6 +50,22 @@ function checkVersion() {
 }
 checkVersion();
 
+function getContractOwner(callback) {
+   if (callback) {
+      hdmdContract.owner.call(callback);
+      return;
+   }
+   return new Promise((resolve, reject) => {
+      hdmdContract.owner.call((err, res) => {
+         if (err) {
+            reject(err);
+         } else {
+            resolve(res);
+         }
+      });
+   });
+}
+
 function allowMinter(account, callback) {
    if (callback) {
       hdmdContract.allowMinter(account, callback);
@@ -425,5 +441,6 @@ module.exports = {
    downloadTxns: downloadTxns,
    getTotalSupplySaved: getTotalSupplySaved,
    getUnmatchedTxns: getUnmatchedTxns,
+   getContractOwner: getContractOwner,
    seedData: seedData
 };

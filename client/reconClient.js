@@ -153,6 +153,7 @@ function synchronizeAll() {
 
    let dmds;
    let hdmds;
+
    Promise.all([downloadDmdTxns(), downloadHdmdTxns()])
       .catch(err => console.log('Error downloading trasactions', err))
       .then(() => Promise.all([getUnmatchedDmds(), getUnmatchedHdmds()]))

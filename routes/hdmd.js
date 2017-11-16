@@ -9,7 +9,8 @@ var hdmdContract = hdmdClient.hdmdContract;
 var web3 = hdmdClient.web3;
 var getBalances = hdmdClient.getBalances;
 
-var accounts = require('../data/hdmdAccounts');
+var contribs = require('../data/hdmdContributions');
+var accounts = contribs.accounts;
 
 /*----  API for HDMD ----*/
 

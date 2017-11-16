@@ -5,12 +5,17 @@ const config = require('../config');
 const hdmdTxns = require('../models/hdmdTxn');
 const burnTxns = require('../models/burn');
 const mintTxns = require('../models/mint');
-const accounts = require('../data/hdmdAccounts');
+
 const wallet = require('../client/dmdWallet');
+
+const contribs = require('../data/hdmdContributions');
+const accounts = contribs.accounts;
 
 const abiDecoder = require('abi-decoder');
 
 abiDecoder.addABI(abi);
+
+var requireSeed = config.requireSeed;
 
 const hdmdVersion = config.hdmdVersion;
 const ethNodeAddress = config.ethNodeAddress;
@@ -32,14 +37,48 @@ var contract = web3.eth.contract(abi);
 // Instantiate contact so we can interact
 var hdmdContract = contract.at(contractAddress);
 
-// Check that version of app matches deployed contract
-var hdmdVersionDeployed = hdmdContract.version.call();
-if (hdmdVersionDeployed == hdmdVersion) {
-   console.log('HDMD contract matched.');
-} else {
-   console.log(
-      `ERROR: HDMD contract version deployed is ${hdmdVersionDeployed} but app version is ${hdmdVersion}`
-   );
+function checkVersion() {
+   // Check that version of app matches deployed contract
+   var hdmdVersionDeployed = hdmdContract.version.call();
+   if (hdmdVersionDeployed == hdmdVersion) {
+      console.log('HDMD contract matched.');
+   } else {
+      console.log(
+         `ERROR: HDMD contract version deployed is ${hdmdVersionDeployed} but app version is ${hdmdVersion}`
+      );
+   }
+}
+checkVersion();
+
+function allowMinter(account, callback) {
+   if (callback) {
+      hdmdContract.allowMinter(account, callback);
+      return;
+   }
+   return new Promise((resolve, reject) => {
+      hdmdContract.allowMinter(account, (err, res) => {
+         if (err) {
+            reject(err);
+         } else {
+            resolve(res);
+         }
+      });
+   });
+}
+
+function seedData() {
+   if (!requireSeed) return Promise.resolve();
+   let accounts = contribs.accounts;
+   let balances = contribs.balances.map(value => new BigNumber(value));
+
+   return allowMinter(defaultAccount)
+      .then(txnHash => console.log(`Allowed account ${defaultAccount} to mint`))
+      .catch(err => console.log(`Error allowing minter ${defaultAccount}`))
+      .then(() => batchTransfer(accounts, balances))
+      .catch(err => {
+         console.log(`Error seeding the smart contract: ${err.message}`);
+      })
+      .then(() => (requireSeed = false));
 }
 
 function downloadTxns() {
@@ -55,7 +94,6 @@ function downloadTxns() {
       .then(lastSavedBlockNumber =>
          // get event logs after the last block number that we saved
          filterEventsGet(lastSavedBlockNumber)
-            .then(eventLog => eventLog)
             .then(eventLog =>
                // parse the event log
                parseEventLog(eventLog)
@@ -220,11 +258,18 @@ function apportion(amount, fundingAddress) {
    });
 }
 
+/**
+* Transfer tokens from sender's address to a list of addresses
+* @param {string[]} addresses - array of addresses to receive the tokens
+* @param {number[]} values - amounts to transfer
+* @return {Promise} return value of the smart contract function
+*/
 function batchTransfer(addresses, values) {
    return new Promise((resolve, reject) => {
+      let rawValues = values.map(value => getRawNumber(value).toNumber());
       hdmdContract.batchTransfer(
          addresses,
-         values,
+         rawValues,
          { gas: gasLimit },
          (error, result) => {
             if (error) {
@@ -349,5 +394,6 @@ module.exports = {
    unmint: unmint,
    downloadTxns: downloadTxns,
    getTotalSupplySaved: getTotalSupplySaved,
-   getUnmatchedTxns: getUnmatchedTxns
+   getUnmatchedTxns: getUnmatchedTxns,
+   seedData: seedData
 };

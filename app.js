@@ -8,12 +8,12 @@ mongoose.Promise = global.Promise;
 var axios = require('axios').default;
 var app = express();
 var reconClient = require('./client/reconClient');
-var reconcileTxns = reconClient.reconcileTxns;
+var synchronizeAll = reconClient.synchronizeAll;
 
 // reconcile transactions at each interval
 let watchInterval = config.dmdWatchInterval;
 
-setInterval(() => reconcileTxns(), watchInterval);
+setInterval(() => synchronizeAll(), watchInterval);
 
 // allows you to parse JSON into req.body.field
 app.use(bodyParser.urlencoded({ extended: true }));

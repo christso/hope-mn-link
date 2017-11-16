@@ -51,31 +51,13 @@ function downloadHdmdTxns() {
       });
 }
 
-function reconcileTxns() {
-   // wait for downloads to complete,
-   // then find unmatched dmdTxns into hdmdTxns in MongDB,
-   // then invoke mint and unmint on HDMD eth smart contract
-   let getUnmatchedDmds = dmdClient.getUnmatchedTxns;
-   let getUnmatchedHdmds = hdmdClient.getUnmatchedTxns;
-
-   Promise.all([downloadDmdTxns(), downloadHdmdTxns()])
-      .catch(err => console.log('Error downloading trasactions', err))
-      .then(() => Promise.all([getUnmatchedDmds(), getUnmatchedHdmds()]))
-      .catch(() =>
-         console.log('Error retrieving unmatched transactions from MongoDB')
-      )
-      .then(([dmds, hdmds]) => mintDmds(dmds, hdmds))
-      .catch(err => console.log(`Error minting: ${err}`))
-      .then(txn => console.log(`Mint txnHash = ${txn}`));
-}
-
 /**
 * Get amount that needs to be minted
 * @param {Object[]} dmds - DMD transactions that needs to be matched
 * @param {Object[]} hdmds - HDMD transactions that needs to be matched
 * @return {BigNumber} amount that needs to be minted
 */
-function getNeedsMintingAmount(dmds, hdmds) {
+function getRequiredMintingAmount(dmds, hdmds) {
    dmdTotal = new BigNumber(0);
    dmds.forEach(txn => {
       dmdTotal = dmdTotal.add(txn.amount);
@@ -90,19 +72,54 @@ function getNeedsMintingAmount(dmds, hdmds) {
 }
 
 /**
-* Invoke mint on HDMD smart contract and reconcile with DMDs
-* @param {Object[]} dmds - DMD transactions to be matched
-* @param {Object[]} hdmds - HDMD transactions to be matched
-* @return {Promise} result of the promise
-*/
+   * Invoke mint on HDMD smart contract and reconcile with DMDs
+   * @param {Object[]} dmds - DMD transactions to be matched
+   * @param {Object[]} hdmds - HDMD transactions to be matched
+   * @return {Promise} result of the promise
+   */
 function mintDmds(dmds, hdmds) {
-   let amount = getNeedsMintingAmount(dmds, hdmds);
-   if (amount.gt(0)) {
-      return hdmdClient.mint(amount);
-   } else if (amount.lt(0)) {
-      return hdmdClient.unmint(amount);
-   }
-   return Promise.resolve('nothing to mint');
+   return new Promise((resolve, reject) => {
+      let amount = getRequiredMintingAmount(dmds, hdmds);
+      let txnHashResolved;
+      if (amount.gt(0)) {
+         txnHashResolved = hdmdClient.mint(amount);
+      } else if (amount.lt(0)) {
+         txnHashResolved = hdmdClient.unmint(amount);
+      } else {
+         txnHashResolved = Promise.resolve();
+      }
+      txnHashResolved
+         .then(txnHash => {
+            let mintTxn = {
+               txnHash: txnHash,
+               amount: amount
+            };
+            resolve(mintTxn);
+         })
+         .catch(err => reject(err));
+   });
+}
+
+function synchronizeAll() {
+   // wait for downloads to complete,
+   // then find unmatched dmdTxns into hdmdTxns in MongDB,
+   // then invoke mint and unmint on HDMD eth smart contract
+   let getUnmatchedDmds = dmdClient.getUnmatchedTxns;
+   let getUnmatchedHdmds = hdmdClient.getUnmatchedTxns;
+
+   Promise.all([downloadDmdTxns(), downloadHdmdTxns()])
+      .catch(err => console.log('Error downloading trasactions', err))
+      .then(() => Promise.all([getUnmatchedDmds(), getUnmatchedHdmds()]))
+      .catch(() =>
+         console.log('Error retrieving unmatched transactions from MongoDB')
+      )
+      .then(([dmds, hdmds]) => mintDmds(dmds, hdmds))
+      .catch(err => console.log(`Error minting: ${err}`))
+      .then(txnHash => {
+         if (txnHash) {
+            console.log(`Mint txnHash = ${txnHash}`);
+         }
+      });
 }
 
 function saveMints(mints) {}
@@ -111,5 +128,5 @@ function saveMints(mints) {}
 function mintNewDmds() {}
 
 module.exports = {
-   reconcileTxns: reconcileTxns
+   synchronizeAll: synchronizeAll
 };

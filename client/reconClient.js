@@ -115,9 +115,9 @@ function synchronizeAll() {
       )
       .then(([dmds, hdmds]) => mintDmds(dmds, hdmds))
       .catch(err => console.log(`Error minting: ${err}`))
-      .then(txnHash => {
-         if (txnHash) {
-            console.log(`Mint txnHash = ${txnHash}`);
+      .then(txn => {
+         if (txn) {
+            console.log(`Mint result = ${JSON.stringify(txn)}`);
          }
       });
 }

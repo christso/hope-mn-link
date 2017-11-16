@@ -165,14 +165,21 @@ function parseEventLog(eventLog) {
          newTxns.push(newTxn);
       };
       parsers['Transfer'] = (event, decoded) => {
-         let newTxn = {};
-         assignBaseTxn(newTxn, event, decoded);
-         // TODO: add logic here to create 2 newTxns uin array
+         let amount = decoded.events[2].value;
          let fromAccount = decoded.events[0].value;
          let toAccount = decoded.events[1].value;
-         let amount = decoded.events[2].value;
-         newTxn.amount = getParsedNumber(new BigNumber(amount ? amount : 0));
-         // newTxns.push(newTxn);
+
+         let txnFrom = {};
+         assignBaseTxn(txnFrom, event, decoded);
+         txnFrom.amount = getParsedNumber(
+            new BigNumber(amount ? amount : 0).mul(-1)
+         );
+         newTxns.push(txnFrom);
+
+         let txnTo = {};
+         assignBaseTxn(txnTo, event, decoded);
+         txnTo.amount = getParsedNumber(new BigNumber(amount ? amount : 0));
+         newTxns.push(txnTo);
       };
 
       for (var i = 0; i < eventLog.length; i++) {

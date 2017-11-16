@@ -107,10 +107,13 @@ function parseEventLog(eventLog) {
          if (eventName === 'Mint') {
             newTxn.sender = decoded.events[0].value;
             amount = decoded.events[1].value;
+         } else if (eventName === 'Unmint') {
+            newTxn.sender = decoded.events[0].value;
+            amount = decoded.events[1].value * -1;
          } else if (eventName === 'Burn') {
             newTxn.sender = decoded.events[0].value;
             newTxn.dmdAddress = decoded.events[1].value;
-            amount = decoded.events[2].value;
+            amount = decoded.events[2].value * -1;
          } else if (eventName === 'Transfer') {
             // TODO: add logic here
          }
@@ -253,7 +256,6 @@ function getParsedNumber(value) {
 function getRawNumber(value) {
    let multiplier = new BigNumber(10);
    multiplier = multiplier.pow(decimals);
-   console.log(`multiplier = ${multiplier}`);
    return value.mul(multiplier);
 }
 
@@ -287,9 +289,7 @@ function mint(amount, callback) {
 * @return {Promise} return value of the smart contract function
 */
 function unmint(amount, callback) {
-   let rawAmount = getRawNumber(amount)
-      .mul(-1)
-      .toNumber();
+   let rawAmount = getRawNumber(amount).toNumber();
    if (callback) {
       hdmdContract.unmint(rawAmount, callback);
       return;

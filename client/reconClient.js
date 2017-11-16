@@ -84,7 +84,7 @@ function mintDmds(dmds, hdmds) {
       if (amount.gt(0)) {
          txnHashResolved = hdmdClient.mint(amount);
       } else if (amount.lt(0)) {
-         txnHashResolved = hdmdClient.unmint(amount);
+         txnHashResolved = hdmdClient.unmint(amount.mul(-1));
       } else {
          txnHashResolved = Promise.resolve();
       }
@@ -92,7 +92,7 @@ function mintDmds(dmds, hdmds) {
          .then(txnHash => {
             let mintTxn = {
                txnHash: txnHash,
-               amount: amount
+               amount: amount.toNumber()
             };
             resolve(mintTxn);
          })
@@ -116,9 +116,10 @@ function synchronizeAll() {
       .then(([dmds, hdmds]) => mintDmds(dmds, hdmds))
       .catch(err => console.log(`Error minting: ${err}`))
       .then(txn => {
-         if (txn) {
-            console.log(`Mint result = ${JSON.stringify(txn)}`);
+         if (!txn || !txn.txnHash) {
+            return;
          }
+         console.log(`Mint result = ${JSON.stringify(txn)}`);
       });
 }
 

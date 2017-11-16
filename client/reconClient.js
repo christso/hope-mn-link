@@ -11,6 +11,8 @@ let hdmdClient = require('../client/hdmdClient');
 
 var mintDocs = require('../models/mint');
 
+const nothingToMint = 'nothing-to-mint';
+
 function downloadDmdTxns() {
    return dmdClient
       .downloadTxns()
@@ -72,6 +74,14 @@ function getRequiredMintingAmount(dmds, hdmds) {
 }
 
 /**
+   * Reconcile HDMDs with DMDs in ReconTxns MongoDB collection
+   * @param {Object[]} dmds - DMD transactions to be reconciled
+   * @param {Object[]} hdmds - HDMD transactions to be reconciled
+   * @return {Promise} result of the promise
+   */
+function reconcile(dmds, hdmds) {}
+
+/**
    * Invoke mint on HDMD smart contract and reconcile with DMDs
    * @param {Object[]} dmds - DMD transactions to be matched
    * @param {Object[]} hdmds - HDMD transactions to be matched
@@ -83,20 +93,31 @@ function mintDmds(dmds, hdmds) {
       let txnHashResolved;
       if (amount.gt(0)) {
          txnHashResolved = hdmdClient.mint(amount);
+         txnHashResolved
+            .then(txnHash => {
+               let mintTxn = {
+                  txnHash: txnHash,
+                  amount: amount.toNumber()
+               };
+               console.log(`Mint invoked = ${JSON.stringify(mintTxn)}`);
+               resolve(mintTxn);
+            })
+            .catch(err => reject(err));
       } else if (amount.lt(0)) {
          txnHashResolved = hdmdClient.unmint(amount.mul(-1));
+         txnHashResolved
+            .then(txnHash => {
+               let mintTxn = {
+                  txnHash: txnHash,
+                  amount: amount.mul(-1).toNumber()
+               };
+               console.log(`Unmint invoked = ${JSON.stringify(mintTxn)}`);
+               resolve(mintTxn);
+            })
+            .catch(err => reject(err));
       } else {
-         txnHashResolved = Promise.resolve();
+         resolve(nothingToMint);
       }
-      txnHashResolved
-         .then(txnHash => {
-            let mintTxn = {
-               txnHash: txnHash,
-               amount: amount.toNumber()
-            };
-            resolve(mintTxn);
-         })
-         .catch(err => reject(err));
    });
 }
 
@@ -110,16 +131,16 @@ function synchronizeAll() {
    Promise.all([downloadDmdTxns(), downloadHdmdTxns()])
       .catch(err => console.log('Error downloading trasactions', err))
       .then(() => Promise.all([getUnmatchedDmds(), getUnmatchedHdmds()]))
-      .catch(() =>
+      .catch(err =>
          console.log('Error retrieving unmatched transactions from MongoDB')
       )
       .then(([dmds, hdmds]) => mintDmds(dmds, hdmds))
-      .then(txn => {
-         if (!txn || !txn.txnHash) {
-            return;
+      .then(minted => {
+         if (minted && minted.txnHash) {
+            return saveMint(minted);
+         } else if (minted === nothingToMint) {
+            console.log('Nothing to Mint');
          }
-         console.log(`Mint invoked = ${JSON.stringify(txn)}`);
-         return saveMint(txn);
       })
       .catch(err => console.log(`Error minting: ${err}`));
 }
@@ -127,9 +148,6 @@ function synchronizeAll() {
 function saveMint(txn) {
    return mintDocs.create(txn);
 }
-
-// invoke mint, then save to MongoDB
-function mintNewDmds() {}
 
 module.exports = {
    synchronizeAll: synchronizeAll

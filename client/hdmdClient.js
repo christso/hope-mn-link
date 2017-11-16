@@ -127,11 +127,13 @@ function filterEventsGet(fromBlock) {
    });
 }
 
+function parseEvent(event) {}
+
 function parseEventLog(eventLog) {
    return new Promise((resolve, reject) => {
       let decodedLog = abiDecoder.decodeLogs(eventLog);
       let newTxns = [];
-      newTxns.length = eventLog.length;
+
       for (var i = 0; i < eventLog.length; i++) {
          let event = eventLog[i];
          let decoded = decodedLog[i];
@@ -145,19 +147,27 @@ function parseEventLog(eventLog) {
          if (eventName === 'Mint') {
             newTxn.sender = decoded.events[0].value;
             amount = decoded.events[1].value;
+            newTxn.amount = getParsedNumber(new BigNumber(amount ? amount : 0));
+            newTxns.push(newTxn);
          } else if (eventName === 'Unmint') {
             newTxn.sender = decoded.events[0].value;
             amount = decoded.events[1].value * -1;
+            newTxn.amount = getParsedNumber(new BigNumber(amount ? amount : 0));
+            newTxns.push(newTxn);
          } else if (eventName === 'Burn') {
             newTxn.sender = decoded.events[0].value;
             newTxn.dmdAddress = decoded.events[1].value;
             amount = decoded.events[2].value * -1;
+            newTxn.amount = getParsedNumber(new BigNumber(amount ? amount : 0));
+            newTxns.push(newTxn);
          } else if (eventName === 'Transfer') {
-            // TODO: add logic here
+            // TODO: add logic here to create 2 newTxns uin array
+            // let fromAccount = decoded.events[0].value;
+            // let toAccount = decoded.events[1].value;
+            // let amount = decoded.events[2].value;
+            // newTxn.amount = getParsedNumber(new BigNumber(amount ? amount : 0));
+            // newTxns.push(newTxn);
          }
-         newTxn.amount = getParsedNumber(new BigNumber(amount ? amount : 0));
-         newTxns[i] = newTxn;
-         console.log('Parsed HDMD Txn', newTxn);
       }
       resolve(newTxns);
    });

@@ -6,7 +6,8 @@ var hdmdTxnSchema = new mongoose.Schema({
    txnHash: String,
    blockNumber: Number,
    amount: Number,
-   balance: Number,
+   account: String,
+   sender: String,
    eventName: String
 });
 

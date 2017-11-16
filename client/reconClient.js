@@ -6,10 +6,10 @@ var BigNumber = require('bignumber.js');
 
 var port = config.port;
 
-// Pull DmdTxns and HdmdTxns
-
 let dmdClient = require('../client/dmdClient');
 let hdmdClient = require('../client/hdmdClient');
+
+var mintDocs = require('../models/mint');
 
 function downloadDmdTxns() {
    return dmdClient
@@ -114,16 +114,19 @@ function synchronizeAll() {
          console.log('Error retrieving unmatched transactions from MongoDB')
       )
       .then(([dmds, hdmds]) => mintDmds(dmds, hdmds))
-      .catch(err => console.log(`Error minting: ${err}`))
       .then(txn => {
          if (!txn || !txn.txnHash) {
             return;
          }
-         console.log(`Mint result = ${JSON.stringify(txn)}`);
-      });
+         console.log(`Mint invoked = ${JSON.stringify(txn)}`);
+         return saveMint(txn);
+      })
+      .catch(err => console.log(`Error minting: ${err}`));
 }
 
-function saveMints(mints) {}
+function saveMint(txn) {
+   return mintDocs.create(txn);
+}
 
 // invoke mint, then save to MongoDB
 function mintNewDmds() {}

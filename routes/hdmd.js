@@ -57,9 +57,9 @@ router.post('/mint', function(req, res) {
       amount: req.body.amount
    };
 
-   hdmdClient.mint(mint.amount, mint.dmdTxnHash, function(err, txnHash) {
+   hdmdClient.mint(mint.amount, function(err, txnHash) {
       if (err) {
-         res.json(min);
+         res.json(err);
       } else {
          mint.txnHash = txnHash;
       }

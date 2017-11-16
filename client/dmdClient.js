@@ -80,7 +80,7 @@ var unmatchedTxnsQueryDef = [
       $lookup: {
          from: 'recontxns',
          localField: 'txnHash',
-         foreignField: 'hdmdTxnHash',
+         foreignField: 'dmdTxnHash',
          as: 'recontxns'
       }
    },

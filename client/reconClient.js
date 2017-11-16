@@ -3,6 +3,7 @@
 var config = require('../config');
 var mongoose = require('mongoose');
 var BigNumber = require('bignumber.js');
+const uuidv1 = require('uuid/v1');
 
 var port = config.port;
 
@@ -10,6 +11,7 @@ let dmdClient = require('../client/dmdClient');
 let hdmdClient = require('../client/hdmdClient');
 
 var mintDocs = require('../models/mint');
+var reconTxns = require('../models/reconTxn');
 
 const nothingToMint = 'nothing-to-mint';
 
@@ -79,7 +81,28 @@ function getRequiredMintingAmount(dmds, hdmds) {
    * @param {Object[]} hdmds - HDMD transactions to be reconciled
    * @return {Promise} result of the promise
    */
-function reconcile(dmds, hdmds) {}
+function reconcile(dmds, hdmds) {
+   let reconId = uuidv1();
+   let dmdRecs = dmds.map(txn => {
+      return {
+         reconId: reconId,
+         dmdTxnHash: txn.txnHash,
+         amount: txn.amount,
+         blockNumber: txn.blockNumber
+      };
+   });
+   let hdmdRecs = hdmds.map(txn => {
+      return {
+         reconId: reconId,
+         hdmdTxnHash: txn.txnHash,
+         amount: txn.amount,
+         blockNumber: txn.blockNumber
+      };
+   });
+   let recs = dmdRecs;
+   recs.push(...hdmdRecs);
+   return reconTxns.create(recs);
+}
 
 /**
    * Invoke mint on HDMD smart contract and reconcile with DMDs
@@ -128,18 +151,24 @@ function synchronizeAll() {
    let getUnmatchedDmds = dmdClient.getUnmatchedTxns;
    let getUnmatchedHdmds = hdmdClient.getUnmatchedTxns;
 
+   let dmds;
+   let hdmds;
    Promise.all([downloadDmdTxns(), downloadHdmdTxns()])
       .catch(err => console.log('Error downloading trasactions', err))
       .then(() => Promise.all([getUnmatchedDmds(), getUnmatchedHdmds()]))
       .catch(err =>
          console.log('Error retrieving unmatched transactions from MongoDB')
       )
-      .then(([dmds, hdmds]) => mintDmds(dmds, hdmds))
+      .then(values => {
+         dmds = values[0];
+         hdmds = values[1];
+         return mintDmds(dmds, hdmds);
+      })
       .then(minted => {
          if (minted && minted.txnHash) {
             return saveMint(minted);
          } else if (minted === nothingToMint) {
-            console.log('Nothing to Mint');
+            reconcile(dmds, hdmds).then(() => console.log('Reconciled'));
          }
       })
       .catch(err => console.log(`Error minting: ${err}`));

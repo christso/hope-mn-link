@@ -6,7 +6,6 @@ db.getCollection('dmdtxns').find({}).sort({blockNumber:-1})
 ```
 
 Join from dmdTxns to hdmdTxns using condition dmdTxns.txnHash == hdmdTxns.dmdTxnHash
-
 ```
 db.getCollection('dmdtxns').aggregate({$lookup: 
     {
@@ -16,4 +15,9 @@ db.getCollection('dmdtxns').aggregate({$lookup:
         as: 'hdmddocs'
     }
 })
+```
+
+Find HDMDs in reconTxns collection
+```
+db.getCollection('recontxns').find({hdmdTxnHash: { $ne: null }}).sort({blockNumber:-1})
 ```

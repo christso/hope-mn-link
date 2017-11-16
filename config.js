@@ -29,6 +29,6 @@ config.dmdWalletPass = 'hope2017';
 //config.dmdWatchInterval = 15000; // 15 seconds
 config.dmdWatchInterval = 5000; // 5 seconds
 
-config.requireSeed = true;
+config.requireSeed = false;
 
 module.exports = config;

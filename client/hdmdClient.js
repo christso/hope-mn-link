@@ -127,48 +127,61 @@ function filterEventsGet(fromBlock) {
    });
 }
 
-function parseEvent(event) {}
-
 function parseEventLog(eventLog) {
    return new Promise((resolve, reject) => {
       let decodedLog = abiDecoder.decodeLogs(eventLog);
       let newTxns = [];
 
+      const assignBaseTxn = (target, event, decoded) => {
+         target.txnHash = event.transactionHash;
+         target.blockNumber = event.blockNumber;
+         target.eventName = decoded.name;
+      };
+
+      let parsers = [];
+      parsers['Mint'] = (event, decoded) => {
+         let newTxn = {};
+         assignBaseTxn(newTxn, event, decoded);
+         newTxn.sender = decoded.events[0].value;
+         let amount = decoded.events[1].value;
+         newTxn.amount = getParsedNumber(new BigNumber(amount ? amount : 0));
+         newTxns.push(newTxn);
+      };
+      parsers['Unmint'] = (event, decoded) => {
+         let newTxn = {};
+         assignBaseTxn(newTxn, event, decoded);
+         newTxn.sender = decoded.events[0].value;
+         let amount = decoded.events[1].value * -1;
+         newTxn.amount = getParsedNumber(new BigNumber(amount ? amount : 0));
+         newTxns.push(newTxn);
+      };
+      parsers['Burn'] = (event, decoded) => {
+         let newTxn = {};
+         assignBaseTxn(newTxn, event, decoded);
+         newTxn.sender = decoded.events[0].value;
+         newTxn.dmdAddress = decoded.events[1].value;
+         amount = decoded.events[2].value * -1;
+         newTxn.amount = getParsedNumber(new BigNumber(amount ? amount : 0));
+         newTxns.push(newTxn);
+      };
+      parsers['Transfer'] = (event, decoded) => {
+         let newTxn = {};
+         assignBaseTxn(newTxn, event, decoded);
+         // TODO: add logic here to create 2 newTxns uin array
+         let fromAccount = decoded.events[0].value;
+         let toAccount = decoded.events[1].value;
+         let amount = decoded.events[2].value;
+         newTxn.amount = getParsedNumber(new BigNumber(amount ? amount : 0));
+         // newTxns.push(newTxn);
+      };
+
       for (var i = 0; i < eventLog.length; i++) {
          let event = eventLog[i];
          let decoded = decodedLog[i];
          let eventName = decoded.name;
-         let newTxn = {
-            txnHash: event.transactionHash,
-            blockNumber: event.blockNumber,
-            eventName: eventName
-         };
-         let amount;
-         if (eventName === 'Mint') {
-            newTxn.sender = decoded.events[0].value;
-            amount = decoded.events[1].value;
-            newTxn.amount = getParsedNumber(new BigNumber(amount ? amount : 0));
-            newTxns.push(newTxn);
-         } else if (eventName === 'Unmint') {
-            newTxn.sender = decoded.events[0].value;
-            amount = decoded.events[1].value * -1;
-            newTxn.amount = getParsedNumber(new BigNumber(amount ? amount : 0));
-            newTxns.push(newTxn);
-         } else if (eventName === 'Burn') {
-            newTxn.sender = decoded.events[0].value;
-            newTxn.dmdAddress = decoded.events[1].value;
-            amount = decoded.events[2].value * -1;
-            newTxn.amount = getParsedNumber(new BigNumber(amount ? amount : 0));
-            newTxns.push(newTxn);
-         } else if (eventName === 'Transfer') {
-            // TODO: add logic here to create 2 newTxns uin array
-            // let fromAccount = decoded.events[0].value;
-            // let toAccount = decoded.events[1].value;
-            // let amount = decoded.events[2].value;
-            // newTxn.amount = getParsedNumber(new BigNumber(amount ? amount : 0));
-            // newTxns.push(newTxn);
-         }
+         parsers[eventName](event, decoded);
       }
+
       resolve(newTxns);
    });
 }

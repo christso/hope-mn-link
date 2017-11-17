@@ -72,9 +72,9 @@ function downloadHdmdTxns() {
 
 /**
 * Get amount that needs to be minted
-* @param {Object[]} dmds - DMD transactions that needs to be matched
-* @param {Object[]} hdmds - HDMD transactions that needs to be matched
-* @return {BigNumber} amount that needs to be minted
+* @param {<DmdTxn>[]} dmds - DMD transactions that needs to be matched
+* @param {<HdmdTxn>[]} hdmds - HDMD transactions that needs to be matched
+* @return {<BigNumber>} amount that needs to be minted
 */
 function getRequiredMintingAmount(dmds, hdmds) {
    dmdTotal = new BigNumber(0);
@@ -263,17 +263,23 @@ function synchronizeAll() {
          } else if (minted === nothingToMint) {
             reconcile(dmds, hdmds).then(() => console.log('Reconciled'));
          }
+         return minted;
       })
       .catch(err => console.log(`Error minting: ${err}`))
-      .then(() => {
+      .then(minted => {
+         if (minted == nothingToMint) {
+            return;
+         }
          let lastSavedDmdBlock;
          getLastHdmdRecon()
             .then(obj => {
-               //console.log(`Last HDMD recon = ${JSON.stringify(obj)}`);
+               getBalancesDmdToHdmd(obj.blockNumber);
             })
             .catch(err =>
                console.log(
-                  `Error in getLastHdmdRecon(): ${JSON.stringify(err)}`
+                  `Error in retrieving HDMD balances from DMD txn: ${JSON.stringify(
+                     err
+                  )}`
                )
             );
       });

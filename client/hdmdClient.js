@@ -36,6 +36,50 @@ var contract = web3.eth.contract(abi);
 // Instantiate contact so we can interact
 var hdmdContract = contract.at(contractAddress);
 
+const Util = {
+   /**
+      * Distributes the minted amount to addresses in proportion to their balances
+      * @param {<BigNumber>} amount - BigNumber amount to distribute
+      * @param {Object[]} weights - array of BigNumber weighting values to determine how much each recipient will receive
+      * @return {Number[]} return value of the smart contract function
+      * */
+   applyWeights: function(amount, weights) {
+      let totalWeight = new BigNumber(0);
+      weights.forEach(w => totalWeight.add(w));
+
+      let newAmounts = [];
+      weights.forEach(w => {
+         newAmounts.push(w.mul(amount).div(totalWeight));
+      });
+      return newAmounts;
+   },
+
+   /**
+      * Converts the parsed value to the underlying uint value used by smart contract
+      * @param {<BigNumber>} value - parsed value
+      * @return {<BigNumber>} - original units
+      * */
+   getParsedNumber: function(value) {
+      let divider = new BigNumber(10);
+      divider = divider.pow(decimals);
+      return value.div(divider);
+   },
+
+   /**
+      * Converts to underlying uint value used by smart contract
+      * @param {<BigNumber>} value - parsed value
+      * @return {<BigNumber>} - original units
+      */
+   getRawNumber: function(value) {
+      let multiplier = new BigNumber(10);
+      multiplier = multiplier.pow(decimals);
+      return value.mul(multiplier);
+   }
+};
+
+const getParsedNumber = Util.getParsedNumber;
+const getRawNumber = Util.getRawNumber;
+
 checkVersion();
 
 function checkVersion() {
@@ -232,6 +276,10 @@ function saveTxns(newTxns) {
    return hdmdTxns.create(newTxns);
 }
 
+/**
+* Get mapping of accounts and their current balances from the HDMD blockchain
+* @return {Promise} - promise returning mapping of accounts and balances
+*/
 function getBalances() {
    return new Promise((resolve, reject) => {
       let accounts_processed = 0;
@@ -284,40 +332,24 @@ function getTotalSupplySaved() {
    });
 }
 
-// Used to distribute the minted amount to addresses in proportion to their balances
-// fundingAddress should be the account that did the minting = web3.eth.defaultAccount
-function apportion(amount, fundingAddress) {
-   return new Promise((resolve, reject) => {
-      getBalances()
-         .then(balances => {
-            let addresses = balances.map(el => {
-               return el.address;
-            });
-            let oldAmounts = balances.map(el => {
-               return el.value;
-            });
-            let oldTotal = oldAmounts.reduce((a, b) => a + b, 0);
-
-            // subtract value so we get balance before minting
-            balances[fundingAddress] -= amount;
-
-            let addValues = oldAmounts.map(oldValue => {
-               return Math.floor(oldValue * amount / oldTotal);
-            });
-
-            // console.log('calling batchTransfer');
-            // console.log('addresses', JSON.stringify(addresses));
-            // console.log('values', JSON.stringify(addValues));
-            resolve(batchTransfer(addresses, addValues));
-         })
-         .catch(err => reject(err));
-   });
+/**
+* Distributes the minted amount to addresses in proportion to their balances
+* @param {<BigNumber>} amount - BigNumber amount to distribute
+* @param {String} fundingAddress - the account that did the minting = web3.eth.defaultAccount
+* @param {String[]} recipients - array of addresses that will receive the amount
+* @param {BigNumber[]} weights - array of BigNumber weighting values to determine how much each recipient will receive
+* @return {Promise} return value of the smart contract function
+*/
+function apportion(amount, fundingAddress, recipients, weights) {
+   let applyWeights = Util.applyWeights();
+   let newAmounts = applyWeights(amount, weights);
+   return batchTransfer(recipients, newAmounts);
 }
 
 /**
 * Transfer tokens from sender's address to a list of addresses
-* @param {string[]} addresses - array of addresses to receive the tokens
-* @param {number[]} values - amounts to transfer
+* @param {String[]} addresses - array of addresses to receive the tokens
+* @param {Number[]} values - amounts to transfer
 * @return {Promise} return value of the smart contract function
 */
 function batchTransfer(addresses, values) {
@@ -339,30 +371,8 @@ function batchTransfer(addresses, values) {
 }
 
 /**
-* Converts the parsed value to the underlying uint value used by smart contract
-* @param {BigNumber} value - parsed value
-* @return {BigNumber} - original units
-*/
-function getParsedNumber(value) {
-   let divider = new BigNumber(10);
-   divider = divider.pow(decimals);
-   return value.div(divider);
-}
-
-/**
-* Converts to underlying uint value used by smart contract
-* @param {BigNumber} value - parsed value
-* @return {BigNumber} - original units
-*/
-function getRawNumber(value) {
-   let multiplier = new BigNumber(10);
-   multiplier = multiplier.pow(decimals);
-   return value.mul(multiplier);
-}
-
-/**
 * Mint amounts on HDMD smart contract
-* @param {BigNumber} amount - amount in BigNumber
+* @param {<BigNumber>} amount - amount in BigNumber
 * @param {requestCallback} callback - The callback that handles the response.
 * @return {Promise} return value of the smart contract function
 */
@@ -385,8 +395,8 @@ function mint(amount, callback) {
 
 /**
 * Unmints amounts on HDMD smart contract
-* @param {BigNumber} amount - amount in BigNumber
-* @param {requestCallback} callback - The callback that handles the response.
+* @param {<BigNumber>} amount - amount in BigNumber
+* @callback callback - The callback that handles the response.
 * @return {Promise} return value of the smart contract function
 */
 function unmint(amount, callback) {

@@ -6,7 +6,7 @@ config.mongodbUri = 'mongodb://localhost:27017/hdmdlink';
 
 config.ethNodeAddress = 'http://localhost:8545';
 
-config.hdmdContractAddress = '0xaba16b72a413b3d01345e0439405cea09397c5a7'; // christso testRPC
+config.hdmdContractAddress = '0x4fae75c105a49bebacb90c277bf0187bc7348482'; // christso testRPC
 //config.hdmdContractAddress = '0x5b45cb92A968329A83Cd3f2FBFB1bF206043d70C'; // rinkeby
 
 config.hdmdDecimals = 8;
@@ -29,6 +29,6 @@ config.dmdWalletPass = 'hope2017';
 //config.dmdWatchInterval = 15000; // 15 seconds
 config.dmdWatchInterval = 5000; // 5 seconds
 
-config.requireSeed = false; // WARNING: Ensure this is false unless you're seeding the contract
+config.requireSeed = true; // WARNING: Ensure this is false unless you're seeding the contract
 
 module.exports = config;

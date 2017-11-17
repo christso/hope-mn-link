@@ -36,7 +36,7 @@ var contract = web3.eth.contract(abi);
 // Instantiate contact so we can interact
 var hdmdContract = contract.at(contractAddress);
 
-const Util = {
+const util = {
    /**
       * Distributes the minted amount to addresses in proportion to their balances
       * @param {<BigNumber>} amount - amount to distribute
@@ -51,6 +51,13 @@ const Util = {
       weights.forEach(w => {
          newAmounts.push(w.mul(amount).div(totalWeight));
       });
+
+      if (newAmounts.length === 0) return;
+
+      let totalNewAmount = newAmounts.reduce((a, b) => a.add(b));
+      let rounding = amount.sub(totalNewAmount);
+      newAmounts[0] = newAmounts[0].add(rounding);
+
       return newAmounts;
    },
 
@@ -77,8 +84,8 @@ const Util = {
    }
 };
 
-const getParsedNumber = Util.getParsedNumber;
-const getRawNumber = Util.getRawNumber;
+const getParsedNumber = util.getParsedNumber;
+const getRawNumber = util.getRawNumber;
 
 checkVersion();
 
@@ -340,7 +347,7 @@ function getTotalSupplySaved() {
 * @return {Promise} return value of the smart contract function
 */
 function apportion(amount, recipients, weights) {
-   let applyWeights = Util.applyWeights;
+   let applyWeights = util.applyWeights;
    let newAmounts = applyWeights(amount, weights);
    return batchTransfer(recipients, newAmounts);
 }
@@ -462,5 +469,6 @@ module.exports = {
    getUnmatchedTxns: getUnmatchedTxns,
    getContractOwner: getContractOwner,
    seedData: seedData,
-   apportion: apportion
+   apportion: apportion,
+   applyWeights: util.applyWeights
 };

@@ -275,31 +275,32 @@ function synchronizeAll() {
       }
       getLastHdmdRecon()
          .then(obj => {
-            return getHdmdBalancesFromDmd(obj.blockNumber);
+            return getHdmdBalancesFromDmd(obj ? obj.blockNumber : undefined);
          })
          .catch(err =>
             console.log(
-               `Error in retrieving HDMD balances from DMD txn: ${JSON.stringify(
-                  err
-               )}`
+               `Error in retrieving HDMD balances from DMD txn: ${err.stack}`
             )
          )
          .then(balances => {
+            if (!balances) {
+               // TODO: reconcile HDMD with DMD
+            }
             let recipients = balances.map(b => b._id);
-            let weights = balances.map(b => new BigNumber(b.totalAmount));
+            let weights = balances.map(b =>
+               Math.round(b.totalAmount, config.hdmdDecimals)
+            );
             if (!minted || !minted.amount) {
                return Promise.reject({
                   error: 'Expected minted amount to be non-zero'
                });
             }
-            let amount = new BigNumber(minted.amount);
+            let amount = minted.amount;
             // console.log(`Balances = ${JSON.stringify(balances)}`);
             return hdmdClient.apportion(amount, recipients, weights);
          })
          .catch(err => {
-            console.log(
-               `Error apportioning minted amount: ${JSON.stringify(err)}`
-            );
+            console.log(`Error apportioning minted amount: ${err.stack}`);
          });
    });
 }

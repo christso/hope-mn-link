@@ -150,6 +150,47 @@ function saveMint(txn) {
    return mintDocs.create(txn);
 }
 
+/**
+   * Get the latest reconTxn for HDMD
+   * @param {Number} dmdBlockNumber - the DMD block number that has been reconciled. If this is undefined, then it will default to the latest block 
+   * @return {Promise} - the last reconTxn for HDMD for the reconId associated with the DMD block number
+   */
+function getLastHdmdRecon(dmdBlockNumber) {
+   return new Promise((resolve, reject) => {
+      let p;
+
+      if (dmdBlockNumber) {
+         // Get the reconTxn for the *DMD block number*
+         p = reconTxns
+            .find({ dmdTxnHash: { $ne: null }, blockNumber: dmdBlockNumber })
+            .limit(1)
+            .then(res => res.reconId);
+      } else {
+         // Get the reconTxn for the *latest DMD block*
+         p = reconTxns
+            .find({ dmdTxnHash: { $ne: null } })
+            .sort({ blockNumber: -1 })
+            .limit(1)
+            .then(res => {
+               return res[0].reconId;
+            });
+      }
+      // return result
+      p
+         .then(reconId =>
+            reconTxns
+               .find({
+                  hdmdTxnHash: { $ne: null },
+                  reconId: reconId
+               })
+               .sort({ blockNumber: -1 })
+               .limit(1)
+         )
+         .then(obj => resolve(obj))
+         .catch(err => reject(err));
+   });
+}
+
 function synchronizeAll() {
    // wait for downloads to complete,
    // then find unmatched dmdTxns into hdmdTxns in MongDB,
@@ -178,7 +219,14 @@ function synchronizeAll() {
             reconcile(dmds, hdmds).then(() => console.log('Reconciled'));
          }
       })
-      .catch(err => console.log(`Error minting: ${err}`));
+      .catch(err => console.log(`Error minting: ${err}`))
+      .then(() => {
+         let lastSavedDmdBlock;
+         dmdClient
+            .getLastSavedBlockNumber()
+            .then(bn => (lastSavedDmdBlock = bn));
+         // .then(bn => console.log(`Last saved block number is ${bn}`));
+      });
 }
 
 /**
@@ -193,5 +241,6 @@ function getBalancesDmdToHdmd(blockNumber) {
 }
 
 module.exports = {
-   synchronizeAll: synchronizeAll
+   synchronizeAll: synchronizeAll,
+   getLastHdmdRecon: getLastHdmdRecon
 };

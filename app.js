@@ -42,7 +42,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use('/api/dmd', dmdRoutes);
 app.use('/api/hdmd', hdmdRoutes);
-app.use('/api/recon', dmdRoutes);
+app.use('/api/recon', reconRoutes);
 
 app.listen(port, function() {
    console.log(`HTTP Server is listening on http://localhost:${port}`);

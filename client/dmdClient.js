@@ -112,7 +112,8 @@ function getUnmatchedTxnsTotal() {
 
 var client = {
    downloadTxns: downloadTxns,
-   getUnmatchedTxns: getUnmatchedTxns
+   getUnmatchedTxns: getUnmatchedTxns,
+   getLastSavedBlockNumber: getLastSavedBlockNumber
 };
 
 module.exports = client;

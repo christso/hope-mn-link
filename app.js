@@ -9,6 +9,7 @@ var axios = require('axios').default;
 var app = express();
 var reconClient = require('./client/reconClient');
 var hdmdClient = require('./client/hdmdClient');
+var dmdClient = require('./client/dmdClient');
 
 var synchronizeAll = reconClient.synchronizeAll;
 
@@ -16,7 +17,10 @@ var synchronizeAll = reconClient.synchronizeAll;
 let watchInterval = config.dmdWatchInterval;
 
 setInterval(() => {
-   return hdmdClient.seedData().then(() => synchronizeAll());
+   return Promise.all([hdmdClient.seedData(), dmdClient.seedData()])
+      .then(() => synchronizeAll())
+      .catch(err => console.log(err.stack))
+      .then(() => (config.requireSeed = false));
 }, watchInterval);
 
 // allows you to parse JSON into req.body.field

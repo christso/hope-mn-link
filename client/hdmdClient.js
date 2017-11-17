@@ -149,8 +149,7 @@ function seedData() {
       .then(() => batchTransfer(accounts, balances))
       .catch(err => {
          console.log(`Error seeding the smart contract: ${err.message}`);
-      })
-      .then(() => (requireSeed = false));
+      });
 }
 
 function downloadTxns() {

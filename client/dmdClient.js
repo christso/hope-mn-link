@@ -5,6 +5,7 @@ var dmdTxns = require('../models/dmdTxn');
 var mongoose = require('mongoose');
 const dmdUrl = config.cryptoidDmdUri;
 var hdmdClient = require('../client/hdmdClient');
+var dmdInterval = require('../models/dmdInterval');
 
 /*----- Create DMD listener -----*/
 
@@ -110,10 +111,20 @@ function getUnmatchedTxnsTotal() {
    return dmdTxns.aggregate(queryDef);
 }
 
-var client = {
+// Seed DB for DMD Block Intervals
+const dmdBlockIntervals = require('../data/dbSeeds').dmdBlockIntervals;
+
+function seedData() {
+   const requireSeed = config.requireSeed;
+   if (!requireSeed) {
+      return Promise.resolve(true);
+   }
+   return dmdInterval.create(dmdBlockIntervals);
+}
+
+module.exports = {
    downloadTxns: downloadTxns,
    getUnmatchedTxns: getUnmatchedTxns,
-   getLastSavedBlockNumber: getLastSavedBlockNumber
+   getLastSavedBlockNumber: getLastSavedBlockNumber,
+   seedData: seedData
 };
-
-module.exports = client;

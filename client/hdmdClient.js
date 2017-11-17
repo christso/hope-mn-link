@@ -39,13 +39,13 @@ var hdmdContract = contract.at(contractAddress);
 const Util = {
    /**
       * Distributes the minted amount to addresses in proportion to their balances
-      * @param {<BigNumber>} amount - BigNumber amount to distribute
-      * @param {Object[]} weights - array of BigNumber weighting values to determine how much each recipient will receive
-      * @return {Number[]} return value of the smart contract function
+      * @param {<BigNumber>} amount - amount to distribute
+      * @param {<BigNumber>[]} weights - array of weighting values to determine how much each recipient will receive
+      * @return {<BigNumber>[]} return value of the smart contract function
       * */
    applyWeights: function(amount, weights) {
       let totalWeight = new BigNumber(0);
-      weights.forEach(w => totalWeight.add(w));
+      weights.forEach(w => (totalWeight = totalWeight.add(w)));
 
       let newAmounts = [];
       weights.forEach(w => {
@@ -335,13 +335,12 @@ function getTotalSupplySaved() {
 /**
 * Distributes the minted amount to addresses in proportion to their balances
 * @param {<BigNumber>} amount - BigNumber amount to distribute
-* @param {String} fundingAddress - the account that did the minting = web3.eth.defaultAccount
 * @param {String[]} recipients - array of addresses that will receive the amount
 * @param {BigNumber[]} weights - array of BigNumber weighting values to determine how much each recipient will receive
 * @return {Promise} return value of the smart contract function
 */
-function apportion(amount, fundingAddress, recipients, weights) {
-   let applyWeights = Util.applyWeights();
+function apportion(amount, recipients, weights) {
+   let applyWeights = Util.applyWeights;
    let newAmounts = applyWeights(amount, weights);
    return batchTransfer(recipients, newAmounts);
 }
@@ -462,5 +461,6 @@ module.exports = {
    getTotalSupplySaved: getTotalSupplySaved,
    getUnmatchedTxns: getUnmatchedTxns,
    getContractOwner: getContractOwner,
-   seedData: seedData
+   seedData: seedData,
+   apportion: apportion
 };

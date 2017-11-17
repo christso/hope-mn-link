@@ -88,6 +88,7 @@ function reconcile(dmds, hdmds) {
          reconId: reconId,
          dmdTxnHash: txn.txnHash,
          amount: txn.amount,
+         account: txn.account,
          blockNumber: txn.blockNumber
       };
    });
@@ -96,6 +97,7 @@ function reconcile(dmds, hdmds) {
          reconId: reconId,
          hdmdTxnHash: txn.txnHash,
          amount: txn.amount,
+         account: txn.account,
          blockNumber: txn.blockNumber
       };
    });

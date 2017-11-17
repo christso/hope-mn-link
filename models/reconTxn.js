@@ -7,6 +7,7 @@ var reconTxnSchema = new mongoose.Schema({
    dmdTxnHash: String,
    hdmdTxnHash: String,
    amount: Number,
+   account: String,
    blockNumber: Number
 });
 

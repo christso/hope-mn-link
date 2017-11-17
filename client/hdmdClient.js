@@ -16,7 +16,6 @@ const abiDecoder = require('abi-decoder');
 abiDecoder.addABI(abi);
 
 var requireSeed = config.requireSeed;
-
 const hdmdVersion = config.hdmdVersion;
 const ethNodeAddress = config.ethNodeAddress;
 
@@ -37,6 +36,8 @@ var contract = web3.eth.contract(abi);
 // Instantiate contact so we can interact
 var hdmdContract = contract.at(contractAddress);
 
+checkVersion();
+
 function checkVersion() {
    // Check that version of app matches deployed contract
    var hdmdVersionDeployed = hdmdContract.version.call();
@@ -48,7 +49,11 @@ function checkVersion() {
       );
    }
 }
-checkVersion();
+
+var ownerAddress;
+getContractOwner()
+   .then(address => (ownerAddress = address))
+   .catch(err => console.log(`Error getting owner address: ${err}`));
 
 function getContractOwner(callback) {
    if (callback) {
@@ -159,6 +164,7 @@ function parseEventLog(eventLog) {
          let newTxn = {};
          assignBaseTxn(newTxn, event, decoded);
          newTxn.sender = decoded.events[0].value;
+         newTxn.account = ownerAddress;
          let amount = decoded.events[1].value;
          newTxn.amount = getParsedNumber(new BigNumber(amount ? amount : 0));
          newTxns.push(newTxn);
@@ -167,6 +173,7 @@ function parseEventLog(eventLog) {
          let newTxn = {};
          assignBaseTxn(newTxn, event, decoded);
          newTxn.sender = decoded.events[0].value;
+         newTxn.account = ownerAddress;
          let amount = decoded.events[1].value * -1;
          newTxn.amount = getParsedNumber(new BigNumber(amount ? amount : 0));
          newTxns.push(newTxn);
@@ -175,6 +182,7 @@ function parseEventLog(eventLog) {
          let newTxn = {};
          assignBaseTxn(newTxn, event, decoded);
          newTxn.sender = decoded.events[0].value;
+         newTxn.account = decoded.events[0].value;
          newTxn.dmdAddress = decoded.events[1].value;
          amount = decoded.events[2].value * -1;
          newTxn.amount = getParsedNumber(new BigNumber(amount ? amount : 0));
@@ -187,6 +195,7 @@ function parseEventLog(eventLog) {
 
          let txnFrom = {};
          assignBaseTxn(txnFrom, event, decoded);
+         txnFrom.account = fromAccount;
          txnFrom.amount = getParsedNumber(
             new BigNumber(amount ? amount : 0).mul(-1)
          );
@@ -194,6 +203,7 @@ function parseEventLog(eventLog) {
 
          let txnTo = {};
          assignBaseTxn(txnTo, event, decoded);
+         txnTo.account = toAccount;
          txnTo.amount = getParsedNumber(new BigNumber(amount ? amount : 0));
          newTxns.push(txnTo);
       };

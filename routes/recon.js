@@ -13,4 +13,13 @@ router.get('/hdmd/last', (req, res) => {
       .catch(err => res.json(err));
 });
 
+router.get('/hdmd/balances', (req, res) => {
+   reconClient
+      .getBalancesDmdToHdmd()
+      .then(obj => {
+         res.json(obj);
+      })
+      .catch(err => res.json(err));
+});
+
 module.exports = router;

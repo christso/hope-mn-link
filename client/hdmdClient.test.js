@@ -10,5 +10,6 @@ test('Unmint will decrement same account by same amount in both DB and blockchai
 
 test('Burn will decrement same account by same amount in both DB and blockchain', () => {});
 
-// Apportion
+test('Balance calculation is correct', () => {});
+
 test('Apportion calculation is correct', () => {});

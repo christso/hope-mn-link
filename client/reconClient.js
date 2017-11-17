@@ -208,6 +208,34 @@ function getLastHdmdRecon(dmdBlockNumber) {
    });
 }
 
+/**
+* Gets HDMD account balances at the specified DMD blockNumber
+* @param {Number} blockNumber - DMD blockNumber to get the balance for
+* @return {{Object, Object}[]}  - { addresses[], balances[] }
+*/
+function getBalancesDmdToHdmd(blockNumber) {
+   let matchStage = {
+      $match: {
+         hdmdTxnHash: { $ne: null },
+         blockNumber: { $lte: blockNumber }
+      }
+   };
+
+   let groupStage = {
+      $group: {
+         _id: '$account',
+         totalAmount: { $sum: '$amount' }
+      }
+   };
+
+   if (blockNumber === undefined) {
+      delete matchStage.$match.blockNumber;
+   }
+
+   // get balances from hdmdtxns collection
+   return reconTxns.aggregate([matchStage, groupStage]);
+}
+
 function synchronizeAll() {
    // wait for downloads to complete,
    // then find unmatched dmdTxns into hdmdTxns in MongDB,
@@ -251,18 +279,8 @@ function synchronizeAll() {
       });
 }
 
-/**
-* Gets HDMD account balances from DMD blockNumber by totalling from block 0
-* @param {Number} blockNumber - DMD blockNumber to get the balance for
-* @return {{Object, Object}[]}  - { addresses[], balances[] }
-*/
-function getBalancesDmdToHdmd(blockNumber) {
-   // reconId = from dmdtxns left join recontxns on recontxns.dmdTxnHash = dmdtxns.txnHash
-   // blockNumber = max(recontxns.blockNumber) where hdmdTxnHasn != null
-   // get balances from hdmdtxns collection
-}
-
 module.exports = {
    synchronizeAll: synchronizeAll,
-   getLastHdmdRecon: getLastHdmdRecon
+   getLastHdmdRecon: getLastHdmdRecon,
+   getBalancesDmdToHdmd: getBalancesDmdToHdmd
 };

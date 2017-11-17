@@ -15,6 +15,21 @@ var reconTxns = require('../models/reconTxn');
 
 const nothingToMint = 'nothing-to-mint';
 
+/**
+* Remove dashes from uuid
+* @param {String} uuid - UUID to be formated
+* @return {String} formatted UUID
+*/
+function formatUuidv1(uuid) {
+   return (
+      uuid.substr(0, 8) +
+      uuid.substr(9, 4) +
+      uuid.substr(14, 4) +
+      uuid.substr(19, 4) +
+      uuid.substr(24, 12)
+   );
+}
+
 function downloadDmdTxns() {
    return dmdClient
       .downloadTxns()
@@ -82,7 +97,7 @@ function getRequiredMintingAmount(dmds, hdmds) {
    * @return {Promise} result of the promise
    */
 function reconcile(dmds, hdmds) {
-   let reconId = uuidv1();
+   let reconId = formatUuidv1(uuidv1());
    let dmdRecs = dmds.map(txn => {
       return {
          reconId: reconId,
@@ -164,7 +179,9 @@ function getLastHdmdRecon(dmdBlockNumber) {
          p = reconTxns
             .find({ dmdTxnHash: { $ne: null }, blockNumber: dmdBlockNumber })
             .limit(1)
-            .then(res => res.reconId);
+            .then(res => {
+               return res[0] ? res[0].reconId : undefined;
+            });
       } else {
          // Get the reconTxn for the *latest DMD block*
          p = reconTxns
@@ -172,7 +189,7 @@ function getLastHdmdRecon(dmdBlockNumber) {
             .sort({ blockNumber: -1 })
             .limit(1)
             .then(res => {
-               return res[0].reconId;
+               return res[0] ? res[0].reconId : undefined;
             });
       }
       // return result
@@ -186,7 +203,7 @@ function getLastHdmdRecon(dmdBlockNumber) {
                .sort({ blockNumber: -1 })
                .limit(1)
          )
-         .then(obj => resolve(obj))
+         .then(obj => resolve(...obj))
          .catch(err => reject(err));
    });
 }
@@ -222,10 +239,15 @@ function synchronizeAll() {
       .catch(err => console.log(`Error minting: ${err}`))
       .then(() => {
          let lastSavedDmdBlock;
-         dmdClient
-            .getLastSavedBlockNumber()
-            .then(bn => (lastSavedDmdBlock = bn));
-         // .then(bn => console.log(`Last saved block number is ${bn}`));
+         getLastHdmdRecon()
+            .then(obj => {
+               //console.log(`Last HDMD recon = ${JSON.stringify(obj)}`);
+            })
+            .catch(err =>
+               console.log(
+                  `Error in getLastHdmdRecon(): ${JSON.stringify(err)}`
+               )
+            );
       });
 }
 

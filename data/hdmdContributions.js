@@ -1,6 +1,7 @@
 // TODO: enter list of accounts into MongoDB via JSON POST request
 
 module.exports = {
+   initialSupply: 10000,
    accounts: [
       '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
       '0xA7Bb5D4d546067782Dd4B5356D9e9771deBB06a3',

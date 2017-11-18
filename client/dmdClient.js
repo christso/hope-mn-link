@@ -30,6 +30,15 @@ function parseRawTxns(rawTxns) {
 
 // Find last saved txn in MongoDB
 function getLastSavedTxn() {
+   dmdTxns
+      .find()
+      .sort({ blockNumber: -1 })
+      .limit(1)
+      .exec()
+      .then(value => {
+         return;
+      });
+
    return dmdTxns
       .find()
       .sort({ blockNumber: -1 })
@@ -111,20 +120,8 @@ function getUnmatchedTxnsTotal() {
    return dmdTxns.aggregate(queryDef);
 }
 
-// Seed DB for DMD Block Intervals
-const dmdBlockIntervals = require('../data/dbSeeds').dmdBlockIntervals;
-
-function seedData() {
-   const requireSeed = config.requireSeed;
-   if (!requireSeed) {
-      return Promise.resolve(true);
-   }
-   return dmdInterval.create(dmdBlockIntervals);
-}
-
 module.exports = {
    downloadTxns: downloadTxns,
    getUnmatchedTxns: getUnmatchedTxns,
-   getLastSavedBlockNumber: getLastSavedBlockNumber,
-   seedData: seedData
+   getLastSavedBlockNumber: getLastSavedBlockNumber
 };

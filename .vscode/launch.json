@@ -7,6 +7,21 @@
       {
          "type": "node",
          "request": "launch",
+         "name": "Mocha Tests",
+         "runtimeExecutable": "mocha",
+         "args": [
+            "-u",
+            "tdd",
+            "--timeout",
+            "999999",
+            "--colors",
+            "${workspaceFolder}/test"
+         ],
+         "internalConsoleOptions": "openOnSessionStart"
+      },
+      {
+         "type": "node",
+         "request": "launch",
          "name": "Launch Selected",
          "restart": true,
          "program": "${file}"

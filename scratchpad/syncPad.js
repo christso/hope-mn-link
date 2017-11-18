@@ -47,7 +47,6 @@ function downloadDmdTxns() {
             'Error downloading from DMD CryptoID and saving to DB',
             err
          );
-         return Promise.reject(err);
       });
 }
 
@@ -68,7 +67,6 @@ function downloadHdmdTxns() {
             'Error downloading HDMD Transactions from Ethereum network and saving to DB',
             err
          );
-         return Promise.reject(err);
       });
 }
 
@@ -99,9 +97,6 @@ function getRequiredMintingAmount(dmds, hdmds) {
    * @return {Promise} result of the promise
    */
 function reconcile(dmds, hdmds) {
-   if (dmds === undefined || hdmds === undefined) {
-      return Promise.reject(`parameters dmds and hdmds cannot be undefined`);
-   }
    let reconId = formatUuidv1(uuidv1());
    let dmdRecs = dmds.map(txn => {
       return {
@@ -234,12 +229,7 @@ function getHdmdBalancesFromDmd(blockNumber) {
    }
 
    // get balances from hdmdtxns collection
-   return reconTxns.aggregate([matchStage, groupStage]).catch(err => {
-      let newErr = new Error(
-         `Error in getHdmdBalancesFromDmd(): ${err.message}`
-      );
-      Promise.reject(newErr);
-   });
+   return reconTxns.aggregate([matchStage, groupStage]);
 }
 
 /**
@@ -262,28 +252,6 @@ function getUnmatchedTxns() {
 }
 
 /**
- * distribute the minted amount to entitled recipients
- * @param {<BigNumber>} amount 
- * @param {{_id: string, totalAmount: number}[]} balances 
- * @returns {Promise}
- */
-function distributeMint(amount, balances) {
-   if (!balances) {
-      return Promise.reject(new Error(`Balances cannot be undefined`));
-   }
-   let recipients = balances.map(b => b._id);
-   let weights = balances.map(b =>
-      Math.round(b.totalAmount, config.hdmdDecimals)
-   );
-
-   return hdmdClient.apportion(amount, recipients, weights).catch(err => {
-      return Promise.reject(
-         new Error(`Error apportioning minted amount: ${err.stack}`)
-      );
-   });
-}
-
-/**
 * Waits for downloads to complete,
 then finds unmatched dmdTxns and hdmdTxns in MongoDB
 then invokes mint and unmint on HDMD eth smart contract
@@ -294,38 +262,64 @@ function synchronizeAll() {
    let hdmds;
 
    // Download transactions and get what is unmatched
-   let p = downloadTxns().then(() => getUnmatchedTxns());
+   let p = downloadTxns()
+      .catch(err => console.log(`Error downloading trasactions: ${err.stack}`))
+      .then(() => getUnmatchedTxns())
+      .catch(err =>
+         console.log(
+            `Error retrieving unmatched transactions from MongoDB: ${err.stack}`
+         )
+      );
 
    // Invoke mint to synchronize HDMDs with DMDs
-   p = p.then(values => {
-      dmds = values[0];
-      hdmds = values[1];
-      return mintDmds(dmds, hdmds);
-   });
-
-   // Reconcile Txns if minting not required
-   p = p.then(minted => {
-      if (minted === nothingToMint) {
-         reconcile(dmds, hdmds).then(() => console.log('Reconciled'));
-      }
-      return minted;
-   });
+   p = p
+      .then(values => {
+         dmds = values[0];
+         hdmds = values[1];
+         return mintDmds(dmds, hdmds);
+      })
+      .then(minted => {
+         if (minted === nothingToMint) {
+            reconcile(dmds, hdmds).then(() => console.log('Reconciled'));
+         }
+         return minted;
+      })
+      .catch(err => console.log(`Error minting: ${err}`));
 
    // If we have just minted, then distribute the minted amount to entitled recipients
    p = p.then(minted => {
       if (minted == nothingToMint) {
          return;
       }
-      if (!minted || !minted.amount) {
-         return Promise.reject(
-            new Error('Expected minted amount to be non-zero')
-         );
-      }
       getLastHdmdRecon()
-         .then(reconObj =>
-            getHdmdBalancesFromDmd(reconObj ? reconObj.blockNumber : undefined)
+         .then(obj => {
+            return getHdmdBalancesFromDmd(obj ? obj.blockNumber : undefined);
+         })
+         .catch(err =>
+            console.log(
+               `Error in retrieving HDMD balances from DMD txn: ${err.stack}`
+            )
          )
-         .then(balances => distributeMint(minted.amount, balances));
+         .then(balances => {
+            if (!balances) {
+               // TODO: reconcile HDMD with DMD
+            }
+            let recipients = balances.map(b => b._id);
+            let weights = balances.map(b =>
+               Math.round(b.totalAmount, config.hdmdDecimals)
+            );
+            if (!minted || !minted.amount) {
+               return Promise.reject({
+                  error: 'Expected minted amount to be non-zero'
+               });
+            }
+            let amount = minted.amount;
+            // console.log(`Balances = ${JSON.stringify(balances)}`);
+            return hdmdClient.apportion(amount, recipients, weights);
+         })
+         .catch(err => {
+            console.log(`Error apportioning minted amount: ${err.stack}`);
+         });
    });
    return p;
 }

@@ -15,7 +15,6 @@ const abiDecoder = require('abi-decoder');
 
 abiDecoder.addABI(abi);
 
-var requireSeed = config.requireSeed;
 const hdmdVersion = config.hdmdVersion;
 const ethNodeAddress = config.ethNodeAddress;
 
@@ -80,7 +79,7 @@ const util = {
    getRawNumber: function(value) {
       let multiplier = new BigNumber(10);
       multiplier = multiplier.pow(decimals);
-      return value.mul(multiplier);
+      return value.mul(multiplier).round(0);
    }
 };
 
@@ -136,20 +135,6 @@ function allowMinter(account, callback) {
          }
       });
    });
-}
-
-function seedData() {
-   if (!requireSeed) return Promise.resolve();
-   let accounts = contribs.accounts;
-   let balances = contribs.balances.map(value => new BigNumber(value));
-
-   return allowMinter(defaultAccount)
-      .then(txnHash => console.log(`Allowed account ${defaultAccount} to mint`))
-      .catch(err => console.log(`Error allowing minter ${defaultAccount}`))
-      .then(() => batchTransfer(accounts, balances))
-      .catch(err => {
-         console.log(`Error seeding the smart contract: ${err.message}`);
-      });
 }
 
 function downloadTxns() {
@@ -270,7 +255,6 @@ function parseEventLog(eventLog) {
 }
 
 function getLastSavedTxn() {
-   // TODO: instead of hardcoding number, get the last block from MongoDB
    return hdmdTxns
       .find()
       .sort({ blockNumber: -1 })
@@ -342,7 +326,7 @@ function getTotalSupplySaved() {
 * Distributes the minted amount to addresses in proportion to their balances
 * @param {<BigNumber>} amount - BigNumber amount to distribute
 * @param {String[]} recipients - array of addresses that will receive the amount
-* @param {BigNumber[]} weights - array of BigNumber weighting values to determine how much each recipient will receive
+* @param {<BigNumber[]>} weights - array of BigNumber weighting values to determine how much each recipient will receive
 * @return {Promise} return value of the smart contract function
 */
 function apportion(amount, recipients, weights) {
@@ -375,18 +359,21 @@ function batchTransfer(addresses, values) {
    });
 }
 
-/**
-* Mint amounts on HDMD smart contract
-* @param {<BigNumber>} amount - amount in BigNumber
-* @param {requestCallback} callback - The callback that handles the response.
-* @return {Promise} return value of the smart contract function
-*/
-function mint(amount, callback) {
+function canMint() {
+   return new Promise((resolve, reject) => {
+      hdmdContract.canMint(defaultAccount, (err, canMint) => {
+         if (err) {
+            reject(err);
+         } else {
+            resolve(canMint);
+         }
+      });
+   });
+}
+
+function _mint(amount) {
    let rawAmount = getRawNumber(amount).toNumber();
-   if (callback) {
-      hdmdContract.mint(rawAmount, callback);
-      return;
-   }
+
    return new Promise((resolve, reject) => {
       hdmdContract.mint(rawAmount, (err, res) => {
          if (err) {
@@ -399,17 +386,34 @@ function mint(amount, callback) {
 }
 
 /**
-* Unmints amounts on HDMD smart contract
+* Mint amounts on HDMD smart contract
 * @param {<BigNumber>} amount - amount in BigNumber
-* @callback callback - The callback that handles the response.
 * @return {Promise} return value of the smart contract function
 */
-function unmint(amount, callback) {
+function mint(amount) {
+   return new Promise((resolve, reject) => {
+      return _mint(amount).catch(err => {
+         canMint().then(allowed => {
+            if (!allowed) {
+               let newErr = new Error(
+                  `Address ${defaultAccount} is not allowed to mint`
+               );
+               reject(newErr);
+               return;
+            }
+            reject(err);
+         });
+      });
+   });
+}
+
+/**
+* Unmints amounts on HDMD smart contract
+* @param {<BigNumber>} amount - amount in BigNumber
+* @return {Promise} return value of the smart contract function
+*/
+function unmint(amount) {
    let rawAmount = getRawNumber(amount).toNumber();
-   if (callback) {
-      hdmdContract.unmint(rawAmount, callback);
-      return;
-   }
    return new Promise((resolve, reject) => {
       hdmdContract.unmint(rawAmount, (err, res) => {
          if (err) {
@@ -467,7 +471,8 @@ module.exports = {
    getTotalSupplySaved: getTotalSupplySaved,
    getUnmatchedTxns: getUnmatchedTxns,
    getContractOwner: getContractOwner,
-   seedData: seedData,
    apportion: apportion,
-   applyWeights: util.applyWeights
+   applyWeights: util.applyWeights,
+   allowMinter: allowMinter,
+   defaultAccount: defaultAccount
 };

@@ -2,11 +2,13 @@ var config = {};
 
 config.port = 8080;
 
+// change the address on deployment
+// NOTE: If you get an error connecting, review https://github.com/Automattic/mongoose/issues/5399
 config.mongodbUri = 'mongodb://localhost:27017/hdmdlink';
 
 config.ethNodeAddress = 'http://localhost:8545';
 
-config.hdmdContractAddress = '0x7c843ff499db2a7985bc81ca61e389cfd3f5766d'; // christso testRPC
+config.hdmdContractAddress = '0x9e704c082a6baccafd2a9637a67ebc5691d86820'; // christso testRPC
 //config.hdmdContractAddress = '0x5b45cb92A968329A83Cd3f2FBFB1bF206043d70C'; // rinkeby
 
 config.hdmdDecimals = 8;

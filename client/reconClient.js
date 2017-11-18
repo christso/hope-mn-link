@@ -306,7 +306,10 @@ function synchronizeAll() {
    // Reconcile Txns if minting not required
    p = p.then(minted => {
       if (minted === nothingToMint) {
-         reconcile(dmds, hdmds).then(() => console.log('Reconciled'));
+         reconcile(dmds, hdmds).then(recs => {
+            let length = recs ? recs.length : 0;
+            console.log(`Reconciled ${length} transactions`);
+         });
       }
       return minted;
    });

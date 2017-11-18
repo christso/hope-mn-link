@@ -1,5 +1,6 @@
-const assert = require('assert');
+const assert = require('chai').assert;
 const hdmdClient = require('../client/hdmdClient');
+const reconClient = require('../client/reconClient');
 const BigNumber = require('bignumber.js');
 const dmdTxns = require('../models/dmdTxn');
 const hdmdTxns = require('../models/hdmdTxn');
@@ -36,7 +37,7 @@ describe('Database Tests', () => {
       }
    });
 
-   it('Save transactions to database', done => {
+   it('Save DMDs to database', done => {
       dmdTxns
          .create([
             {
@@ -57,5 +58,15 @@ describe('Database Tests', () => {
             done();
          })
          .catch(err => assert.fail(err));
+   });
+
+   it('Save HDMDs to database', done => {});
+
+   it('Saves HDMD total supply difference to agree database to blockchain', done => {
+      const initialSupply = 12000;
+
+      hdmdClient.getTotalSupplyNotSaved().then(supply => {
+         assert.equal(supply.toNumber(), 12000);
+      });
    });
 });

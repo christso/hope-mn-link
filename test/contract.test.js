@@ -1,4 +1,4 @@
-const assert = require('assert');
+const assert = require('chai').assert;
 const hdmdClient = require('../client/hdmdClient');
 const BigNumber = require('bignumber.js');
 

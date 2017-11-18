@@ -430,10 +430,13 @@ function unmint(amount) {
    });
 }
 
+/**
+ * @returns {Promise.<BigNumber>}
+ */
 function getTotalSupplyNotSaved() {
    // return hdmdClient.totalSupply - hdmdTxns.aggregate({group: { $sum: 'amount'}})
 
-   return Promise.resolve(10000);
+   return Promise.resolve(new BignNumber(10000));
 }
 
 /**
@@ -448,7 +451,7 @@ function saveTotalSupplyDiff() {
          hdmdTxns
             .create({
                blockNumber: -1,
-               amount: supply,
+               amount: supply.toNumber(),
                txnHash: contractAddress,
                eventName: 'Adjustment'
             })
@@ -552,5 +555,6 @@ module.exports = {
    defaultAccount: defaultAccount,
    saveTotalSupplyDiff: saveTotalSupplyDiff,
    allowThisMinter: allowThisMinter,
-   getTotalSupply: getTotalSupply
+   getTotalSupply: getTotalSupply,
+   getTotalSupplyNotSaved: getTotalSupplyNotSaved
 };

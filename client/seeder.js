@@ -11,6 +11,7 @@ var reconClient = require('./reconClient');
 var allowMinter = hdmdClient.allowMinter;
 var defaultAccount = hdmdClient.defaultAccount;
 var batchTransfer = hdmdClient.batchTransfer;
+var saveInitialSupply = hdmdClient.saveInitialSupply;
 var downloadTxns = reconClient.downloadTxns;
 var getUnmatchedTxns = reconClient.getUnmatchedTxns;
 var reconcile = reconClient.reconcile;
@@ -26,15 +27,12 @@ function seedHdmd() {
    let balances = contribs.balances.map(
       value => new BigNumber(Math.round(value, decimals))
    );
-   let initialSupply = new BigNumber(contribs.initialSupply);
 
-   return allowMinter(defaultAccount)
-      .then(txnHash => console.log(`Allowed account ${defaultAccount} to mint`))
-      .catch(err => console.log(`Error allowing minter ${defaultAccount}`))
-      .then(() => batchTransfer(accounts, balances))
-      .catch(err => {
-         console.log(`Error seeding the smart contract: ${err.message}`);
-      });
+   // Initial contributions
+   return batchTransfer(accounts, balances).catch(err => {
+      console.log(`Error seeding the smart contract: ${err.message}`);
+   });
+   return p;
 }
 
 // Seed DB for DMD Block Intervals
@@ -44,6 +42,8 @@ function seedDmd() {
    return dmdInterval.create(dmdBlockIntervals);
 }
 
+var magic_BlockNumber = 18386;
+
 function seedAll() {
    if (!requireSeed) {
       return Promise.resolve(true);
@@ -51,16 +51,19 @@ function seedAll() {
    return seedDmd()
       .then(() => seedHdmd())
       .then(() => downloadTxns())
-      .catch(err => console.log(`Error downloading trasactions: ${err.stack}`))
-      .then(() => getUnmatchedTxns())
+      .catch(err => Promise.reject(new Error(`Error downloading trasactions`)))
+      .then(() => saveInitialSupply())
+      .then(() => getUnmatchedTxns(magic_BlockNumber))
       .then(([dmds, hdmds]) => reconcile(dmds, hdmds))
       .catch(err =>
-         console.log(
-            `Error retrieving unmatched transactions from MongoDB: ${err.stack}`
+         Promise.reject(
+            new Error(
+               `Error retrieving unmatched transactions from MongoDB: ${err}`
+            )
          )
       )
       .then(() => console.log('Seeding Successful'))
-      .catch(err => console.log(`Error seeding: ${err.stack}`));
+      .catch(err => Promise.reject(new Error(`Error seeding: ${err}`)));
 }
 
 module.exports = {

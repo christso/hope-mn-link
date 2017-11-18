@@ -26,29 +26,4 @@ const hdmdTxns = require('../models/hdmdTxn');
 
 database.connect();
 
-function seedHdmd() {
-   return Promise.resolve(true);
-}
-
-function seedAll() {
-   return seedHdmd()
-      .then(() => downloadTxns())
-      .catch(err => console.log(`Error downloading trasactions: ${err.stack}`))
-      .then(() => getUnmatchedTxns())
-      .then(([dmds, hdmds]) => reconcile(dmds, hdmds))
-      .catch(err =>
-         console.log(
-            `Error retrieving unmatched transactions from MongoDB: ${err.stack}`
-         )
-      )
-      .then(() => console.log('Seeding Successful'))
-      .catch(err => console.log(`Error seeding: ${err.stack}`));
-}
-
-var syncPad = require('./syncPad');
-var synchronizeAll = syncPad.synchronizeAll;
-synchronizeAll()
-   .then(() => (requireSeed = false))
-   .catch(err => console.log(err.stack));
-
 setInterval(() => true, 1000000);

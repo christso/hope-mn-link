@@ -85,38 +85,50 @@ function downloadTxns() {
       .then(txns => saveTxns(txns));
 }
 
-var unmatchedTxnsQueryDef = [
-   {
-      $lookup: {
-         from: 'recontxns',
-         localField: 'txnHash',
-         foreignField: 'dmdTxnHash',
-         as: 'recontxns'
-      }
+const unmatchedQueryDefs = {
+   lookup: () => {
+      return {
+         $lookup: {
+            from: 'recontxns',
+            localField: 'txnHash',
+            foreignField: 'dmdTxnHash',
+            as: 'recontxns'
+         }
+      };
    },
-   {
-      $match: {
-         recontxns: { $eq: [] }
-      }
-   }
-];
-
-var groupQuery = {
-   $group: {
-      _id: null,
-      totalAmount: { $sum: '$amount' },
-      count: { $sum: 1 }
+   match: () => {
+      return {
+         $match: {
+            recontxns: {
+               $eq: []
+            }
+         }
+      };
+   },
+   group: () => {
+      return {
+         $group: {
+            _id: null,
+            totalAmount: { $sum: '$amount' },
+            count: { $sum: 1 }
+         }
+      };
    }
 };
 
 // get DMD Txns that don't exist in HDMD Txns MongoDB
-function getUnmatchedTxns() {
-   return dmdTxns.aggregate(unmatchedTxnsQueryDef);
-}
+function getUnmatchedTxns(blockNumber) {
+   let matchQueryDef = unmatchedQueryDefs.match();
 
-function getUnmatchedTxnsTotal() {
-   let queryDef = unmatchedTxnsQueryDef;
-   queryDef.push(groupQuery);
+   if (blockNumber) {
+      matchQueryDef.$match.blockNumber = { $lte: blockNumber };
+   }
+
+   let lookupQueryDef = unmatchedQueryDefs.lookup();
+   let groupQueryDef = unmatchedQueryDefs.group();
+
+   let queryDef = [lookupQueryDef, matchQueryDef];
+
    return dmdTxns.aggregate(queryDef);
 }
 

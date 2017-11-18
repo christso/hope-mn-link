@@ -118,7 +118,8 @@ function reconcile(dmds, hdmds) {
          hdmdTxnHash: txn.txnHash,
          amount: txn.amount,
          account: txn.account,
-         blockNumber: txn.blockNumber
+         blockNumber: txn.blockNumber,
+         eventName: txn.eventName
       };
    });
    let recs = dmdRecs;
@@ -254,11 +255,11 @@ function downloadTxns() {
 * Retrieve unmatched transactions from MongoDB
 * @return {Promise.<[DmdTxn[], HdmdTxn[]]>} - returns resolved promise for unmatched DMDs and HDMDs
 */
-function getUnmatchedTxns() {
+function getUnmatchedTxns(dmdBlockNumber) {
    let getUnmatchedDmds = dmdClient.getUnmatchedTxns;
    let getUnmatchedHdmds = hdmdClient.getUnmatchedTxns;
 
-   return Promise.all([getUnmatchedDmds(), getUnmatchedHdmds()]);
+   return Promise.all([getUnmatchedDmds(dmdBlockNumber), getUnmatchedHdmds()]);
 }
 
 /**

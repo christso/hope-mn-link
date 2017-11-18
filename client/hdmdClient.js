@@ -158,9 +158,10 @@ function downloadTxns() {
                // save the newTxns into MongoDB
                saveTxns(newTxns)
             )
-            .catch(error =>
-               console.log('--- Error downloading DMD Txn Log ---', error)
-            )
+            .catch(error => {
+               console.log('--- Error downloading DMD Txn Log ---', error);
+               return Promise.reject(new Error(err));
+            })
       );
 }
 
@@ -425,39 +426,83 @@ function unmint(amount) {
    });
 }
 
-var unmatchedTxnsQueryDef = [
-   {
-      $lookup: {
-         from: 'recontxns',
-         localField: 'txnHash',
-         foreignField: 'hdmdTxnHash',
-         as: 'recontxns'
+function saveInitialSupply() {
+   return new Promise((resolve, reject) => {
+      if (!config.saveInitialSupply) {
+         return;
       }
-   },
-   {
-      $match: {
-         recontxns: { $eq: [] }
-      }
-   }
-];
+      hdmdTxns
+         .create({
+            blockNumber: -1,
+            amount: 10000, // magic number to be fixed
+            txnHash: contractAddress,
+            eventName: 'Adjustment'
+         })
+         .then(created => resolve(created))
+         .catch(err => reject(err));
+   });
+}
 
-var groupQuery = {
-   $group: {
-      _id: null,
-      totalAmount: { $sum: '$amount' },
-      count: { $sum: 1 }
+const unmatchedQueryDefs = {
+   lookup: () => {
+      return {
+         $lookup: {
+            from: 'recontxns',
+            localField: 'txnHash',
+            foreignField: 'hdmdTxnHash',
+            as: 'recontxns'
+         }
+      };
+   },
+   match: () => {
+      return {
+         $match: {
+            recontxns: {
+               $eq: []
+            }
+         }
+      };
+   },
+   group: () => {
+      return {
+         $group: {
+            _id: null,
+            totalAmount: { $sum: '$amount' },
+            count: { $sum: 1 }
+         }
+      };
    }
 };
 
-function getUnmatchedTxnsTotal() {
-   let queryDef = unmatchedTxnsQueryDef;
-   queryDef.push(groupQuery);
+function getUnmatchedTxns(blockNumber) {
+   let matchQueryDef = unmatchedQueryDefs.match();
+
+   if (blockNumber) {
+      matchQueryDef.$match.blockNumber = { $lte: blockNumber };
+   }
+
+   let lookupQueryDef = unmatchedQueryDefs.lookup();
+   let groupQueryDef = unmatchedQueryDefs.group();
+
+   let queryDef = [lookupQueryDef, matchQueryDef];
+
    return hdmdTxns.aggregate(queryDef);
 }
 
-function getUnmatchedTxns() {
-   let queryDef = unmatchedTxnsQueryDef;
-   return hdmdTxns.aggregate(queryDef);
+function allowThisMinter() {
+   if (!config.allowThisMinter) {
+      return Promise.resolve();
+   }
+   // Allow this node to mint
+   return allowMinter(defaultAccount)
+      .then(txnHash => {
+         console.log(`Allowed account ${defaultAccount} to mint`);
+         return txnHash;
+      })
+      .catch(err => {
+         console.log(`Error allowing minter ${defaultAccount}`);
+         return err;
+      });
 }
 
 module.exports = {
@@ -474,5 +519,7 @@ module.exports = {
    apportion: apportion,
    applyWeights: util.applyWeights,
    allowMinter: allowMinter,
-   defaultAccount: defaultAccount
+   defaultAccount: defaultAccount,
+   saveInitialSupply: saveInitialSupply,
+   allowThisMinter: allowThisMinter
 };

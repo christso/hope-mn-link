@@ -13,17 +13,22 @@ var database = require('./client/database');
 
 var seedAll = seeder.seedAll;
 var synchronizeAll = reconClient.synchronizeAll;
+var allowThisMinter = hdmdClient.allowThisMinter;
+var saveInitialSupply = hdmdClient.saveInitialSupply;
 
 // reconcile transactions at each interval
 let watchInterval = config.dmdWatchInterval;
 
-seedAll().then(() =>
-   setInterval(() => {
-      return synchronizeAll()
-         .then(() => (config.requireSeed = false))
-         .catch(err => console.log(err));
-   }, watchInterval)
-);
+saveInitialSupply()
+   .then(() => allowThisMinter())
+   .then(() => seedAll())
+   .then(() =>
+      setInterval(() => {
+         return synchronizeAll()
+            .then(() => (config.requireSeed = false))
+            .catch(err => console.log(err));
+      }, watchInterval)
+   );
 
 // allows you to parse JSON into req.body.field
 app.use(bodyParser.urlencoded({ extended: true }));

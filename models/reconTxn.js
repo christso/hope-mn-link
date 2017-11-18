@@ -8,7 +8,8 @@ var reconTxnSchema = new mongoose.Schema({
    hdmdTxnHash: String,
    amount: Number,
    account: String,
-   blockNumber: Number
+   blockNumber: Number,
+   eventName: String
 });
 
 module.exports = mongoose.model('ReconTxn', reconTxnSchema);

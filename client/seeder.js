@@ -11,7 +11,7 @@ var reconClient = require('./reconClient');
 var allowMinter = hdmdClient.allowMinter;
 var defaultAccount = hdmdClient.defaultAccount;
 var batchTransfer = hdmdClient.batchTransfer;
-var saveInitialSupply = hdmdClient.saveInitialSupply;
+var saveTotalSupplyDiff = hdmdClient.saveTotalSupplyDiff;
 var downloadTxns = reconClient.downloadTxns;
 var getUnmatchedTxns = reconClient.getUnmatchedTxns;
 var reconcile = reconClient.reconcile;
@@ -42,18 +42,24 @@ function seedDmd() {
    return dmdInterval.create(dmdBlockIntervals);
 }
 
-var magic_BlockNumber = 18386;
+function getFirstBlockInterval() {
+   return Promise.resolve(18386);
+}
 
 function seedAll() {
-   if (!requireSeed) {
-      return Promise.resolve(true);
+   let p;
+   if (requireSeed) {
+      p = seedDmd()
+         .then(() => seedHdmd())
+         .then(() => console.log('Seeding successful'))
+         .catch(err => Promise.reject(new Error(`Error seeding: ${err}`)));
    }
-   return seedDmd()
-      .then(() => seedHdmd())
+   return p
       .then(() => downloadTxns())
       .catch(err => Promise.reject(new Error(`Error downloading trasactions`)))
-      .then(() => saveInitialSupply())
-      .then(() => getUnmatchedTxns(magic_BlockNumber))
+      .then(() => saveTotalSupplyDiff())
+      .then(() => getFirstBlockInterval())
+      .then(block => getUnmatchedTxns(block))
       .then(([dmds, hdmds]) => reconcile(dmds, hdmds))
       .catch(err =>
          Promise.reject(
@@ -61,9 +67,7 @@ function seedAll() {
                `Error retrieving unmatched transactions from MongoDB: ${err}`
             )
          )
-      )
-      .then(() => console.log('Seeding Successful'))
-      .catch(err => Promise.reject(new Error(`Error seeding: ${err}`)));
+      );
 }
 
 module.exports = {

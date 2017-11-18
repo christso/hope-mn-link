@@ -426,20 +426,28 @@ function unmint(amount) {
    });
 }
 
-function saveInitialSupply() {
+function getTotalSupplyNotSaved() {
+   // return hdmdClient.totalSupply - hdmdTxns.aggregate({group: { $sum: 'amount'}})
+
+   return Promise.resolve(10000);
+}
+
+function saveTotalSupplyDiff() {
    return new Promise((resolve, reject) => {
       if (!config.saveInitialSupply) {
          return;
       }
-      hdmdTxns
-         .create({
-            blockNumber: -1,
-            amount: 10000, // magic number to be fixed
-            txnHash: contractAddress,
-            eventName: 'Adjustment'
-         })
-         .then(created => resolve(created))
-         .catch(err => reject(err));
+      getTotalSupplyNotSaved().then(supply =>
+         hdmdTxns
+            .create({
+               blockNumber: -1,
+               amount: supply,
+               txnHash: contractAddress,
+               eventName: 'Adjustment'
+            })
+            .then(created => resolve(created))
+            .catch(err => reject(err))
+      );
    });
 }
 
@@ -520,6 +528,6 @@ module.exports = {
    applyWeights: util.applyWeights,
    allowMinter: allowMinter,
    defaultAccount: defaultAccount,
-   saveInitialSupply: saveInitialSupply,
+   saveTotalSupplyDiff: saveTotalSupplyDiff,
    allowThisMinter: allowThisMinter
 };

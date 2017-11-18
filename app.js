@@ -14,13 +14,12 @@ var database = require('./client/database');
 var seedAll = seeder.seedAll;
 var synchronizeAll = reconClient.synchronizeAll;
 var allowThisMinter = hdmdClient.allowThisMinter;
-var saveInitialSupply = hdmdClient.saveInitialSupply;
+var saveInitialSupply = hdmdClient.saveTotalSupplyDiff;
 
 // reconcile transactions at each interval
 let watchInterval = config.dmdWatchInterval;
 
-saveInitialSupply()
-   .then(() => allowThisMinter())
+allowThisMinter()
    .then(() => seedAll())
    .then(() =>
       setInterval(() => {

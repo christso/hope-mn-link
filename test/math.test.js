@@ -2,24 +2,6 @@ const assert = require('assert');
 const hdmdClient = require('../client/hdmdClient');
 const BigNumber = require('bignumber.js');
 
-describe('Smart Contract Tests', () => {
-   it('BatchTransfer will decrement owner balance and increment recipient balances', done => {
-      done();
-   });
-
-   it('Mint will increment same account by same amount in both DB and blockchain', done => {
-      done();
-   });
-
-   it('Unmint will decrement same account by same amount in both DB and blockchain', done => {
-      done();
-   });
-
-   it('Burn will decrement same account by same amount in both DB and blockchain', done => {
-      done();
-   });
-});
-
 describe('HDMD calculation tests', () => {
    it('applyWeights outputs total amount that equals the input amount', done => {
       // test if the total amounts equal with the base amount
@@ -53,12 +35,6 @@ describe('HDMD calculation tests', () => {
          totalWeightedAmount = totalWeightedAmount.add(a);
       });
       assert.equal(totalWeightedAmount.toNumber(), amount.toNumber());
-      done();
-   });
-});
-
-describe('Database Tests', () => {
-   it('Save transactions to database', done => {
       done();
    });
 });

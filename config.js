@@ -5,6 +5,7 @@ config.port = 8080;
 // change the address on deployment
 // NOTE: If you get an error connecting, review https://github.com/Automattic/mongoose/issues/5399
 config.mongodbUri = 'mongodb://localhost:27017/hdmdlink';
+config.mongodbUriTest = 'mongodb://localhost:27017/hdmdlinktest';
 
 config.ethNodeAddress = 'http://localhost:8545';
 

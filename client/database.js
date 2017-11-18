@@ -3,6 +3,7 @@ var mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 
 function connect() {
+   let databaseName = config.mongodbUri;
    mongoose.connect(config.mongodbUri, {
       useMongoClient: true,
       promiseLibrary: global.Promise
@@ -13,12 +14,13 @@ function connect() {
       console.error.bind(console, '# MongoDB - connection error: ')
    );
    db.once('open', function() {
-      console.log('We are connected to test database!');
+      console.log(`We are connected to database ${databaseName}`);
    });
 }
 
 function createTestConnection() {
    return new Promise((resolve, reject) => {
+      let databaseName = config.mongodbUriTest;
       mongoose.connect(
          config.mongodbUriTest,
          {
@@ -33,6 +35,9 @@ function createTestConnection() {
                   'error',
                   console.error.bind(console, '# MongoDB - connection error: ')
                );
+               db.once('open', function() {
+                  console.log(`We are connected to database ${databaseName}`);
+               });
                resolve(db);
             }
          }

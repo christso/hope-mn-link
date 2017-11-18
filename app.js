@@ -27,7 +27,8 @@ allowThisMinter()
             .then(() => (config.requireSeed = false))
             .catch(err => console.log(err));
       }, watchInterval)
-   );
+   )
+   .catch(err => console.log(err));
 
 // allows you to parse JSON into req.body.field
 app.use(bodyParser.urlencoded({ extended: true }));

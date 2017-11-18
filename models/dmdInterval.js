@@ -6,4 +6,4 @@ var dmdIntervalSchema = new mongoose.Schema({
    blockNumber: Number
 });
 
-module.exports = mongoose.model('dmdInterval', dmdIntervalSchema);
+module.exports = mongoose.model('DmdInterval', dmdIntervalSchema);

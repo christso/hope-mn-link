@@ -17,6 +17,7 @@ var getUnmatchedTxns = reconClient.getUnmatchedTxns;
 var reconcile = reconClient.reconcile;
 
 var dmdInterval = require('../models/dmdInterval');
+const getLastSavedDmdBlockInterval = dmdClient.getLastSavedBlockInterval;
 const contribs = require('../data/hdmdContributions');
 const accounts = contribs.accounts;
 const decimals = config.hdmdDecimals;
@@ -42,12 +43,8 @@ function seedDmd() {
    return dmdInterval.create(dmdBlockIntervals);
 }
 
-function getFirstBlockInterval() {
-   return Promise.resolve(18386);
-}
-
 function seedAll() {
-   let p;
+   let p = Promise.resolve();
    if (requireSeed) {
       p = seedDmd()
          .then(() => seedHdmd())
@@ -56,10 +53,12 @@ function seedAll() {
    }
    return p
       .then(() => downloadTxns())
-      .catch(err => Promise.reject(new Error(`Error downloading trasactions`)))
-      .then(() => saveTotalSupplyDiff())
-      .then(() => getFirstBlockInterval())
-      .then(block => getUnmatchedTxns(block))
+      .catch(err => Promise.reject(new Error(`Error downloading transactions`)))
+      .then(() => saveTotalSupplyDiff()) // TODO: implement (currently 10000 is hard coded)
+      .then(() => getLastSavedDmdBlockInterval())
+      .then(block => {
+         return getUnmatchedTxns(block);
+      })
       .then(([dmds, hdmds]) => reconcile(dmds, hdmds))
       .catch(err =>
          Promise.reject(

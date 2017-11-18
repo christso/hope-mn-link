@@ -24,6 +24,16 @@ const decimals = config.hdmdDecimals;
 const dmdTxns = require('../models/dmdTxn');
 const hdmdTxns = require('../models/hdmdTxn');
 
-hdmdClient.getTotalSupply().then(res => console.log(res.toNumber()));
+// connect to database
+database.connect();
+
+console.log('test');
+
+reconClient
+   .getLastSavedDmdBlockInterval()
+   .then(res => {
+      console.log(`result: ${res}`);
+   })
+   .catch(err => console.log(err));
 
 setInterval(() => true, 1000000);

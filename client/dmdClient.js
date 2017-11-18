@@ -30,15 +30,6 @@ function parseRawTxns(rawTxns) {
 
 // Find last saved txn in MongoDB
 function getLastSavedTxn() {
-   dmdTxns
-      .find()
-      .sort({ blockNumber: -1 })
-      .limit(1)
-      .exec()
-      .then(value => {
-         return;
-      });
-
    return dmdTxns
       .find()
       .sort({ blockNumber: -1 })
@@ -132,8 +123,24 @@ function getUnmatchedTxns(blockNumber) {
    return dmdTxns.aggregate(queryDef);
 }
 
+function getLastSavedBlockInterval(minBlockNumber) {
+   // TODO: the first DMD block is at 18386
+   // This will find the minimum dmdBlockInterval that is greater than the last reconciled DMD block.
+   let block = minBlockNumber ? minBlockNumber : 0;
+
+   return dmdInterval
+      .find({ blockNumber: { $gte: block } })
+      .sort({ blockNumber: 1 })
+      .limit(1)
+      .exec()
+      .then(doc => {
+         return doc[0].blockNumber;
+      });
+}
+
 module.exports = {
    downloadTxns: downloadTxns,
    getUnmatchedTxns: getUnmatchedTxns,
-   getLastSavedBlockNumber: getLastSavedBlockNumber
+   getLastSavedBlockNumber: getLastSavedBlockNumber,
+   getLastSavedBlockInterval: getLastSavedBlockInterval
 };

@@ -436,6 +436,9 @@ function getTotalSupplyNotSaved() {
    return Promise.resolve(10000);
 }
 
+/**
+ * @returns {Promise.<HdmdTxn>}
+ */
 function saveTotalSupplyDiff() {
    return new Promise((resolve, reject) => {
       if (!config.saveInitialSupply) {

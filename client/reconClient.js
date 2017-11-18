@@ -167,6 +167,26 @@ function mintDmds(dmds, hdmds) {
    });
 }
 
+function getLastDmdRecon() {
+   if (dmdBlockNumber) {
+      // Get the reconTxn for the *DMD block number*
+      return reconTxns
+         .find({ dmdTxnHash: { $ne: null }, blockNumber: dmdBlockNumber })
+         .limit(1)
+         .then(res => {
+            return res[0] ? res[0].reconId : undefined;
+         });
+   }
+   // Get the reconTxn for the *latest DMD block*
+   return reconTxns
+      .find({ dmdTxnHash: { $ne: null } })
+      .sort({ blockNumber: -1 })
+      .limit(1)
+      .then(res => {
+         return res[0] ? res[0].reconId : undefined;
+      });
+}
+
 /**
    * Get the latest reconTxn for HDMD
    * @param {Number} dmdBlockNumber - the DMD block number that has been reconciled. If this is undefined, then it will default to the latest block 
@@ -174,28 +194,8 @@ function mintDmds(dmds, hdmds) {
    */
 function getLastHdmdRecon(dmdBlockNumber) {
    return new Promise((resolve, reject) => {
-      let p;
-
-      if (dmdBlockNumber) {
-         // Get the reconTxn for the *DMD block number*
-         p = reconTxns
-            .find({ dmdTxnHash: { $ne: null }, blockNumber: dmdBlockNumber })
-            .limit(1)
-            .then(res => {
-               return res[0] ? res[0].reconId : undefined;
-            });
-      } else {
-         // Get the reconTxn for the *latest DMD block*
-         p = reconTxns
-            .find({ dmdTxnHash: { $ne: null } })
-            .sort({ blockNumber: -1 })
-            .limit(1)
-            .then(res => {
-               return res[0] ? res[0].reconId : undefined;
-            });
-      }
-      // return result
-      p
+      let p = getLastDmdRecon(dmdBlockNumber);
+      getLastDmdRecon(dmdBlockNumber)
          .then(reconId =>
             reconTxns
                .find({
@@ -334,6 +334,14 @@ function synchronizeAll() {
    return p;
 }
 
+function getLastSavedDmdBlockInterval() {
+   // TODO: the first DMD block is at 18386
+   // This will find the minimum dmdBlockInterval that is greater than the last reconciled DMD block.
+
+   let lastReconBlock = 10000; // TODO: replace this magic number
+   return dmdClient.getLastSavedBlockInterval(lastReconBlock);
+}
+
 module.exports = {
    synchronizeAll: synchronizeAll,
    getLastHdmdRecon: getLastHdmdRecon,
@@ -341,5 +349,6 @@ module.exports = {
    downloadTxns: downloadTxns,
    getUnmatchedTxns: getUnmatchedTxns,
    reconcile: reconcile,
-   downloadDmdTxns: downloadDmdTxns
+   downloadDmdTxns: downloadDmdTxns,
+   getLastSavedDmdBlockInterval: getLastSavedDmdBlockInterval
 };

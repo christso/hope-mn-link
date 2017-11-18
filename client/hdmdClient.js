@@ -1,3 +1,7 @@
+/**
+ * @typedef {<BigNumber>} BigNumber
+ */
+
 const BigNumber = require('bignumber.js');
 const Web3 = require('web3');
 const abi = require('./hdmdABI')();
@@ -513,6 +517,21 @@ function allowThisMinter() {
       });
 }
 
+/**
+ * @return {Promise<BigNumber>} total supply
+ */
+function getTotalSupply() {
+   return new Promise((resolve, reject) => {
+      hdmdContract.totalSupply.call((err, res) => {
+         if (err) {
+            reject(err);
+         } else {
+            resolve(res);
+         }
+      });
+   });
+}
+
 module.exports = {
    web3: web3,
    hdmdContract: hdmdContract,
@@ -529,5 +548,6 @@ module.exports = {
    allowMinter: allowMinter,
    defaultAccount: defaultAccount,
    saveTotalSupplyDiff: saveTotalSupplyDiff,
-   allowThisMinter: allowThisMinter
+   allowThisMinter: allowThisMinter,
+   getTotalSupply: getTotalSupply
 };

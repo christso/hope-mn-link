@@ -3,6 +3,7 @@ const hdmdClient = require('../client/hdmdClient');
 const BigNumber = require('bignumber.js');
 
 describe('Smart Contract Tests', () => {
+   /*
    it('BatchTransfer will decrement owner balance and increment recipient balances', done => {
       done();
    });
@@ -18,4 +19,5 @@ describe('Smart Contract Tests', () => {
    it('Burn will decrement same account by same amount in both DB and blockchain', done => {
       done();
    });
+   */
 });

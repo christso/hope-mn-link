@@ -3,6 +3,7 @@ var sinon = require('sinon');
 var proxyquire = require('proxyquire');
 
 const hdmdClient = require('../client/hdmdClient');
+const hdmdContract = require('../client/hdmdContract');
 const reconClient = require('../client/reconClient');
 const BigNumber = require('bignumber.js');
 const dmdTxns = require('../models/dmdTxn');
@@ -14,20 +15,23 @@ var database = require('../client/database');
 
 const cleanup = false;
 
-describe('Database Tests', () => {
+describe('HDMD Database Tests', () => {
    var connection;
    const initialSupply = 12000;
 
-   var hdmdClientMock;
+   var hdmdContractMock;
+
+   var dmdBlockIntervals = [18386, 18584, 23742, 27962, 28022].map(b => {
+      return { blockNumber: b };
+   });
 
    var createMocks = () => {
-      hdmdClientMock = sinon.mock(hdmdClient);
+      hdmdContractMock = sinon.mock(hdmdContract);
+      hdmdClient.init(hdmdContractMock.object);
 
-      sinon
-         .stub(hdmdClientMock.object, 'getTotalSupplyNotSaved')
-         .callsFake(() => {
-            return Promise.resolve(new BigNumber(initialSupply));
-         });
+      sinon.stub(hdmdContractMock.object, 'getTotalSupply').callsFake(() => {
+         return Promise.resolve(new BigNumber(initialSupply));
+      });
    };
 
    var createDatabase = done => {
@@ -85,8 +89,24 @@ describe('Database Tests', () => {
       done();
    });
 
+   it('Get initial DMD block interval', () => {
+      return dmdIntervals
+         .create(dmdBlockIntervals)
+         .then(intervals => {
+            assert.notEqual(
+               intervals,
+               undefined,
+               'No intervals were saved to DB'
+            );
+         })
+         .then(() => reconClient.getLastSavedDmdBlockInterval())
+         .then(block => {
+            assert.equal(block, dmdBlockIntervals[0].blockNumber);
+         });
+   });
+
    it('Saves HDMD total supply difference to agree database to blockchain', () => {
-      return hdmdClientMock.object
+      return hdmdClient
          .getTotalSupplyNotSaved()
          .then(supply => {
             assert.equal(supply.toNumber(), initialSupply);

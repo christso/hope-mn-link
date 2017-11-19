@@ -10,6 +10,7 @@ var hdmdClient = require('./client/hdmdClient');
 var dmdClient = require('./client/dmdClient');
 var seeder = require('./client/seeder');
 var database = require('./client/database');
+var contract = require('./client/hdmdContract');
 
 var seedAll = seeder.seedAll;
 var synchronizeAll = reconClient.synchronizeAll;
@@ -19,7 +20,9 @@ var saveInitialSupply = hdmdClient.saveTotalSupplyDiff;
 // reconcile transactions at each interval
 let watchInterval = config.dmdWatchInterval;
 
-allowThisMinter()
+contract
+   .checkVersion()
+   .then(() => allowThisMinter())
    .then(() => seedAll())
    .then(() =>
       setInterval(() => {

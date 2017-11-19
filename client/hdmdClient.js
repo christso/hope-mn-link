@@ -3,41 +3,34 @@
  */
 
 const BigNumber = require('bignumber.js');
-const Web3 = require('web3');
-const abi = require('./hdmdABI')();
 const config = require('../config');
 const hdmdTxns = require('../models/hdmdTxn');
 const burnTxns = require('../models/burn');
 const mintTxns = require('../models/mint');
+var hdmdContract = require('./hdmdContract');
 
 const wallet = require('../client/dmdWallet');
 
 const contribs = require('../data/hdmdContributions');
 const accounts = contribs.accounts;
 
-const abiDecoder = require('abi-decoder');
-
-abiDecoder.addABI(abi);
-
-const hdmdVersion = config.hdmdVersion;
-const ethNodeAddress = config.ethNodeAddress;
-
 var contractAddress = config.hdmdContractAddress;
 var gasLimit = config.ethGasLimit;
 var decimals = config.hdmdDecimals;
 
-// set the Web3 to where we need to connect
-var web3 = new Web3(new Web3.providers.HttpProvider(ethNodeAddress));
+var web3 = hdmdContract.web3;
+var abiDecoder = hdmdContract.abiDecoder;
 
 // set default account to use as msg.sender to contract
 // this account will need to be added via allowMinter to be able to invoke mint()
 web3.eth.defaultAccount = web3.eth.coinbase;
 var defaultAccount = web3.eth.defaultAccount;
 
-// Set up a contract with interface
-var contract = web3.eth.contract(abi);
-// Instantiate contact so we can interact
-var hdmdContract = contract.at(contractAddress);
+var init = newHdmdContract => {
+   hdmdContract = newHdmdContract;
+};
+
+var contractObj = hdmdContract.contractObj;
 
 const util = {
    /**
@@ -90,20 +83,6 @@ const util = {
 const getParsedNumber = util.getParsedNumber;
 const getRawNumber = util.getRawNumber;
 
-checkVersion();
-
-function checkVersion() {
-   // Check that version of app matches deployed contract
-   var hdmdVersionDeployed = hdmdContract.version.call();
-   if (hdmdVersionDeployed == hdmdVersion) {
-      console.log('HDMD contract matched.');
-   } else {
-      console.log(
-         `ERROR: HDMD contract version deployed is ${hdmdVersionDeployed} but app version is ${hdmdVersion}`
-      );
-   }
-}
-
 var ownerAddress;
 getContractOwner()
    .then(address => (ownerAddress = address))
@@ -111,11 +90,11 @@ getContractOwner()
 
 function getContractOwner(callback) {
    if (callback) {
-      hdmdContract.owner.call(callback);
+      contractObj.owner.call(callback);
       return;
    }
    return new Promise((resolve, reject) => {
-      hdmdContract.owner.call((err, res) => {
+      contractObj.owner.call((err, res) => {
          if (err) {
             reject(err);
          } else {
@@ -127,11 +106,11 @@ function getContractOwner(callback) {
 
 function allowMinter(account, callback) {
    if (callback) {
-      hdmdContract.allowMinter(account, callback);
+      contractObj.allowMinter(account, callback);
       return;
    }
    return new Promise((resolve, reject) => {
-      hdmdContract.allowMinter(account, (err, res) => {
+      contractObj.allowMinter(account, (err, res) => {
          if (err) {
             reject(err);
          } else {
@@ -300,7 +279,7 @@ function getBalances() {
       };
 
       accounts.forEach(account => {
-         hdmdContract.balanceOf(account, (err, value) => {
+         contractObj.balanceOf(account, (err, value) => {
             let done = () => accounts_processed === totalAccounts;
             appendBalance(err, value);
             if (done()) {
@@ -366,7 +345,7 @@ function batchTransfer(addresses, values) {
 
 function canMint() {
    return new Promise((resolve, reject) => {
-      hdmdContract.canMint(defaultAccount, (err, canMint) => {
+      contractObj.canMint(defaultAccount, (err, canMint) => {
          if (err) {
             reject(err);
          } else {
@@ -380,7 +359,7 @@ function _mint(amount) {
    let rawAmount = getRawNumber(amount).toNumber();
 
    return new Promise((resolve, reject) => {
-      hdmdContract.mint(rawAmount, (err, res) => {
+      contractObj.mint(rawAmount, (err, res) => {
          if (err) {
             reject(err);
          } else {
@@ -435,8 +414,20 @@ function unmint(amount) {
  */
 function getTotalSupplyNotSaved() {
    // return hdmdClient.totalSupply - hdmdTxns.aggregate({group: { $sum: 'amount'}})
-
-   return Promise.resolve(new BigNumber(10000));
+   return hdmdContract
+      .getTotalSupply()
+      .then(total => {
+         let actualTotal = total;
+         return actualTotal;
+      })
+      .then(actualTotal => {
+         let savedTotal = 0; // TODO: replace magic number
+         return [actualTotal, savedTotal];
+      })
+      .then(([actualTotal, savedTotal]) => {
+         let diff = actualTotal.sub(savedTotal);
+         return diff;
+      });
 }
 
 /**
@@ -523,22 +514,8 @@ function allowThisMinter() {
       });
 }
 
-/**
- * @return {Promise<BigNumber>} total supply
- */
-function getTotalSupply() {
-   return new Promise((resolve, reject) => {
-      hdmdContract.totalSupply.call((err, res) => {
-         if (err) {
-            reject(err);
-         } else {
-            resolve(res);
-         }
-      });
-   });
-}
-
 module.exports = {
+   init: init,
    web3: web3,
    hdmdContract: hdmdContract,
    getBalances: getBalances,
@@ -547,6 +524,7 @@ module.exports = {
    unmint: unmint,
    downloadTxns: downloadTxns,
    getTotalSupplySaved: getTotalSupplySaved,
+   getTotalSupplyNotSaved: getTotalSupplyNotSaved,
    getUnmatchedTxns: getUnmatchedTxns,
    getContractOwner: getContractOwner,
    apportion: apportion,
@@ -554,7 +532,5 @@ module.exports = {
    allowMinter: allowMinter,
    defaultAccount: defaultAccount,
    saveTotalSupplyDiff: saveTotalSupplyDiff,
-   allowThisMinter: allowThisMinter,
-   getTotalSupply: getTotalSupply,
-   getTotalSupplyNotSaved: getTotalSupplyNotSaved
+   allowThisMinter: allowThisMinter
 };

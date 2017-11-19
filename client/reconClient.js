@@ -295,7 +295,9 @@ function synchronizeAll() {
    let hdmds;
 
    // Download transactions and get what is unmatched
-   let p = downloadTxns().then(() => getUnmatchedTxns());
+   let p = downloadTxns()
+      .then(() => getLastSavedDmdBlockInterval())
+      .then(dmdBlockNumber => getUnmatchedTxns(dmdBlockNumber));
 
    // Invoke mint to synchronize HDMDs with DMDs
    p = p.then(values => {

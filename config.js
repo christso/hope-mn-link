@@ -32,7 +32,7 @@ config.dmdWalletPass = 'hope2017';
 //config.dmdWatchInterval = 15000; // 15 seconds
 config.dmdWatchInterval = 5000; // 5 seconds
 
-config.requireSeed = true; // WARNING: Ensure this is false unless you're seeding the contract
+config.requireSeed = false; // WARNING: Ensure this is false unless you're seeding the contract
 config.allowThisMinter = true; // force allow this node to mint
 config.saveInitialSupply = true; // save the difference in total supply to agree MongoDB to HDMD blockchain
 

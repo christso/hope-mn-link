@@ -122,6 +122,24 @@ describe('HDMD Integration Tests', () => {
    });
 
    it('Saves HDMD total supply difference to agree database to blockchain', () => {
+      let getDmdTotal = () => {
+         return dmdTxns.aggregate({
+            $group: {
+               _id: null,
+               totalAmount: { $sum: '$amount' }
+            }
+         });
+      };
+
+      let getHdmdTotal = () => {
+         return hdmdTxns.aggregate({
+            $group: {
+               _id: null,
+               totalAmount: { $sum: '$amount' }
+            }
+         });
+      };
+
       return hdmdClient
          .getTotalSupplyNotSaved()
          .then(supply => {
@@ -129,23 +147,33 @@ describe('HDMD Integration Tests', () => {
          })
          .then(() => hdmdClient.saveTotalSupplyDiff())
          .then(txn => {
+            // the amount saved to HDMD should equal the actual initial supply of HDMD
             assert.equal(txn.amount, initialSupply);
+         })
+         .then(() => {
+            return Promise.all([getDmdTotal(), getHdmdTotal()]);
+         })
+         .then(([dmdTotal, hdmdTotal]) => {
+            assert.equal(
+               dmdTotal[0] ? dmdTotal[0].totalAmount : 0,
+               hdmdTotal[0] ? hdmdTotal[0].totalAmount : 0
+            );
          });
    });
 
-   it('Reconciles HDMD initial adjustment with DMD first block interval', () => {
+   it('HdmdTxns should equal DmdTxns in ReconTxns after saving HDMD total supply difference', () => {
       let getUnmatchedTxns = reconClient.getUnmatchedTxns;
       let getLastSavedDmdBlockInterval =
          reconClient.getLastSavedDmdBlockInterval;
       let reconcile = reconClient.reconcile;
 
-      let dmdReconTotal = queries.recon.getDmdTotal;
-      let hdmdReconTotal = queries.recon.getHdmdTotal;
+      let getDmdReconTotal = queries.recon.getDmdTotal;
+      let getHdmdReconTotal = queries.recon.getHdmdTotal;
 
       return seeder.reconcileTotalSupply().then(newRecons => {
          return Promise.all([
-            dmdReconTotal(),
-            hdmdReconTotal()
+            getDmdReconTotal(),
+            getHdmdReconTotal()
          ]).then(([dmds, hdmds]) => {
             assert.equal(dmds[0].totalAmount, hdmds[0].totalAmount);
          });

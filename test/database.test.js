@@ -39,8 +39,11 @@ describe('HDMD Database Tests', () => {
       }
    ];
 
-   var createMocks = () => {};
-
+   var createMocks = () => {
+      return new Promise(resolve => {
+         resolve();
+      });
+   };
    var createDatabase = done => {
       // drop existing db and create new one
       return database
@@ -51,9 +54,8 @@ describe('HDMD Database Tests', () => {
          .then(done, done);
    };
 
-   before(done => {
-      createMocks();
-      createDatabase(done).catch(err => console.log(err));
+   before(() => {
+      return createMocks().then(() => createDatabase());
    });
 
    after(done => {

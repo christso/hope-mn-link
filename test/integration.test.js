@@ -30,11 +30,15 @@ describe('HDMD Integration Tests', () => {
    });
 
    var createMocks = () => {
-      hdmdContractMock = sinon.mock(hdmdContract);
-      hdmdClient.init(hdmdContractMock.object);
+      return new Promise(resolve => {
+         hdmdContractMock = sinon.mock(hdmdContract);
+         hdmdClient.init(hdmdContractMock.object);
 
-      sinon.stub(hdmdContractMock.object, 'getTotalSupply').callsFake(() => {
-         return Promise.resolve(new BigNumber(initialSupply));
+         sinon.stub(hdmdContractMock.object, 'getTotalSupply').callsFake(() => {
+            return Promise.resolve(new BigNumber(initialSupply));
+         });
+
+         resolve();
       });
    };
 
@@ -48,9 +52,8 @@ describe('HDMD Integration Tests', () => {
          .then(done, done);
    };
 
-   before(done => {
-      createMocks();
-      createDatabase(done).catch(err => console.log(err));
+   before(() => {
+      return createMocks().then(() => createDatabase());
    });
 
    after(done => {
@@ -60,8 +63,8 @@ describe('HDMD Integration Tests', () => {
       done();
    });
 
-   it('Save DMDs to database', done => {
-      dmdTxns
+   it('Save DMDs to database', () => {
+      return dmdTxns
          .create([
             {
                txnHash:
@@ -96,29 +99,12 @@ describe('HDMD Integration Tests', () => {
          ])
          .then(created => {
             assert.notEqual(created, undefined);
-            done();
          })
          .catch(err => assert.fail(err));
    });
 
-   it('Save HDMDs to database', done => {
-      done();
-   });
-
-   it('Get initial DMD block interval', () => {
-      return dmdIntervals
-         .create(dmdBlockIntervals)
-         .then(intervals => {
-            assert.notEqual(
-               intervals,
-               undefined,
-               'No intervals were saved to DB'
-            );
-         })
-         .then(() => reconClient.getLastSavedDmdBlockInterval())
-         .then(block => {
-            assert.equal(block, dmdBlockIntervals[0].blockNumber);
-         });
+   it('Save HDMDs to database', () => {
+      return Promise.reject('TODO');
    });
 
    it('Saves HDMD total supply difference to agree database to blockchain', () => {
@@ -158,6 +144,22 @@ describe('HDMD Integration Tests', () => {
                dmdTotal[0] ? dmdTotal[0].totalAmount : 0,
                hdmdTotal[0] ? hdmdTotal[0].totalAmount : 0
             );
+         });
+   });
+
+   it('Get initial DMD block interval', () => {
+      return dmdIntervals
+         .create(dmdBlockIntervals)
+         .then(intervals => {
+            assert.notEqual(
+               intervals,
+               undefined,
+               'No intervals were saved to DB'
+            );
+         })
+         .then(() => reconClient.getLastSavedDmdBlockInterval())
+         .then(block => {
+            assert.equal(block, dmdBlockIntervals[0].blockNumber);
          });
    });
 

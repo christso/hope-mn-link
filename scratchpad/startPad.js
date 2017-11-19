@@ -24,24 +24,18 @@ const decimals = config.hdmdDecimals;
 const dmdTxns = require('../models/dmdTxn');
 const hdmdTxns = require('../models/hdmdTxn');
 const reconTxns = require('../models/reconTxn');
+const queries = require('../client/databaseQueries');
 
 // connect to database
 let connection = database.createTestConnection();
 
-reconTxns
-   .find({})
+queries.recon
+   .getNextDmdInterval()
    .then(res => {
       console.log(res);
    })
    .catch(err => {
       console.log(err);
    });
-
-// reconClient
-//    .getLastSavedDmdBlockInterval()
-//    .then(res => {
-//       console.log(`result: ${res}`);
-//    })
-//    .catch(err => console.log(err));
 
 setInterval(() => true, 1000000);

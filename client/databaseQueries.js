@@ -1,7 +1,8 @@
 var reconTxns = require('../models/reconTxn');
+var dmdIntervals = require('../models/dmdInterval');
 
 var recon = (function() {
-   const getDmdIntervalMatchDef = (fromBlockNumber, toBlockNumber) => {
+   let getDmdIntervalMatchDef = (fromBlockNumber, toBlockNumber) => {
       return {
          $match: {
             $and: [
@@ -14,7 +15,7 @@ var recon = (function() {
       };
    };
 
-   const getDmdIntervalGroupDef = (fromBlockNumber, toBlockNumber) => {
+   let getDmdIntervalGroupDef = (fromBlockNumber, toBlockNumber) => {
       return {
          $group: {
             _id: null,
@@ -23,7 +24,7 @@ var recon = (function() {
       };
    };
 
-   const dmdTotalByInterval = (fromBlockNumber, toBlockNumber) => {
+   let getDmdTotalByInterval = (fromBlockNumber, toBlockNumber) => {
       return reconTxns.aggregate([
          getDmdIntervalMatchDef(),
          getDmdIntervalGroupDef()
@@ -34,7 +35,7 @@ var recon = (function() {
       return reconTxns.aggregate([getDmdIntervalMatchDef()]);
    };
 
-   const getHdmdReconMatchDef = reconId => {
+   let getHdmdReconMatchDef = reconId => {
       return {
          $match: {
             $and: [{ reconId: reconId }, { hdmdTxnHash: { $ne: null } }]
@@ -51,7 +52,7 @@ var recon = (function() {
       };
    };
 
-   let hdmdTotalByRecon = reconId => {
+   let getHdmdTotalByRecon = reconId => {
       return reconTxns.aggregate([
          getHdmdReconMatchDef(),
          getHdmdReconGroupDef()
@@ -62,7 +63,7 @@ var recon = (function() {
       return reconTxns.aggregate([getHdmdReconMatchDef()]);
    };
 
-   let dmdTotal = () =>
+   let getDmdTotal = () =>
       reconTxns.aggregate(
          {
             $match: {
@@ -77,7 +78,7 @@ var recon = (function() {
          }
       );
 
-   let hdmdTotal = () =>
+   let getHdmdTotal = () =>
       reconTxns.aggregate(
          {
             $match: {
@@ -92,11 +93,36 @@ var recon = (function() {
          }
       );
 
+   let getLastDmd = () => {
+      return reconTxns
+         .find({ dmdTxnHash: { $ne: null } })
+         .sort({ blockNumber: -1 })
+         .limit(1);
+   };
+
+   /**
+    * @returns {Promise.<number>} Resolves to the block interval that is greater than the last reconciled block interval
+    */
+   let getNextDmdInterval = () => {
+      return getLastDmd()
+         .then(recon => {
+            return dmdIntervals
+               .find({
+                  blockNumber: { $gt: recon[0] ? recon[0].blockNumber : 0 }
+               })
+               .sort({ blockNumber: 1 })
+               .limit(1);
+         })
+         .then(found => found[0].blockNumber);
+   };
+
    return {
-      dmdTotal: dmdTotal,
-      hdmdTotal: hdmdTotal,
-      dmdTotalByInterval: dmdTotalByInterval,
-      hdmdTotalByRecon: hdmdTotalByRecon
+      getDmdTotal: getDmdTotal,
+      getHdmdTotal: getHdmdTotal,
+      getDmdTotalByInterval: getDmdTotalByInterval,
+      getHdmdTotalByRecon: getHdmdTotalByRecon,
+      getLastDmd: getLastDmd,
+      getNextDmdInterval: getNextDmdInterval
    };
 })();
 

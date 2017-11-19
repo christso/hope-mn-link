@@ -114,7 +114,7 @@ var recon = (function() {
                .limit(1);
          })
          .then(found => {
-            return found[0] ? found[0].blockNumber : -1;
+            return found[0] ? found[0].blockNumber : undefined;
          });
    };
 
@@ -128,6 +128,20 @@ var recon = (function() {
    };
 })();
 
+var dmd = (function() {
+   let getNextBlockNumber = blockNumber => {
+      return dmdIntervals
+         .find({ blockNumber: { $gt: blockNumber } })
+         .sort({ blockNumber: 1 })
+         .limit(1)
+         .then(found => {
+            return found[0] ? found[0].blockNumber : undefined;
+         });
+   };
+   return { getNextBlockNumber: getNextBlockNumber };
+})();
+
 module.exports = {
-   recon: recon
+   recon: recon,
+   dmd: dmd
 };

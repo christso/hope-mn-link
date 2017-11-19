@@ -29,8 +29,8 @@ const queries = require('../client/databaseQueries');
 // connect to database
 let connection = database.createTestConnection();
 
-queries.recon
-   .getNextDmdInterval()
+queries.dmd
+   .getNextBlockNumber(19000)
    .then(res => {
       console.log(res);
    })

@@ -31,6 +31,7 @@ var contractObj = hdmdContract.contractObj;
 const getContractOwner = hdmdContract.getContractOwner;
 var ownerAddress;
 let allowMinter = hdmdContract.allowMinter;
+let getTotalSupply = hdmdContract.getTotalSupply;
 
 // contract math
 const contractMath = require('../lib/contractMath');
@@ -461,7 +462,7 @@ module.exports = {
    mint: mint,
    unmint: unmint,
    downloadTxns: downloadTxns,
-   getTotalSupply: hdmdContract.getTotalSupply,
+   getTotalSupply: getTotalSupply,
    getTotalSupplySaved: getTotalSupplySaved,
    getTotalSupplyNotSaved: getTotalSupplyNotSaved,
    getUnmatchedTxns: getUnmatchedTxns,

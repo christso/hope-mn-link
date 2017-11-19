@@ -27,6 +27,9 @@ var contract = web3.eth.contract(abi);
 // Instantiate contact so we can interact
 var contractObj = contract.at(contractAddress);
 
+var contractMath = require('../lib/contractMath');
+contractMath.decimals = decimals;
+
 /**
  *  Check that version of app matches deployed contract
  */
@@ -53,7 +56,8 @@ function getTotalSupply() {
          if (err) {
             reject(err);
          } else {
-            resolve(res);
+            let parsed = contractMath.getParsedNumber(res);
+            resolve(parsed);
          }
       });
    });

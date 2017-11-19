@@ -26,127 +26,38 @@ var abiDecoder = hdmdContract.abiDecoder;
 web3.eth.defaultAccount = web3.eth.coinbase;
 var defaultAccount = web3.eth.defaultAccount;
 
-var init = newHdmdContract => {
-   hdmdContract = newHdmdContract;
-};
-
+// contractObj
 var contractObj = hdmdContract.contractObj;
+const getContractOwner = hdmdContract.getContractOwner;
+var ownerAddress;
+let allowMinter = hdmdContract.allowMinter;
 
-const util = {
-   /**
-      * Distributes the minted amount to addresses in proportion to their balances
-      * @param {<BigNumber>} amount - amount to distribute
-      * @param {<BigNumber>[]} weights - array of weighting values to determine how much each recipient will receive
-      * @return {<BigNumber>[]} return value of the smart contract function
-      * */
-   applyWeights: function(amount, weights) {
-      let totalWeight = new BigNumber(0);
-      weights.forEach(w => (totalWeight = totalWeight.add(w)));
+// contract math
+const contractMath = require('../lib/contractMath');
+contractMath.decimals = decimals;
+let getParsedNumber = contractMath.getParsedNumber;
+let getRawNumber = contractMath.getRawNumber;
 
-      let newAmounts = [];
-      weights.forEach(w => {
-         newAmounts.push(w.mul(amount).div(totalWeight));
+var init = newHdmdContract => {
+   let assign = () => {
+      return new Promise(resolve => {
+         if (newHdmdContract) {
+            hdmdContract = newHdmdContract;
+         }
+         resolve();
       });
+   };
 
-      if (newAmounts.length === 0) return;
-
-      let totalNewAmount = newAmounts.reduce((a, b) => a.add(b));
-      let rounding = amount.sub(totalNewAmount);
-      newAmounts[0] = newAmounts[0].add(rounding);
-
-      return newAmounts;
-   },
-
-   /**
-      * Converts the parsed value to the underlying uint value used by smart contract
-      * @param {<BigNumber>} value - parsed value
-      * @return {<BigNumber>} - original units
-      * */
-   getParsedNumber: function(value) {
-      let divider = new BigNumber(10);
-      divider = divider.pow(decimals);
-      return value.div(divider);
-   },
-
-   /**
-      * Converts to underlying uint value used by smart contract
-      * @param {<BigNumber>} value - parsed value
-      * @return {<BigNumber>} - original units
-      */
-   getRawNumber: function(value) {
-      let multiplier = new BigNumber(10);
-      multiplier = multiplier.pow(decimals);
-      return value.mul(multiplier).round(0);
-   }
+   return assign().then(() => {
+      getContractOwner()
+         .then(address => (ownerAddress = address))
+         .catch(err => {
+            throw new Error(`Error getting owner address: ${err.stack}`);
+         });
+   });
 };
 
-const getParsedNumber = util.getParsedNumber;
-const getRawNumber = util.getRawNumber;
-
-var ownerAddress;
-getContractOwner()
-   .then(address => (ownerAddress = address))
-   .catch(err => console.log(`Error getting owner address: ${err}`));
-
-function getContractOwner(callback) {
-   if (callback) {
-      contractObj.owner.call(callback);
-      return;
-   }
-   return new Promise((resolve, reject) => {
-      contractObj.owner.call((err, res) => {
-         if (err) {
-            reject(err);
-         } else {
-            resolve(res);
-         }
-      });
-   });
-}
-
-function allowMinter(account, callback) {
-   if (callback) {
-      contractObj.allowMinter(account, callback);
-      return;
-   }
-   return new Promise((resolve, reject) => {
-      contractObj.allowMinter(account, (err, res) => {
-         if (err) {
-            reject(err);
-         } else {
-            resolve(res);
-         }
-      });
-   });
-}
-
-function downloadTxns() {
-   return getLastSavedTxn()
-      .then(docs => {
-         // get last block number that was saved in MongoDB
-         let lastSavedBlockNumber = 0;
-         if (docs.length > 0) {
-            lastSavedBlockNumber = docs[0].blockNumber;
-         }
-         return lastSavedBlockNumber;
-      })
-      .then(lastSavedBlockNumber =>
-         // get event logs after the last block number that we saved
-         filterEventsGet(lastSavedBlockNumber)
-            .then(eventLog =>
-               // parse the event log
-               parseEventLog(eventLog)
-            )
-            .then(newTxns =>
-               // save the newTxns into MongoDB
-               saveTxns(newTxns)
-            )
-            .catch(error => {
-               console.log('--- Error downloading DMD Txn Log ---', error);
-               return Promise.reject(new Error(err));
-            })
-      );
-}
+init();
 
 var filter;
 function filterEventsGet(fromBlock) {
@@ -514,6 +425,33 @@ function allowThisMinter() {
       });
 }
 
+function downloadTxns() {
+   return getLastSavedTxn()
+      .then(docs => {
+         // get last block number that was saved in MongoDB
+         let lastSavedBlockNumber = 0;
+         if (docs.length > 0) {
+            lastSavedBlockNumber = docs[0].blockNumber;
+         }
+         return lastSavedBlockNumber;
+      })
+      .then(lastSavedBlockNumber =>
+         // get event logs after the last block number that we saved
+         filterEventsGet(lastSavedBlockNumber)
+            .then(eventLog =>
+               // parse the event log
+               parseEventLog(eventLog)
+            )
+            .then(newTxns =>
+               // save the newTxns into MongoDB
+               saveTxns(newTxns)
+            )
+            .catch(error =>
+               console.log('--- Error downloading DMD Txn Log ---', error)
+            )
+      );
+}
+
 module.exports = {
    init: init,
    web3: web3,
@@ -523,12 +461,13 @@ module.exports = {
    mint: mint,
    unmint: unmint,
    downloadTxns: downloadTxns,
+   getTotalSupply: hdmdContract.getTotalSupply,
    getTotalSupplySaved: getTotalSupplySaved,
    getTotalSupplyNotSaved: getTotalSupplyNotSaved,
    getUnmatchedTxns: getUnmatchedTxns,
    getContractOwner: getContractOwner,
    apportion: apportion,
-   applyWeights: util.applyWeights,
+   applyWeights: contractMath.applyWeights,
    allowMinter: allowMinter,
    defaultAccount: defaultAccount,
    saveTotalSupplyDiff: saveTotalSupplyDiff,

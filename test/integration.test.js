@@ -29,6 +29,48 @@ describe('HDMD Integration Tests', () => {
       return { blockNumber: b };
    });
 
+   var dmdTxnsData = [
+      {
+         txnHash:
+            'DE64758DD95EE59B9F7ED45404321D48D9FCC7087D7E90CE68730B03CDC49FAC',
+         blockNumber: 18386,
+         amount: 9000
+      },
+      {
+         txnHash:
+            'DE64758DD95EE59B9F7ED45404321D48D9FCC7087D7E90CE68730B03CDC49FAC',
+         blockNumber: 18387,
+         amount: 1000
+      },
+      {
+         txnHash:
+            '18086BC1FBBD4C279E84080A537CBC0215133ADA55817BA76C4457C131FACA28',
+         blockNumber: 18996,
+         amount: 200
+      },
+      {
+         txnHash:
+            'DE64758DD95EE59B9F7ED45404321D48D9FCC7087D7E90CE68730B03CDC49FAC',
+         blockNumber: 22000,
+         amount: 200
+      },
+      {
+         txnHash:
+            'DE64758DD95EE59B9F7ED45404321D48D9FCC7087D7E90CE68730B03CDC49FAC',
+         blockNumber: 24742,
+         amount: 200
+      }
+   ];
+
+   var hdmdTxnsData = [
+      {
+         txnHash:
+            '0x9e48dcad620045e4796ec8aca03a4f7f279a073fcf3ac701008105b0e34235ee',
+         blockNumber: 5,
+         amount: 150
+      }
+   ];
+
    var createMocks = () => {
       return new Promise(resolve => {
          hdmdContractMock = sinon.mock(hdmdContract);
@@ -65,38 +107,7 @@ describe('HDMD Integration Tests', () => {
 
    it('Save DMDs to database', () => {
       return dmdTxns
-         .create([
-            {
-               txnHash:
-                  'DE64758DD95EE59B9F7ED45404321D48D9FCC7087D7E90CE68730B03CDC49FAC',
-               blockNumber: 18386,
-               amount: 9000
-            },
-            {
-               txnHash:
-                  'DE64758DD95EE59B9F7ED45404321D48D9FCC7087D7E90CE68730B03CDC49FAC',
-               blockNumber: 18387,
-               amount: 1000
-            },
-            {
-               txnHash:
-                  '18086BC1FBBD4C279E84080A537CBC0215133ADA55817BA76C4457C131FACA28',
-               blockNumber: 18996,
-               amount: 200
-            },
-            {
-               txnHash:
-                  'DE64758DD95EE59B9F7ED45404321D48D9FCC7087D7E90CE68730B03CDC49FAC',
-               blockNumber: 22000,
-               amount: 200
-            },
-            {
-               txnHash:
-                  'DE64758DD95EE59B9F7ED45404321D48D9FCC7087D7E90CE68730B03CDC49FAC',
-               blockNumber: 24742,
-               amount: 200
-            }
-         ])
+         .create(dmdTxnsData)
          .then(created => {
             assert.notEqual(created, undefined);
          })
@@ -104,20 +115,16 @@ describe('HDMD Integration Tests', () => {
    });
 
    it('Save HDMDs to database', () => {
-      return Promise.reject('TODO');
+      return hdmdTxns
+         .create(hdmdTxnsData)
+         .then(created => {
+            assert.notEqual(created, undefined);
+         })
+         .catch(err => assert.fail(err));
    });
 
-   it('Saves HDMD total supply difference to agree database to blockchain', () => {
-      let getDmdTotal = () => {
-         return dmdTxns.aggregate({
-            $group: {
-               _id: null,
-               totalAmount: { $sum: '$amount' }
-            }
-         });
-      };
-
-      let getHdmdTotal = () => {
+   it('Saves HDMD total supply difference to agree hdmdTxns database to blockchain', () => {
+      let getHdmdSavedTotal = () => {
          return hdmdTxns.aggregate({
             $group: {
                _id: null,
@@ -125,6 +132,8 @@ describe('HDMD Integration Tests', () => {
             }
          });
       };
+
+      let getTotalSupply = hdmdClient.getTotalSupply;
 
       return hdmdClient
          .getTotalSupplyNotSaved()
@@ -137,11 +146,11 @@ describe('HDMD Integration Tests', () => {
             assert.equal(txn.amount, initialSupply);
          })
          .then(() => {
-            return Promise.all([getDmdTotal(), getHdmdTotal()]);
+            return Promise.all([getHdmdSavedTotal(), getTotalSupply()]);
          })
-         .then(([dmdTotal, hdmdTotal]) => {
+         .then(([hdmdTotal, totalSupply]) => {
             assert.equal(
-               dmdTotal[0] ? dmdTotal[0].totalAmount : 0,
+               totalSupply ? totalSupply.toNumber() : 0,
                hdmdTotal[0] ? hdmdTotal[0].totalAmount : 0
             );
          });

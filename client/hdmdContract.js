@@ -59,10 +59,44 @@ function getTotalSupply() {
    });
 }
 
+function getContractOwner(callback) {
+   if (callback) {
+      contractObj.owner.call(callback);
+      return;
+   }
+   return new Promise((resolve, reject) => {
+      contractObj.owner.call((err, res) => {
+         if (err) {
+            reject(err);
+         } else {
+            resolve(res);
+         }
+      });
+   });
+}
+
+function allowMinter(account, callback) {
+   if (callback) {
+      contractObj.allowMinter(account, callback);
+      return;
+   }
+   return new Promise((resolve, reject) => {
+      contractObj.allowMinter(account, (err, res) => {
+         if (err) {
+            reject(err);
+         } else {
+            resolve(res);
+         }
+      });
+   });
+}
+
 module.exports = {
    checkVersion: checkVersion,
    web3: web3,
    contractObj: contractObj,
    abiDecoder: abiDecoder,
-   getTotalSupply: getTotalSupply
+   getTotalSupply: getTotalSupply,
+   getContractOwner: getContractOwner,
+   allowMinter: allowMinter
 };

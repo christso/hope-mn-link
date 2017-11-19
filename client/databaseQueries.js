@@ -108,12 +108,14 @@ var recon = (function() {
          .then(recon => {
             return dmdIntervals
                .find({
-                  blockNumber: { $gt: recon[0] ? recon[0].blockNumber : 0 }
+                  blockNumber: { $gt: recon[0] ? recon[0].blockNumber : -1 }
                })
                .sort({ blockNumber: 1 })
                .limit(1);
          })
-         .then(found => found[0].blockNumber);
+         .then(found => {
+            return found[0] ? found[0].blockNumber : -1;
+         });
    };
 
    return {

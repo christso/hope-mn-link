@@ -25,7 +25,64 @@ describe('HDMD Database Tests', () => {
 
    var hdmdContractMock;
 
-   var dmdBlockIntervals = [18386, 18388, 18584, 23742, 27962, 28022].map(b => {
+   var dmdIntervalsData = [18386, 18388, 18584, 23742, 27962, 28022].map(b => {
       return { blockNumber: b };
+   });
+
+   var reconTxnsData = [
+      {
+         reconId: '8726d9c0cd1f11e7b529ed384b92c5f0',
+         dmdTxnHash:
+            'DE64758DD95EE59B9F7ED45404321D48D9FCC7087D7E90CE68730B03CDC49FAC',
+         amount: 1000,
+         blockNumber: 18389
+      }
+   ];
+
+   var createMocks = () => {};
+
+   var createDatabase = done => {
+      // drop existing db and create new one
+      return database
+         .dropAndCreateTestDatabase()
+         .then(c => {
+            undefined;
+         })
+         .then(done, done);
+   };
+
+   before(done => {
+      createMocks();
+      createDatabase(done).catch(err => console.log(err));
+   });
+
+   after(done => {
+      if (cleanup) {
+         database.dropDatabase();
+      }
+      done();
+   });
+
+   it('Saves reconTxns', () => {
+      return reconTxns.create(reconTxnsData);
+   });
+
+   it('Saves dmdIntervals', () => {
+      return dmdIntervals.create(dmdIntervalsData);
+   });
+
+   it('Gets the last DMD that was reconciled', () => {
+      var getLastDmd = queries.recon.getLastDmd;
+      return getLastDmd().then(dmdRecon => {
+         assert.equal(dmdRecon.length, 1);
+         assert.equal(dmdRecon[0].blockNumber, 18389);
+      });
+   });
+
+   it('Gets the next block interval that is not reconciled', () => {
+      var getNextDmdInterval = queries.recon.getNextDmdInterval;
+      return getNextDmdInterval().then(dmdInterval => {
+         assert.equal(dmdInterval, dmdIntervalsData[2].blockNumber);
+      });
    });
 });

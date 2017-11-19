@@ -28,10 +28,16 @@ var defaultAccount = web3.eth.defaultAccount;
 
 // contractObj
 var contractObj = hdmdContract.contractObj;
-const getContractOwner = hdmdContract.getContractOwner;
+var getContractOwner = () => {
+   return hdmdContract.getContractOwner();
+};
 var ownerAddress;
-let allowMinter = hdmdContract.allowMinter;
-let getTotalSupply = hdmdContract.getTotalSupply;
+var allowMinter = () => {
+   return hdmdContract.allowMinter();
+};
+var getTotalSupply = () => {
+   return hdmdContract.getTotalSupply();
+};
 
 // contract math
 const contractMath = require('../lib/contractMath');

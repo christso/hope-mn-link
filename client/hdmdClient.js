@@ -436,7 +436,7 @@ function unmint(amount) {
 function getTotalSupplyNotSaved() {
    // return hdmdClient.totalSupply - hdmdTxns.aggregate({group: { $sum: 'amount'}})
 
-   return Promise.resolve(new BignNumber(10000));
+   return Promise.resolve(new BigNumber(10000));
 }
 
 /**

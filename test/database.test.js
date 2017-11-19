@@ -1,4 +1,7 @@
 const assert = require('chai').assert;
+var sinon = require('sinon');
+var proxyquire = require('proxyquire');
+
 const hdmdClient = require('../client/hdmdClient');
 const reconClient = require('../client/reconClient');
 const BigNumber = require('bignumber.js');
@@ -13,10 +16,23 @@ const cleanup = false;
 
 describe('Database Tests', () => {
    var connection;
+   const initialSupply = 12000;
 
-   before(done => {
+   var hdmdClientMock;
+
+   var createMocks = () => {
+      hdmdClientMock = sinon.mock(hdmdClient);
+
+      sinon
+         .stub(hdmdClientMock.object, 'getTotalSupplyNotSaved')
+         .callsFake(() => {
+            return Promise.resolve(new BigNumber(initialSupply));
+         });
+   };
+
+   var createDatabase = done => {
       // drop existing db and create new one
-      database
+      return database
          .createTestConnection()
          .then(c => {
             connection = c;
@@ -27,14 +43,19 @@ describe('Database Tests', () => {
          .then(c => {
             connection = c;
          })
-         .catch(err => console.log(err));
-      done();
+         .then(done, done);
+   };
+
+   before(done => {
+      createMocks();
+      createDatabase(done).catch(err => console.log(err));
    });
 
    after(done => {
       if (cleanup) {
          database.dropDatabase(connection);
       }
+      done();
    });
 
    it('Save DMDs to database', done => {
@@ -60,13 +81,19 @@ describe('Database Tests', () => {
          .catch(err => assert.fail(err));
    });
 
-   it('Save HDMDs to database', done => {});
+   it('Save HDMDs to database', done => {
+      done();
+   });
 
-   it('Saves HDMD total supply difference to agree database to blockchain', done => {
-      const initialSupply = 12000;
-
-      hdmdClient.getTotalSupplyNotSaved().then(supply => {
-         assert.equal(supply.toNumber(), 12000);
-      });
+   it('Saves HDMD total supply difference to agree database to blockchain', () => {
+      return hdmdClientMock.object
+         .getTotalSupplyNotSaved()
+         .then(supply => {
+            assert.equal(supply.toNumber(), initialSupply);
+         })
+         .then(() => hdmdClient.saveTotalSupplyDiff())
+         .then(txn => {
+            assert.equal(txn.amount, initialSupply);
+         });
    });
 });

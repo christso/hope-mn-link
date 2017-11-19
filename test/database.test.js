@@ -10,8 +10,12 @@ const dmdTxns = require('../models/dmdTxn');
 const hdmdTxns = require('../models/hdmdTxn');
 const reconTxns = require('../models/reconTxn');
 const dmdIntervals = require('../models/dmdInterval');
+const seeder = require('../client/seeder');
 
+var mongoose = require('mongoose');
+mongoose.Promise = global.Promise;
 var database = require('../client/database');
+var queries = require('../client/databaseQueries');
 
 const cleanup = false;
 
@@ -21,7 +25,7 @@ describe('HDMD Database Tests', () => {
 
    var hdmdContractMock;
 
-   var dmdBlockIntervals = [18386, 18584, 23742, 27962, 28022].map(b => {
+   var dmdBlockIntervals = [18386, 18388, 18584, 23742, 27962, 28022].map(b => {
       return { blockNumber: b };
    });
 
@@ -69,13 +73,31 @@ describe('HDMD Database Tests', () => {
                txnHash:
                   'DE64758DD95EE59B9F7ED45404321D48D9FCC7087D7E90CE68730B03CDC49FAC',
                blockNumber: 18386,
-               amount: 10000
+               amount: 9000
+            },
+            {
+               txnHash:
+                  'DE64758DD95EE59B9F7ED45404321D48D9FCC7087D7E90CE68730B03CDC49FAC',
+               blockNumber: 18387,
+               amount: 1000
             },
             {
                txnHash:
                   '18086BC1FBBD4C279E84080A537CBC0215133ADA55817BA76C4457C131FACA28',
                blockNumber: 18996,
-               amount: 1.5
+               amount: 200
+            },
+            {
+               txnHash:
+                  'DE64758DD95EE59B9F7ED45404321D48D9FCC7087D7E90CE68730B03CDC49FAC',
+               blockNumber: 22000,
+               amount: 200
+            },
+            {
+               txnHash:
+                  'DE64758DD95EE59B9F7ED45404321D48D9FCC7087D7E90CE68730B03CDC49FAC',
+               blockNumber: 24742,
+               amount: 200
             }
          ])
          .then(created => {
@@ -115,5 +137,85 @@ describe('HDMD Database Tests', () => {
          .then(txn => {
             assert.equal(txn.amount, initialSupply);
          });
+   });
+
+   it('Reconciles HDMD initial adjustment with DMD first block interval', () => {
+      let getUnmatchedTxns = reconClient.getUnmatchedTxns;
+      let getLastSavedDmdBlockInterval =
+         reconClient.getLastSavedDmdBlockInterval;
+      let reconcile = reconClient.reconcile;
+
+      let dmdReconTotal = queries.recon.dmdTotal;
+      let hdmdReconTotal = queries.recon.hdmdTotal;
+
+      return seeder.reconcileTotalSupply().then(newRecons => {
+         return Promise.all([
+            dmdReconTotal,
+            hdmdReconTotal
+         ]).then(([dmds, hdmds]) => {
+            assert.equal(dmds[0].totalAmount, hdmds[0].totalAmount);
+         });
+      });
+   });
+
+   it('Mints current DMD block interval only', () => {
+      let getUnmatchedTxns = reconClient.getUnmatchedTxns;
+      let getLastSavedDmdBlockInterval =
+         reconClient.getLastSavedDmdBlockInterval;
+      let reconcile = reconClient.reconcile;
+      let mintDmds = reconClient.mintDmds;
+      let dmdReconTotal = queries.recon.dmdTotal;
+      let hdmdReconTotal = queries.recon.hdmdTotal;
+
+      // No need to download because mintDmdsMock will save directly to MongoDB
+      let downloadTxns = () => {
+         return Promise.resolve();
+      };
+
+      let promises = [];
+      let amounts = [];
+
+      let synchronizeAll = () => {
+         return (
+            downloadTxns()
+               .then(() => getLastSavedDmdBlockInterval())
+               .then(dmdBlockNumber => getUnmatchedTxns(dmdBlockNumber))
+               // Invoke mint to synchronize HDMDs with DMDs
+               .then(([dmds, hdmds]) => {
+                  return mintDmds(dmds, hdmds); // TODO: create mock mintDmds which will add to MongoDB
+               })
+               // Assert
+               .then(mintTxn => {
+                  return Promise.all([
+                     dmdReconTotal,
+                     hdmdReconTotal
+                  ]).then(([dmds, hdmds]) => {
+                     amounts.push({
+                        dmd: dmds[0].totalAmount,
+                        hdmd: hdmds[0].totalAmount
+                     });
+                  });
+               })
+         );
+      };
+
+      for (let i = 0; i < 2; i++) {
+         promises.push(synchronizeAll());
+      }
+
+      return Promise.all(promises).then(results => {
+         for (let i = 0; i < amounts.length; i++) {
+            assert.equal(
+               amounts[i].dmd,
+               amounts[i].hdmd,
+               `Assertion error -> expected ${amounts[i]
+                  .dmd} to equal ${amounts[i].hdmd} at iteration ${i}`
+            );
+         }
+      });
+   });
+
+   it('Gets the next block interval that is not reconciled', () => {
+      return Promise.reject(); // TODO
    });
 });

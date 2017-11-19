@@ -352,5 +352,6 @@ module.exports = {
    getUnmatchedTxns: getUnmatchedTxns,
    reconcile: reconcile,
    downloadDmdTxns: downloadDmdTxns,
-   getLastSavedDmdBlockInterval: getLastSavedDmdBlockInterval
+   getLastSavedDmdBlockInterval: getLastSavedDmdBlockInterval,
+   mintDmds: mintDmds
 };

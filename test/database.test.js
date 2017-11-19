@@ -41,15 +41,9 @@ describe('HDMD Database Tests', () => {
    var createDatabase = done => {
       // drop existing db and create new one
       return database
-         .createTestConnection()
+         .dropAndCreateTestDatabase()
          .then(c => {
-            connection = c;
-            database.dropDatabase(connection);
-         })
-         .then(() => database.disconnect(connection))
-         .then(() => database.createTestConnection())
-         .then(c => {
-            connection = c;
+            undefined;
          })
          .then(done, done);
    };
@@ -61,7 +55,7 @@ describe('HDMD Database Tests', () => {
 
    after(done => {
       if (cleanup) {
-         database.dropDatabase(connection);
+         database.dropDatabase();
       }
       done();
    });
@@ -150,8 +144,8 @@ describe('HDMD Database Tests', () => {
 
       return seeder.reconcileTotalSupply().then(newRecons => {
          return Promise.all([
-            dmdReconTotal,
-            hdmdReconTotal
+            dmdReconTotal(),
+            hdmdReconTotal()
          ]).then(([dmds, hdmds]) => {
             assert.equal(dmds[0].totalAmount, hdmds[0].totalAmount);
          });
@@ -187,8 +181,8 @@ describe('HDMD Database Tests', () => {
                // Assert
                .then(mintTxn => {
                   return Promise.all([
-                     dmdReconTotal,
-                     hdmdReconTotal
+                     dmdReconTotal(),
+                     hdmdReconTotal()
                   ]).then(([dmds, hdmds]) => {
                      amounts.push({
                         dmd: dmds[0].totalAmount,
@@ -198,6 +192,8 @@ describe('HDMD Database Tests', () => {
                })
          );
       };
+
+      dmdIntervals.aggregate();
 
       for (let i = 0; i < 2; i++) {
          promises.push(synchronizeAll());

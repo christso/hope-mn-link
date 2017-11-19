@@ -45,16 +45,25 @@ function createTestConnection() {
    });
 }
 
-function disconnect(connection) {
+function disconnect() {
+   let connection = mongoose.connection;
    return connection.close();
 }
 
-function dropDatabase(connection) {
+function dropDatabase() {
+   var connection = mongoose.connection;
    return new Promise((resolve, reject) => {
       return connection.db.dropDatabase(function() {
          return resolve(connection);
       });
    });
+}
+
+function dropAndCreateTestDatabase() {
+   return createTestConnection()
+      .then(() => dropDatabase())
+      .then(() => disconnect())
+      .then(() => createTestConnection());
 }
 
 function dropDatabaseAndDisconnect(connection) {
@@ -67,5 +76,6 @@ module.exports = {
    connect: connect,
    createTestConnection: createTestConnection,
    dropDatabase: dropDatabase,
-   disconnect: disconnect
+   disconnect: disconnect,
+   dropAndCreateTestDatabase: dropAndCreateTestDatabase
 };

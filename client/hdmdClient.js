@@ -332,18 +332,32 @@ function unmint(amount) {
  */
 function getTotalSupplyNotSaved() {
    // return hdmdClient.totalSupply - hdmdTxns.aggregate({group: { $sum: 'amount'}})
+   let pSavedTotal = hdmdTxns.aggregate([
+      {
+         $group: {
+            _id: null,
+            totalAmount: { $sum: '$amount' }
+         }
+      }
+   ]);
+
+   let actualTotal = 0;
+   let savedTotal = 0;
+
    return hdmdContract
       .getTotalSupply()
       .then(total => {
-         let actualTotal = total;
+         actualTotal = total;
          return actualTotal;
       })
-      .then(actualTotal => {
-         let savedTotal = 0; // TODO: replace magic number
-         return [actualTotal, savedTotal];
+      .then(() => {
+         return pSavedTotal.then(doc => {
+            savedTotal = doc[0] ? doc[0].totalAmount : 0;
+            return savedTotal;
+         });
       })
-      .then(([actualTotal, savedTotal]) => {
-         let diff = actualTotal.sub(savedTotal);
+      .then(() => {
+         let diff = actualTotal.minus(savedTotal);
          return diff;
       });
 }

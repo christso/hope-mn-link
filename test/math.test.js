@@ -32,7 +32,7 @@ describe('HDMD calculation tests', () => {
       let weightedAmount = hdmdClient.applyWeights(amount, weights);
       let totalWeightedAmount = new BigNumber(0);
       weightedAmount.forEach(a => {
-         totalWeightedAmount = totalWeightedAmount.add(a);
+         totalWeightedAmount = totalWeightedAmount.plus(a);
       });
       assert.equal(totalWeightedAmount.toNumber(), amount.toNumber());
       done();

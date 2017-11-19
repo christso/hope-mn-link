@@ -81,15 +81,15 @@ function downloadHdmdTxns() {
 function getRequiredMintingAmount(dmds, hdmds) {
    dmdTotal = new BigNumber(0);
    dmds.forEach(txn => {
-      dmdTotal = dmdTotal.add(txn.amount);
+      dmdTotal = dmdTotal.plus(txn.amount);
    });
 
    hdmdTotal = new BigNumber(0);
    hdmds.forEach(txn => {
-      hdmdTotal = hdmdTotal.add(txn.amount);
+      hdmdTotal = hdmdTotal.plus(txn.amount);
    });
 
-   return dmdTotal.sub(hdmdTotal);
+   return dmdTotal.minus(hdmdTotal);
 }
 
 /**

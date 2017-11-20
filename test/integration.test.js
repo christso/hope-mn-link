@@ -271,7 +271,7 @@ describe('HDMD Integration Tests', () => {
          .then(txn => {
             // The amount saved to HDMD should equal the actual initial supply of HDMD
             // This should be the only difference between the hdmdEvents and the total supply
-            assert.equal(txn.amount, initialSupply - initialHdmdSavedTotal);
+            assert.equal(txn.amount, initialSupply);
          })
          .then(() => {
             return Promise.all([getHdmdSavedTotal(), getTotalSupply()]);

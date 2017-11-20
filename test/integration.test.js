@@ -372,6 +372,8 @@ describe('HDMD Integration Tests', () => {
       let expected = [];
       expected.push({ dmd: 0, hdmd: 0 });
       expected.push({ dmd: 10000, hdmd: 10000 });
+      expected.push({ dmd: 10000, hdmd: 10000 });
+      expected.push({ dmd: 10400, hdmd: 10400 });
       expected.push({ dmd: 10400, hdmd: 10400 });
       expected.push({ dmd: 10600, hdmd: 10600 });
       expected.push({ dmd: 10600, hdmd: 10600 });

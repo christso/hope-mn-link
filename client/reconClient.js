@@ -3,7 +3,9 @@
 var config = require('../config');
 var mongoose = require('mongoose');
 var BigNumber = require('bignumber.js');
-const uuidv1 = require('uuid/v1');
+const uuidv4 = require('uuid/v4');
+var Logger = require('../lib/logger');
+var logger = new Logger('RECON');
 
 var port = config.port;
 
@@ -15,11 +17,7 @@ var reconTxns = require('../models/reconTxn');
 
 const nothingToMint = 'nothing-to-mint';
 const formatter = require('../lib/formatter');
-/**
-* Remove dashes from uuid
-* @param {String} uuid - UUID to be formated
-* @return {String} formatted UUID
-*/
+
 var formatUuidv1 = formatter.formatUuidv1;
 
 function downloadDmdTxns() {
@@ -27,15 +25,15 @@ function downloadDmdTxns() {
       .downloadTxns()
       .then(result => {
          if (result) {
-            console.log('Downloaded DMD Transactions from CryptoID', result);
+            logger.log('Downloaded DMD Transactions from CryptoID', result);
          } else {
-            console.log(
+            logger.log(
                'Downloaded DMD Transactions from CryptoID - no changes found'
             );
          }
       })
       .catch(err => {
-         console.log(
+         logger.log(
             'Error downloading from DMD CryptoID and saving to DB',
             err
          );
@@ -48,15 +46,15 @@ function downloadHdmdTxns() {
       .downloadTxns()
       .then(result => {
          if (result) {
-            console.log('Downloaded HDMD Transactions from Ethereum network');
+            logger.log('Downloaded HDMD Transactions from Ethereum network');
          } else {
-            console.log(
+            logger.log(
                'Downloaded HDMD Transactions from Ethereum network - no changes found'
             );
          }
       })
       .catch(err => {
-         console.log(
+         logger.log(
             'Error downloading HDMD Transactions from Ethereum network and saving to DB',
             err
          );
@@ -94,7 +92,7 @@ function reconcile(dmds, hdmds) {
    if (dmds === undefined || hdmds === undefined) {
       return Promise.reject(`parameters dmds and hdmds cannot be undefined`);
    }
-   let reconId = formatUuidv1(uuidv1());
+   let reconId = formatUuidv1(uuidv4());
    let dmdRecs = dmds.map(txn => {
       return {
          reconId: reconId,
@@ -137,7 +135,7 @@ function mintToDmd(dmds, hdmds) {
                   txnHash: txnHash,
                   amount: amount.toNumber()
                };
-               console.log(`Mint invoked = ${JSON.stringify(mintTxn)}`);
+               logger.log(`Mint invoked = ${JSON.stringify(mintTxn)}`);
                resolve(mintTxn);
             })
             .catch(err => reject(err));
@@ -149,7 +147,7 @@ function mintToDmd(dmds, hdmds) {
                   txnHash: txnHash,
                   amount: amount.mul(-1).toNumber()
                };
-               console.log(`Unmint invoked = ${JSON.stringify(mintTxn)}`);
+               logger.log(`Unmint invoked = ${JSON.stringify(mintTxn)}`);
                resolve(mintTxn);
             })
             .catch(err => reject(err));
@@ -303,7 +301,7 @@ function synchronizeAll() {
       if (minted === nothingToMint) {
          reconcile(dmds, hdmds).then(recs => {
             let length = recs ? recs.length : 0;
-            console.log(`Reconciled ${length} transactions`);
+            logger.log(`Reconciled ${length} transactions`);
          });
       }
       return minted;

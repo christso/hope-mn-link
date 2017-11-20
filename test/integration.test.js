@@ -92,7 +92,43 @@ describe('HDMD Integration Tests', () => {
    };
 
    let downloadHdmdsFaker = () => {
-      return Promise.resolve(); // TODO
+      return new Promise((resolve, reject) => {
+         let getLastHdmdBlockNumberSaved = () => {
+            return hdmdTxns
+               .find({})
+               .sort({ blockNumber: -1 })
+               .limit(1)
+               .then(found => {
+                  return found[0] ? found[0].blockNumber : 0;
+               });
+         };
+
+         let getHdmdEvents = startBlockNumber => {
+            return hdmdEvents.find({
+               blockNumber: { $gt: startBlockNumber ? startBlockNumber : 0 }
+            });
+         };
+
+         let newTxns = [];
+
+         getLastHdmdBlockNumberSaved()
+            .then(blockNumber => getHdmdEvents(blockNumber))
+            .then(hdmdEvents => {
+               hdmdEvents.forEach(event => {
+                  newTxns.push({
+                     txnHash: event.txnHash,
+                     blockNumber: event.blockNumber,
+                     amount: event.netAmount,
+                     eventName: event.eventName
+                  });
+               });
+               return hdmdTxns.create(newTxns);
+            })
+            .then(created => {
+               resolve(created);
+            })
+            .catch(err => reject(err));
+      });
    };
 
    var createMocks = () => {
@@ -233,7 +269,8 @@ describe('HDMD Integration Tests', () => {
          })
          .then(() => hdmdClient.saveTotalSupplyDiff())
          .then(txn => {
-            // the amount saved to HDMD should equal the actual initial supply of HDMD
+            // The amount saved to HDMD should equal the actual initial supply of HDMD
+            // This should be the only difference between the hdmdEvents and the total supply
             assert.equal(txn.amount, initialSupply - initialHdmdSavedTotal);
          })
          .then(() => {

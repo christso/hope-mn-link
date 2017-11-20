@@ -2,6 +2,7 @@ const assert = require('chai').assert;
 var sinon = require('sinon');
 var proxyquire = require('proxyquire');
 
+const uuidv1 = require('uuid/v1');
 const hdmdClient = require('../client/hdmdClient');
 const hdmdContract = require('../client/hdmdContract');
 const reconClient = require('../client/reconClient');
@@ -11,6 +12,7 @@ const hdmdTxns = require('../models/hdmdTxn');
 const reconTxns = require('../models/reconTxn');
 const dmdIntervals = require('../models/dmdInterval');
 const seeder = require('../client/seeder');
+const formatter = require('../lib/formatter');
 
 var mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
@@ -62,32 +64,95 @@ describe('HDMD Integration Tests', () => {
       }
    ];
 
-   var hdmdTxnsData = [
+   var hdmdEventsData = [
       {
          txnHash:
             '0x9e48dcad620045e4796ec8aca03a4f7f279a073fcf3ac701008105b0e34235ee',
-         blockNumber: 5,
-         amount: 150
+         blockNumber: 1,
+         amount: 150,
+         netAmount: 150,
+         eventName: 'Mint'
       }
    ];
 
+   // Fake eth event log
+   var hdmdEventSchema = new mongoose.Schema({
+      txnHash: String,
+      blockNumber: Number,
+      amount: Number,
+      netAmount: Number,
+      eventName: String
+   });
+   var hdmdEvents = mongoose.model('HdmdEvent', hdmdEventSchema);
+
+   // Fake downloaders
+   // No need to download because mintDmdsMock will save directly to MongoDB
+   let downloadTxnsFaker = () => {
+      return downloadHdmdsFaker();
+   };
+
+   let downloadHdmdsFaker = () => {
+      return Promise.resolve(); // TODO
+   };
+
    var createMocks = () => {
       return new Promise(resolve => {
+         let getLastHdmdBlockNumber = () => {
+            return hdmdEvents
+               .find({})
+               .sort({ blockNumber: -1 })
+               .limit(1)
+               .then(found => (found[0] ? found[0].blockNumber : 0));
+         };
+
          hdmdContractMock = sinon.mock(hdmdContract);
          hdmdClient.init(hdmdContractMock.object);
 
          sinon.stub(hdmdContractMock.object, 'getTotalSupply').callsFake(() => {
-            return Promise.resolve(new BigNumber(initialSupply));
+            return new Promise((resolve, reject) => {
+               let bnInitSupply = new BigNumber(initialSupply);
+               hdmdEvents
+                  .find({})
+                  .then(found => {
+                     if (!found[0]) {
+                        return new BigNumber(0);
+                     }
+                     let total = new BigNumber(0);
+                     found.forEach(obj => {
+                        total = total.plus(obj.netAmount);
+                     });
+                     return total;
+                  })
+                  .then(bnEventTotal => {
+                     resolve(bnEventTotal.plus(bnInitSupply));
+                     return;
+                  })
+                  .catch(err => {
+                     reject(err);
+                  });
+            });
          });
 
          sinon.stub(hdmdContractMock.object, 'unmint').callsFake(amount => {
-            console.log(`unmint ${amount}`);
-            return Promise.resolve(amount);
+            return getLastHdmdBlockNumber().then(blockNumber =>
+               hdmdEvents.create({
+                  txnHash: formatter.formatUuidv1(uuidv1()),
+                  blockNumber: blockNumber,
+                  amount: amount ? amount.toNumber() : 0,
+                  eventName: 'Unmint'
+               })
+            );
          });
 
          sinon.stub(hdmdContractMock.object, 'mint').callsFake(amount => {
-            console.log(`mint ${amount}`);
-            return Promise.resolve(amount);
+            return getLastHdmdBlockNumber().then(blockNumber =>
+               hdmdEvents.create({
+                  txnHash: formatter.formatUuidv1(uuidv1()),
+                  blockNumber: blockNumber,
+                  amount: amount,
+                  eventName: 'Mint'
+               })
+            );
          });
 
          resolve();
@@ -124,13 +189,17 @@ describe('HDMD Integration Tests', () => {
          .catch(err => assert.fail(err));
    });
 
-   it('Save HDMDs to database', () => {
-      return hdmdTxns
-         .create(hdmdTxnsData)
+   it('Save HDMD events to database', () => {
+      return hdmdEvents
+         .create(hdmdEventsData)
          .then(created => {
             assert.notEqual(created, undefined);
          })
          .catch(err => assert.fail(err));
+   });
+
+   it('Downloads HDMD events into database', () => {
+      return downloadHdmdsFaker();
    });
 
    it('Saves HDMD total supply difference to agree hdmdTxns database to blockchain', () => {
@@ -144,7 +213,7 @@ describe('HDMD Integration Tests', () => {
       };
 
       let getTotalSupply = hdmdClient.getTotalSupply;
-      let initialHdmdSavedTotal = 0;
+      let initialHdmdSavedTotal = 0; // what was saved already in MongoDB
       let getTotalSupplyNotSaved = hdmdClient.getTotalSupplyNotSaved;
 
       return getHdmdSavedTotal()
@@ -157,7 +226,9 @@ describe('HDMD Integration Tests', () => {
          .then(supply => {
             assert.equal(
                supply.toNumber(),
-               initialSupply - initialHdmdSavedTotal
+               initialSupply +
+                  hdmdEventsData[0].netAmount -
+                  initialHdmdSavedTotal
             );
          })
          .then(() => hdmdClient.saveTotalSupplyDiff())
@@ -201,21 +272,6 @@ describe('HDMD Integration Tests', () => {
       let dmdReconTotal = queries.recon.getDmdTotal;
       let hdmdReconTotal = queries.recon.getHdmdTotal;
       let nothingToMint = reconClient.nothingToMint;
-
-      // Fake eth event log
-      var hdmdEventSchema = new mongoose.Schema({
-         blockNumber: Number
-      });
-      var hdmdEvents = mongoose.model('HdmdEvent', hdmdEventSchema);
-
-      // No need to download because mintDmdsMock will save directly to MongoDB
-      let downloadTxnsFaker = () => {
-         return downloadHdmdsFaker();
-      };
-
-      let downloadHdmdsFaker = () => {
-         return Promise.resolve();
-      };
 
       let synchronize = i => {
          let mintTxn;

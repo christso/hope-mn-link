@@ -14,21 +14,13 @@ var mintDocs = require('../models/mint');
 var reconTxns = require('../models/reconTxn');
 
 const nothingToMint = 'nothing-to-mint';
-
+const formatter = require('../lib/formatter');
 /**
 * Remove dashes from uuid
 * @param {String} uuid - UUID to be formated
 * @return {String} formatted UUID
 */
-function formatUuidv1(uuid) {
-   return (
-      uuid.substr(0, 8) +
-      uuid.substr(9, 4) +
-      uuid.substr(14, 4) +
-      uuid.substr(19, 4) +
-      uuid.substr(24, 12)
-   );
-}
+var formatUuidv1 = formatter.formatUuidv1;
 
 function downloadDmdTxns() {
    return dmdClient

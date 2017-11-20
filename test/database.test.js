@@ -25,7 +25,7 @@ describe('HDMD Database Tests', () => {
 
    var hdmdContractMock;
 
-   var dmdIntervalsData = [18386, 18388, 18584, 23742, 27962, 28022].map(b => {
+   var dmdIntervalsData = [18386, 18388, 18584, 23730].map(b => {
       return { blockNumber: b };
    });
 

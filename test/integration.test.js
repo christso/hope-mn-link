@@ -27,7 +27,8 @@ describe('HDMD Integration Tests', () => {
 
    var hdmdContractMock;
 
-   var dmdBlockIntervals = [18386, 18388, 18584, 23742, 27962, 28022].map(b => {
+   //[18386, 18388, 18584, 23742, 27962, 28022]
+   var dmdBlockIntervals = [18386, 18388, 18584, 23730].map(b => {
       return { blockNumber: b };
    });
 
@@ -304,7 +305,7 @@ describe('HDMD Integration Tests', () => {
          });
    });
 
-   it('Mints at each DMD block interval', () => {
+   it('Mints and apportions at each DMD block interval', () => {
       let getUnmatchedTxns = reconClient.getUnmatchedTxns;
       let getNextUnmatchedDmdBlockInterval =
          queries.recon.getNextUnmatchedDmdBlockInterval;
@@ -314,6 +315,7 @@ describe('HDMD Integration Tests', () => {
       let hdmdReconTotal = queries.recon.getHdmdTotal;
       let nothingToMint = reconClient.nothingToMint;
 
+      // TODO: move this to codebase
       let mintNewToDmd = () => {
          let dmds;
          let hdmds;

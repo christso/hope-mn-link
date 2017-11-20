@@ -40,7 +40,7 @@ describe('HDMD Integration Tests', () => {
       },
       {
          txnHash:
-            'DE64758DD95EE59B9F7ED45404321D48D9FCC7087D7E90CE68730B03CDC49FAC',
+            '85D2B4842737DA504E86E7FC202FAA4F6C624E3F05600EC614F45B09C7C15AC7',
          blockNumber: 18387,
          amount: 1000
       },
@@ -52,13 +52,13 @@ describe('HDMD Integration Tests', () => {
       },
       {
          txnHash:
-            'DE64758DD95EE59B9F7ED45404321D48D9FCC7087D7E90CE68730B03CDC49FAC',
+            'F6B85A9B287AF28D21B855740821D00B354FB6CE66C2A316C366A098199ED453',
          blockNumber: 22000,
          amount: 200
       },
       {
          txnHash:
-            'DE64758DD95EE59B9F7ED45404321D48D9FCC7087D7E90CE68730B03CDC49FAC',
+            '107528048D26A9B2D238F37C4DE7050C0C478F2F9FFF2D09012105036E74C720',
          blockNumber: 24742,
          amount: 200
       }
@@ -306,35 +306,52 @@ describe('HDMD Integration Tests', () => {
 
    it('Mints at each DMD block interval', () => {
       let getUnmatchedTxns = reconClient.getUnmatchedTxns;
-      let getLastSavedDmdBlockInterval =
-         reconClient.getLastSavedDmdBlockInterval;
+      let getNextUnmatchedDmdBlockInterval =
+         queries.recon.getNextUnmatchedDmdBlockInterval;
       let reconcile = reconClient.reconcile;
-      let mintDmds = reconClient.mintDmds;
+      let mintToDmd = reconClient.mintToDmd;
       let dmdReconTotal = queries.recon.getDmdTotal;
       let hdmdReconTotal = queries.recon.getHdmdTotal;
       let nothingToMint = reconClient.nothingToMint;
 
-      let synchronize = i => {
-         let mintTxn;
+      let mintNewToDmd = () => {
          let dmds;
          let hdmds;
+
          return (
-            getLastSavedDmdBlockInterval()
-               .then(dmdBlockNumber => getUnmatchedTxns(dmdBlockNumber))
+            getNextUnmatchedDmdBlockInterval()
+               .then(dmdBlockNumber => {
+                  return getUnmatchedTxns(dmdBlockNumber - 1);
+               })
                // Invoke mint to synchronize HDMDs with DMDs
                .then(values => {
                   dmds = values[0];
                   hdmds = values[1];
-                  return mintDmds(dmds, hdmds); // TODO: create mock mintDmds which will add to MongoDB
+                  return mintToDmd(dmds, hdmds); // TODO: create mock mintDmds which will add to MongoDB
                })
-               .then(m => (mintTxn = m))
-               // download eth event log
-               .then(() => {
+               .then(mintTxn => {
+                  return [dmds, hdmds, mintTxn];
+               })
+         );
+      };
+
+      let synchronize = i => {
+         let minted;
+         let dmds;
+         let hdmds;
+         return (
+            // mint amount to sync with DMD
+            mintNewToDmd()
+               .then(values => {
+                  [dmds, hdmds, minted] = values;
+                  // download eth event log
                   return downloadHdmdsFaker();
                })
                // reconcile hdmdTxns MongoDB to dmdTxns MongoDB
-               .then(() => {
-                  return reconcile(dmds, hdmds);
+               .then(created => {
+                  if (minted === nothingToMint) {
+                     return reconcile(dmds, hdmds);
+                  }
                })
                // Save assertion data
                .then(() => {
@@ -352,22 +369,23 @@ describe('HDMD Integration Tests', () => {
       };
 
       // Assert
-      let results = [];
-
-      let p = Promise.resolve();
-      for (let i = 0; i < 4; i++) {
-         p = p.then(() => synchronize(i)).then(result => {
-            results.push(result);
-         });
-      }
-
       let expected = [];
+      expected.push({ dmd: 0, hdmd: 0 });
       expected.push({ dmd: 10000, hdmd: 10000 });
       expected.push({ dmd: 10400, hdmd: 10400 });
       expected.push({ dmd: 10600, hdmd: 10600 });
       expected.push({ dmd: 10600, hdmd: 10600 });
 
-      return p.then(() => downloadTxnsFaker()).then(() => {
+      let results = [];
+
+      let p = downloadTxnsFaker();
+      for (let i = 0; i < expected.length; i++) {
+         p = p.then(() => synchronize(i)).then(result => {
+            results.push(result);
+         });
+      }
+
+      return p.then(() => {
          for (let i = 0; i < results.length; i++) {
             assert.equal(
                results[i].hdmd,

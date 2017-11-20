@@ -1,4 +1,5 @@
 var reconTxns = require('../models/reconTxn');
+var dmdTxns = require('../models/dmdTxn');
 var dmdIntervals = require('../models/dmdInterval');
 
 var recon = (function() {
@@ -93,25 +94,57 @@ var recon = (function() {
          }
       );
 
-   let getLastDmd = () => {
+   let getLastMatchedDmd = () => {
       return reconTxns
          .find({ dmdTxnHash: { $ne: null } })
          .sort({ blockNumber: -1 })
          .limit(1);
    };
 
+   let getFirstUnmatchedDmd = () => {
+      return dmdTxns.aggregate([
+         {
+            $lookup: {
+               from: 'recontxns',
+               localField: 'txnHash',
+               foreignField: 'dmdTxnHash',
+               as: 'recontxns'
+            }
+         },
+
+         {
+            $match: {
+               recontxns: {
+                  $eq: []
+               }
+            }
+         },
+         {
+            $sort: {
+               blockNumber: 1
+            }
+         },
+         {
+            $limit: 1
+         }
+      ]);
+   };
+
    /**
-    * @returns {Promise.<number>} Resolves to the block interval that is greater than the last reconciled block interval
+    * @returns {Promise.<number>} Resolves to the next unreconciled block number 
     */
-   let getNextDmdInterval = () => {
-      return getLastDmd()
-         .then(recon => {
-            return dmdIntervals
-               .find({
-                  blockNumber: { $gt: recon[0] ? recon[0].blockNumber : -1 }
-               })
-               .sort({ blockNumber: 1 })
-               .limit(1);
+   let getNextUnmatchedDmdBlockInterval = () => {
+      return getFirstUnmatchedDmd()
+         .then(dmd => {
+            return dmdIntervals.aggregate([
+               {
+                  $match: {
+                     blockNumber: { $gt: dmd[0] ? dmd[0].blockNumber : -1 }
+                  }
+               },
+               { $sort: { blockNumber: 1 } },
+               { $limit: 1 }
+            ]);
          })
          .then(found => {
             return found[0] ? found[0].blockNumber : undefined;
@@ -123,8 +156,9 @@ var recon = (function() {
       getHdmdTotal: getHdmdTotal,
       getDmdTotalByInterval: getDmdTotalByInterval,
       getHdmdTotalByRecon: getHdmdTotalByRecon,
-      getLastDmd: getLastDmd,
-      getNextDmdInterval: getNextDmdInterval
+      getLastMatchedDmd: getLastMatchedDmd,
+      getFirstUnmatchedDmd: getFirstUnmatchedDmd,
+      getNextUnmatchedDmdBlockInterval: getNextUnmatchedDmdBlockInterval
    };
 })();
 

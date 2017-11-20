@@ -125,7 +125,7 @@ function reconcile(dmds, hdmds) {
    * @param {<Hdmd>[]} hdmds - HDMD transactions to be matched
    * @return {Promise.<{txnHash: string, amount: number}>} result of the promise
    */
-function mintDmds(dmds, hdmds) {
+function mintToDmd(dmds, hdmds) {
    return new Promise((resolve, reject) => {
       let amount = getRequiredMintingAmount(dmds, hdmds);
       let txnHashResolved;
@@ -295,7 +295,7 @@ function synchronizeAll() {
    p = p.then(values => {
       dmds = values[0];
       hdmds = values[1];
-      return mintDmds(dmds, hdmds);
+      return mintToDmd(dmds, hdmds);
    });
 
    // Reconcile Txns if minting not required
@@ -346,6 +346,6 @@ module.exports = {
    reconcile: reconcile,
    downloadDmdTxns: downloadDmdTxns,
    getLastSavedDmdBlockInterval: getLastSavedDmdBlockInterval,
-   mintDmds: mintDmds,
+   mintToDmd: mintToDmd,
    nothingToMint: nothingToMint
 };

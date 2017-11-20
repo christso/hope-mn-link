@@ -221,7 +221,7 @@ describe('HDMD Integration Tests', () => {
       done();
    });
 
-   it('Save DMDs to database', () => {
+   it('Seed DMDs to database', () => {
       return dmdTxns
          .create(dmdTxnsData)
          .then(created => {
@@ -230,7 +230,7 @@ describe('HDMD Integration Tests', () => {
          .catch(err => assert.fail(err));
    });
 
-   it('Save HDMD events to database', () => {
+   it('Seed HDMD events to database', () => {
       return hdmdEvents
          .create(hdmdEventsData)
          .then(created => {
@@ -355,6 +355,8 @@ describe('HDMD Integration Tests', () => {
                      return reconcile(dmds, hdmds);
                   }
                })
+               // get balance that was reconciled
+
                // Save assertion data
                .then(() => {
                   return Promise.all([

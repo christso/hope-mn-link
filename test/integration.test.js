@@ -134,16 +134,26 @@ describe('HDMD Integration Tests', () => {
       };
 
       let getTotalSupply = hdmdClient.getTotalSupply;
+      let initialHdmdSavedTotal = 0;
+      let getTotalSupplyNotSaved = hdmdClient.getTotalSupplyNotSaved;
 
-      return hdmdClient
-         .getTotalSupplyNotSaved()
+      return getHdmdSavedTotal()
+         .then(total => {
+            return (initialHdmdSavedTotal = total[0]
+               ? total[0].totalAmount
+               : 0);
+         })
+         .then(() => getTotalSupplyNotSaved())
          .then(supply => {
-            assert.equal(supply.toNumber(), initialSupply);
+            assert.equal(
+               supply.toNumber(),
+               initialSupply - initialHdmdSavedTotal
+            );
          })
          .then(() => hdmdClient.saveTotalSupplyDiff())
          .then(txn => {
             // the amount saved to HDMD should equal the actual initial supply of HDMD
-            assert.equal(txn.amount, initialSupply);
+            assert.equal(txn.amount, initialSupply - initialHdmdSavedTotal);
          })
          .then(() => {
             return Promise.all([getHdmdSavedTotal(), getTotalSupply()]);

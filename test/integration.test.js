@@ -81,6 +81,12 @@ describe('HDMD Integration Tests', () => {
          });
 
          sinon.stub(hdmdContractMock.object, 'unmint').callsFake(amount => {
+            console.log(`unmint ${amount}`);
+            return Promise.resolve(amount);
+         });
+
+         sinon.stub(hdmdContractMock.object, 'mint').callsFake(amount => {
+            console.log(`mint ${amount}`);
             return Promise.resolve(amount);
          });
 
@@ -239,8 +245,6 @@ describe('HDMD Integration Tests', () => {
                      dmdReconTotal(),
                      hdmdReconTotal()
                   ]).then(([dmds, hdmds]) => {
-                     // return reconId
-                     console.log(dmds);
                      return {
                         dmd: dmds[0] ? dmds[0].totalAmount : 0,
                         hdmd: hdmds[0] ? hdmds[0].totalAmount : 0

@@ -80,6 +80,10 @@ describe('HDMD Integration Tests', () => {
             return Promise.resolve(new BigNumber(initialSupply));
          });
 
+         sinon.stub(hdmdContractMock.object, 'unmint').callsFake(amount => {
+            return Promise.resolve(amount);
+         });
+
          resolve();
       });
    };
@@ -182,26 +186,7 @@ describe('HDMD Integration Tests', () => {
          });
    });
 
-   it('HdmdTxns should equal DmdTxns in ReconTxns after saving HDMD total supply difference', () => {
-      let getUnmatchedTxns = reconClient.getUnmatchedTxns;
-      let getLastSavedDmdBlockInterval =
-         reconClient.getLastSavedDmdBlockInterval;
-      let reconcile = reconClient.reconcile;
-
-      let getDmdReconTotal = queries.recon.getDmdTotal;
-      let getHdmdReconTotal = queries.recon.getHdmdTotal;
-
-      return seeder.reconcileTotalSupply().then(newRecons => {
-         return Promise.all([
-            getDmdReconTotal(),
-            getHdmdReconTotal()
-         ]).then(([dmds, hdmds]) => {
-            assert.equal(dmds[0].totalAmount, hdmds[0].totalAmount);
-         });
-      });
-   });
-
-   it('Mints current DMD block interval only', () => {
+   it('Mints at each DMD block interval', () => {
       let getUnmatchedTxns = reconClient.getUnmatchedTxns;
       let getLastSavedDmdBlockInterval =
          reconClient.getLastSavedDmdBlockInterval;
@@ -209,54 +194,92 @@ describe('HDMD Integration Tests', () => {
       let mintDmds = reconClient.mintDmds;
       let dmdReconTotal = queries.recon.getDmdTotal;
       let hdmdReconTotal = queries.recon.getHdmdTotal;
+      let nothingToMint = reconClient.nothingToMint;
+
+      // Fake eth event log
+      var hdmdEventSchema = new mongoose.Schema({
+         blockNumber: Number
+      });
+      var hdmdEvents = mongoose.model('HdmdEvent', hdmdEventSchema);
 
       // No need to download because mintDmdsMock will save directly to MongoDB
-      let downloadTxns = () => {
+      let downloadTxnsFaker = () => {
+         return downloadHdmdsFaker();
+      };
+
+      let downloadHdmdsFaker = () => {
          return Promise.resolve();
       };
 
-      let promises = [];
-      let amounts = [];
-
-      let synchronizeAll = () => {
+      let synchronize = () => {
+         let mintTxn;
+         let dmds;
+         let hdmds;
          return (
-            downloadTxns()
-               .then(() => getLastSavedDmdBlockInterval())
+            getLastSavedDmdBlockInterval()
                .then(dmdBlockNumber => getUnmatchedTxns(dmdBlockNumber))
                // Invoke mint to synchronize HDMDs with DMDs
-               .then(([dmds, hdmds]) => {
+               .then(values => {
+                  dmds = values[0];
+                  hdmds = values[1];
                   return mintDmds(dmds, hdmds); // TODO: create mock mintDmds which will add to MongoDB
                })
-               // Assert
-               .then(mintTxn => {
+               .then(m => (mintTxn = m))
+               // download eth event log
+               .then(() => {
+                  return downloadHdmdsFaker();
+               })
+               // reconcile hdmdTxns MongoDB to dmdTxns MongoDB
+               .then(() => {
+                  return reconcile(dmds, hdmds);
+               })
+               // Save assertion data
+               .then(() => {
                   return Promise.all([
                      dmdReconTotal(),
                      hdmdReconTotal()
                   ]).then(([dmds, hdmds]) => {
-                     amounts.push({
-                        dmd: dmds[0].totalAmount,
-                        hdmd: hdmds[0].totalAmount
-                     });
+                     // return reconId
+                     return {
+                        dmd: dmds[0] ? dmds[0].totalAmount : 0,
+                        hdmd: hdmds[0] ? hdmds[0].totalAmount : 0
+                     };
                   });
                })
          );
       };
 
-      dmdIntervals.aggregate();
+      // Assert
 
-      for (let i = 0; i < 2; i++) {
-         promises.push(synchronizeAll());
-      }
+      let promises = [];
+      promises.push(synchronize());
+      promises.push(synchronize());
+      promises.push(synchronize());
+      promises.push(synchronize());
 
-      return Promise.all(promises).then(results => {
-         for (let i = 0; i < amounts.length; i++) {
-            assert.equal(
-               amounts[i].dmd,
-               amounts[i].hdmd,
-               `Assertion error -> expected ${amounts[i]
-                  .dmd} to equal ${amounts[i].hdmd} at iteration ${i}`
-            );
-         }
-      });
+      let expected = [];
+      expected.push({ dmd: 10000, hdmd: 10000 });
+      expected.push({ dmd: 10400, hdmd: 10400 });
+      expected.push({ dmd: 10600, hdmd: 10600 });
+      expected.push({ dmd: 10600, hdmd: 10600 });
+
+      return downloadTxnsFaker()
+         .then(() => Promise.all(promises))
+         .then(results => {
+            for (let i = 0; i < results.length; i++) {
+               assert.equal(
+                  results[i].hdmd,
+                  expected[i].hdmd,
+                  `Assertion error -> expected ${results[i]
+                     .dmd} to equal ${expected[i].hdmd} at iteration ${i}`
+               );
+               assert.equal(
+                  results[i].dmd,
+                  expected[i].dmd,
+                  `Assertion error -> expected ${results[i]
+                     .dmd} to equal ${expected[i].dmd} at iteration ${i}`
+               );
+            }
+         });
    });
 });

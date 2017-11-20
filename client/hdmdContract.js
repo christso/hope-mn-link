@@ -29,6 +29,8 @@ var contractObj = contract.at(contractAddress);
 
 var contractMath = require('../lib/contractMath');
 contractMath.decimals = decimals;
+let getRawNumber = contractMath.getRawNumber;
+let getParsedNumber = contractMath.getParsedNumber;
 
 /**
  *  Check that version of app matches deployed contract
@@ -95,6 +97,72 @@ function allowMinter(account, callback) {
    });
 }
 
+function canMint() {
+   return new Promise((resolve, reject) => {
+      contractObj.canMint(defaultAccount, (err, canMint) => {
+         if (err) {
+            reject(err);
+         } else {
+            resolve(canMint);
+         }
+      });
+   });
+}
+
+function _mint(amount) {
+   let rawAmount = getRawNumber(amount).toNumber();
+
+   return new Promise((resolve, reject) => {
+      contractObj.mint(rawAmount, (err, res) => {
+         if (err) {
+            reject(err);
+         } else {
+            resolve(res);
+         }
+      });
+   });
+}
+
+/**
+* Mint amounts on HDMD smart contract
+* @param {<BigNumber>} amount - amount in BigNumber
+* @return {Promise} return value of the smart contract function
+*/
+function mint(amount) {
+   return new Promise((resolve, reject) => {
+      return _mint(amount).catch(err => {
+         canMint().then(allowed => {
+            if (!allowed) {
+               let newErr = new Error(
+                  `Address ${defaultAccount} is not allowed to mint`
+               );
+               reject(newErr);
+               return;
+            }
+            reject(err);
+         });
+      });
+   });
+}
+
+/**
+* Unmints amounts on HDMD smart contract
+* @param {<BigNumber>} amount - amount in BigNumber
+* @return {Promise} return value of the smart contract function
+*/
+function unmint(amount) {
+   let rawAmount = getRawNumber(amount).toNumber();
+   return new Promise((resolve, reject) => {
+      contractObj.unmint(rawAmount, (err, res) => {
+         if (err) {
+            reject(err);
+         } else {
+            resolve(res);
+         }
+      });
+   });
+}
+
 module.exports = {
    checkVersion: checkVersion,
    web3: web3,
@@ -102,5 +170,8 @@ module.exports = {
    abiDecoder: abiDecoder,
    getTotalSupply: getTotalSupply,
    getContractOwner: getContractOwner,
-   allowMinter: allowMinter
+   allowMinter: allowMinter,
+   canMint: canMint,
+   mint: mint,
+   unmint: unmint
 };

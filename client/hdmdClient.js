@@ -38,6 +38,12 @@ var allowMinter = () => {
 var getTotalSupply = () => {
    return hdmdContract.getTotalSupply();
 };
+var mint = amount => {
+   return hdmdContract.mint(amount);
+};
+var unmint = amount => {
+   return hdmdContract.unmint(amount);
+};
 
 // contract math
 const contractMath = require('../lib/contractMath');
@@ -258,72 +264,6 @@ function batchTransfer(addresses, values) {
             }
          }
       );
-   });
-}
-
-function canMint() {
-   return new Promise((resolve, reject) => {
-      contractObj.canMint(defaultAccount, (err, canMint) => {
-         if (err) {
-            reject(err);
-         } else {
-            resolve(canMint);
-         }
-      });
-   });
-}
-
-function _mint(amount) {
-   let rawAmount = getRawNumber(amount).toNumber();
-
-   return new Promise((resolve, reject) => {
-      contractObj.mint(rawAmount, (err, res) => {
-         if (err) {
-            reject(err);
-         } else {
-            resolve(res);
-         }
-      });
-   });
-}
-
-/**
-* Mint amounts on HDMD smart contract
-* @param {<BigNumber>} amount - amount in BigNumber
-* @return {Promise} return value of the smart contract function
-*/
-function mint(amount) {
-   return new Promise((resolve, reject) => {
-      return _mint(amount).catch(err => {
-         canMint().then(allowed => {
-            if (!allowed) {
-               let newErr = new Error(
-                  `Address ${defaultAccount} is not allowed to mint`
-               );
-               reject(newErr);
-               return;
-            }
-            reject(err);
-         });
-      });
-   });
-}
-
-/**
-* Unmints amounts on HDMD smart contract
-* @param {<BigNumber>} amount - amount in BigNumber
-* @return {Promise} return value of the smart contract function
-*/
-function unmint(amount) {
-   let rawAmount = getRawNumber(amount).toNumber();
-   return new Promise((resolve, reject) => {
-      hdmdContract.unmint(rawAmount, (err, res) => {
-         if (err) {
-            reject(err);
-         } else {
-            resolve(res);
-         }
-      });
    });
 }
 

@@ -96,7 +96,7 @@ function getRequiredMintingAmount(dmds, hdmds) {
    * Reconcile HDMDs with DMDs in ReconTxns MongoDB collection
    * @param {Object[]} dmds - DMD transactions to be reconciled
    * @param {Object[]} hdmds - HDMD transactions to be reconciled
-   * @return {Promise} result of the promise
+   * @return {Promise.<ReconTxns[]>} result of the promise
    */
 function reconcile(dmds, hdmds) {
    if (dmds === undefined || hdmds === undefined) {
@@ -336,10 +336,11 @@ function synchronizeAll() {
    return p;
 }
 
+/**
+ * This will find the minimum dmdBlockInterval that is greater than the last reconciled DMD block.
+ */
 function getLastSavedDmdBlockInterval() {
    // TODO: the first DMD block is at 18386
-   // This will find the minimum dmdBlockInterval that is greater than the last reconciled DMD block.
-
    let lastReconBlock = 10000; // TODO: replace this magic number
    return dmdClient.getLastSavedBlockInterval(lastReconBlock);
 }
@@ -353,5 +354,6 @@ module.exports = {
    reconcile: reconcile,
    downloadDmdTxns: downloadDmdTxns,
    getLastSavedDmdBlockInterval: getLastSavedDmdBlockInterval,
-   mintDmds: mintDmds
+   mintDmds: mintDmds,
+   nothingToMint: nothingToMint
 };

@@ -170,22 +170,26 @@ describe('HDMD Integration Tests', () => {
          });
 
          sinon.stub(hdmdContractMock.object, 'unmint').callsFake(amount => {
+            let eventAmount = amount ? amount.toNumber() : 0;
             return getLastHdmdBlockNumber().then(blockNumber =>
                hdmdEvents.create({
                   txnHash: formatter.formatUuidv1(uuidv1()),
-                  blockNumber: blockNumber,
-                  amount: amount ? amount.toNumber() : 0,
+                  blockNumber: blockNumber + 1,
+                  amount: eventAmount,
+                  netAmount: eventAmount * -1,
                   eventName: 'Unmint'
                })
             );
          });
 
          sinon.stub(hdmdContractMock.object, 'mint').callsFake(amount => {
+            let eventAmount = amount ? amount.toNumber() : 0;
             return getLastHdmdBlockNumber().then(blockNumber =>
                hdmdEvents.create({
                   txnHash: formatter.formatUuidv1(uuidv1()),
-                  blockNumber: blockNumber,
-                  amount: amount,
+                  blockNumber: blockNumber + 1,
+                  amount: eventAmount,
+                  netAmount: eventAmount,
                   eventName: 'Mint'
                })
             );

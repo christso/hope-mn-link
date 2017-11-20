@@ -211,7 +211,7 @@ describe('HDMD Integration Tests', () => {
          return Promise.resolve();
       };
 
-      let synchronize = () => {
+      let synchronize = i => {
          let mintTxn;
          let dmds;
          let hdmds;
@@ -240,6 +240,7 @@ describe('HDMD Integration Tests', () => {
                      hdmdReconTotal()
                   ]).then(([dmds, hdmds]) => {
                      // return reconId
+                     console.log(dmds);
                      return {
                         dmd: dmds[0] ? dmds[0].totalAmount : 0,
                         hdmd: hdmds[0] ? hdmds[0].totalAmount : 0
@@ -250,12 +251,14 @@ describe('HDMD Integration Tests', () => {
       };
 
       // Assert
+      let results = [];
 
-      let promises = [];
-      promises.push(synchronize());
-      promises.push(synchronize());
-      promises.push(synchronize());
-      promises.push(synchronize());
+      let p = Promise.resolve();
+      for (let i = 0; i < 4; i++) {
+         p = p.then(() => synchronize(i)).then(result => {
+            results.push(result);
+         });
+      }
 
       let expected = [];
       expected.push({ dmd: 10000, hdmd: 10000 });
@@ -263,23 +266,21 @@ describe('HDMD Integration Tests', () => {
       expected.push({ dmd: 10600, hdmd: 10600 });
       expected.push({ dmd: 10600, hdmd: 10600 });
 
-      return downloadTxnsFaker()
-         .then(() => Promise.all(promises))
-         .then(results => {
-            for (let i = 0; i < results.length; i++) {
-               assert.equal(
-                  results[i].hdmd,
-                  expected[i].hdmd,
-                  `Assertion error -> expected ${results[i]
-                     .dmd} to equal ${expected[i].hdmd} at iteration ${i}`
-               );
-               assert.equal(
-                  results[i].dmd,
-                  expected[i].dmd,
-                  `Assertion error -> expected ${results[i]
-                     .dmd} to equal ${expected[i].dmd} at iteration ${i}`
-               );
-            }
-         });
+      return p.then(() => downloadTxnsFaker()).then(() => {
+         for (let i = 0; i < results.length; i++) {
+            assert.equal(
+               results[i].hdmd,
+               expected[i].hdmd,
+               `Assertion error -> expected HDMD ${results[i]
+                  .hdmd} to equal ${expected[i].hdmd} at iteration ${i}`
+            );
+            assert.equal(
+               results[i].dmd,
+               expected[i].dmd,
+               `Assertion error -> expected DMD ${results[i]
+                  .dmd} to equal ${expected[i].dmd} at iteration ${i}`
+            );
+         }
+      });
    });
 });

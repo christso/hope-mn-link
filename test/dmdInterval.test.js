@@ -71,7 +71,45 @@ describe('DMD Interval Tests', () => {
 
    it('Seeds databases', () => {
       return dmdIntervals.create(dmdBlockIntervals).then(intervals => {
-         assert.notEqual(intervals, undefined, 'No intervals were saved to DB');
+         return reconTxns.create(testData.reconTxns);
+      });
+   });
+
+   it('Gets previous HDMD block number from DMD block number', () => {
+      let getPrevHdmdBlockByRecon = queries.recon.getPrevHdmdBlockByRecon;
+      let getReconByDmdBlock = queries.recon.getReconByDmdBlock;
+
+      var inputDmdBlocks = [1800, 1810, 1820, 1830];
+      var expectedHdmdBlocks = [undefined, 2, 4, 5];
+
+      var actualHdmdBlocks = [];
+      var p = Promise.resolve();
+
+      return new Promise((resolve, reject) => {
+         for (var i = 0; i < actualHdmdBlocks.length; i++) {
+            p = p.then(() =>
+               getReconByDmdBlock(inputDmdBlocks[i])
+                  .then(recon => {
+                     return getPrevHdmdBlockByRecon(recon.reconId);
+                  })
+                  .then(hdmdBlockNum => {
+                     return getHdmdBalanceByBlock(hdmdBlockNum);
+                  })
+            );
+         }
+
+         p
+            .then(() => {
+               assert.equal(
+                  actualHdmdBlocks.length,
+                  expectedHdmdBlocks.length,
+                  `actualHdmdBlocks.length -> expected ${actualHdmdBlocks.length} to equal ${expectedHdmdBlocks.length}`
+               );
+               resolve();
+            })
+            .catch(err => {
+               reject(err);
+            });
       });
    });
 });

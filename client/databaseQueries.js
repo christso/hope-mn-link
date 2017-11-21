@@ -10,7 +10,8 @@ var recon = (function() {
                {
                   blockNumber: { $gte: fromBlockNumber, $lte: toBlockNumber }
                },
-               { dmdTxnHash: { $ne: null } }
+               { dmdTxnHash: { $ne: null } },
+               { dmdTxnHash: { $ne: '' } }
             ]
          }
       };
@@ -39,7 +40,11 @@ var recon = (function() {
    let getHdmdReconMatchDef = reconId => {
       return {
          $match: {
-            $and: [{ reconId: reconId }, { hdmdTxnHash: { $ne: null } }]
+            $and: [
+               { reconId: reconId },
+               { hdmdTxnHash: { $ne: '' } },
+               { hdmdTxnHash: { $ne: null } }
+            ]
          }
       };
    };
@@ -58,6 +63,14 @@ var recon = (function() {
          getHdmdReconMatchDef(),
          getHdmdReconGroupDef()
       ]);
+   };
+
+   let getPrevHdmdBlockByRecon = reconId => {
+      return Promise.resolve();
+   };
+
+   let getHdmdBalanceByBlock = blockNumber => {
+      return Promise.resolve();
    };
 
    let hdmdFindByRecon = reconId => {
@@ -151,14 +164,42 @@ var recon = (function() {
          });
    };
 
+   /**
+    * Get the latest reconTxn from dmdBlockNumber
+    * @param {Number} bn - DMD Block Number 
+    */
+   //
+   let getReconByDmdBlock = bn =>
+      reconTxns.aggregate([
+         {
+            $match: {
+               $and: [
+                  { blockNumber: { $lte: bn } },
+                  { dmdTxnHash: { $ne: '' } },
+                  { dmdTxnHash: { $ne: null } }
+               ]
+            }
+         },
+         {
+            $sort: {
+               blockNumber: -1
+            }
+         },
+         {
+            $limit: 1
+         }
+      ]);
+
    return {
       getDmdTotal: getDmdTotal,
       getHdmdTotal: getHdmdTotal,
       getDmdTotalByInterval: getDmdTotalByInterval,
       getHdmdTotalByRecon: getHdmdTotalByRecon,
+      getPrevHdmdBlockByRecon: getPrevHdmdBlockByRecon,
       getLastMatchedDmd: getLastMatchedDmd,
       getFirstUnmatchedDmd: getFirstUnmatchedDmd,
-      getNextUnmatchedDmdBlockInterval: getNextUnmatchedDmdBlockInterval
+      getNextUnmatchedDmdBlockInterval: getNextUnmatchedDmdBlockInterval,
+      getReconByDmdBlock: getReconByDmdBlock
    };
 })();
 

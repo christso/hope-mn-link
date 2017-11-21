@@ -28,9 +28,11 @@ const queries = require('../client/databaseQueries');
 
 const sinon = require('sinon');
 const hdmdContract = require('../client/hdmdContract');
-const mock = require('../test_data/mock');
 
 // connect to database
 let connection = database.createTestConnection();
+
+var data = [640.871654887, 3670.68499516765, 6000.344823265084];
+console.log(data.reduce((a, b) => a + b));
 
 setInterval(() => true, 1000000);

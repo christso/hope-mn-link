@@ -22,8 +22,9 @@ var testData = require('../test_data/integrationData');
 const hdmdEvents = require('../test_modules/hdmdEventModel');
 const hdmdContractMocker = require('../test_modules/hdmdContractMocker');
 const dloadMocker = require('../test_modules/dloadMocker');
+const contribs = require('../test_data/hdmdContributions');
 
-const cleanup = false;
+const cleanup = true;
 
 describe('HDMD Integration Tests', () => {
    const initialSupply = testData.initialSupply;
@@ -49,6 +50,19 @@ describe('HDMD Integration Tests', () => {
             undefined;
          })
          .then(done, done);
+   };
+
+   // Initial contributions
+   var seedHdmds = () => {
+      let accounts = contribs.accounts;
+      let balances = contribs.amounts.map(
+         value => new BigNumber(Math.round(value, decimals))
+      );
+
+      // Initial contributions
+      return hdmdClient.batchTransfer(accounts, balances).catch(err => {
+         logger.log(`Error in batch transfer: ${err.stack}`);
+      });
    };
 
    before(() => {
@@ -192,6 +206,7 @@ describe('HDMD Integration Tests', () => {
                })
                // reconcile hdmdTxns MongoDB to dmdTxns MongoDB
                .then(created => {
+                  // nothing to mint if dmds.amount == hdmds.amount
                   if (minted === nothingToMint) {
                      return reconcile(dmds, hdmds);
                   }

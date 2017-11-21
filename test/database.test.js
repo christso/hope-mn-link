@@ -17,7 +17,7 @@ mongoose.Promise = global.Promise;
 var database = require('../client/database');
 var queries = require('../client/databaseQueries');
 
-const cleanup = false;
+const cleanup = true;
 
 describe('HDMD Database Tests', () => {
    var connection;

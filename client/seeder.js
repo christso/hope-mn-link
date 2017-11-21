@@ -30,7 +30,7 @@ function seedHdmd(contribData) {
       contribs = contribData;
    }
    let accounts = contribs.accounts;
-   let balances = contribs.balances.map(
+   let balances = contribs.amounts.map(
       value => new BigNumber(Math.round(value, decimals))
    );
 

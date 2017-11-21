@@ -24,7 +24,7 @@ module.exports = {
       '0x934B820aCFF9274B99d857a3e1cEcE97bcC803b8',
       '0x6E15731De69f85bD1eDD4308eD6AF3C72292a387'
    ],
-   balances: [
+   amounts: [
       0,
       2670.68499516765,
       477.344823265084,

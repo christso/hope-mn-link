@@ -1,3 +1,7 @@
+/* This will to connect to ethereum network, 
+** and compare the results between the smart contract and what we save into our database
+*/
+
 const assert = require('chai').assert;
 const hdmdClient = require('../client/hdmdClient');
 const BigNumber = require('bignumber.js');

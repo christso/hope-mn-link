@@ -66,7 +66,22 @@ var recon = (function() {
    };
 
    let getPrevHdmdBlockByRecon = reconId => {
-      return Promise.resolve();
+      return reconTxns.aggregate([
+         {
+            $match: {
+               $and: [
+                  {
+                     reconId: { $eq: reconId }
+                  },
+                  { hdmdTxnHash: { $ne: null } },
+                  { hdmdTxnHash: { $ne: '' } }
+               ]
+            }
+         },
+         {
+            $sort: -1
+         }
+      ]);
    };
 
    let getHdmdBalanceByBlock = blockNumber => {

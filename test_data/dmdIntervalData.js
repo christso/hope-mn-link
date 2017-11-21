@@ -1,7 +1,7 @@
 module.exports = (function() {
    var initialSupply = 12000;
 
-   var dmdBlockIntervals = [18386].map(b => {
+   var dmdBlockIntervals = [].map(b => {
       return { blockNumber: b };
    });
 

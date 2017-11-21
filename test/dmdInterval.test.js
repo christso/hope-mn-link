@@ -80,30 +80,33 @@ describe('DMD Interval Tests', () => {
       let getReconByDmdBlock = queries.recon.getReconByDmdBlock;
 
       var inputDmdBlocks = [1800, 1810, 1820, 1830];
-      var expectedHdmdBlocks = [undefined, 2, 4, 5];
-      var expectedHdmdBalances = [{}, {}, {}, {}]; // TODO: need to test balances of individual accounts
+      var expectedHdmdBlocks = [];
+      var expectedHdmdBalances = []; // TODO: need to test balances of individual accounts
 
       var actualHdmdBlocks = [];
       var actualHdmdBalances = [];
       var p = Promise.resolve();
 
       return new Promise((resolve, reject) => {
-         for (var i = 0; i < inputDmdBlocks.length; i++) {
-            p = p.then(() =>
-               getReconByDmdBlock(inputDmdBlocks[i])
-                  .then(recon => {
-                     return getPrevHdmdBlockByRecon(recon.reconId);
-                  })
-                  .then(hdmdBlockNum => {
-                     actualHdmdBlocks.push(hdmdBlockNum);
-                     return hdmdBlockNum;
-                  })
-                  .then(hdmdBlockNum => {
-                     return getPrevHdmdBlockByRecon(hdmdBlockNum);
-                  })
-            );
-         }
+         // Actions
+         inputDmdBlocks.forEach(inputDmdBlock => {
+            p = p
+               .then(() => {
+                  return getReconByDmdBlock(inputDmdBlock);
+               })
+               .then(recon => {
+                  return getPrevHdmdBlockByRecon(recon[0].reconId);
+               })
+               .then(hdmdBlockNum => {
+                  actualHdmdBlocks.push(hdmdBlockNum);
+                  return hdmdBlockNum;
+               })
+               .then(hdmdBlockNum => {
+                  return getPrevHdmdBlockByRecon(hdmdBlockNum);
+               });
+         });
 
+         // Assertions
          p
             .then(() => {
                assert.equal(
@@ -114,7 +117,7 @@ describe('DMD Interval Tests', () => {
                assert.equal(
                   actualHdmdBalances.length,
                   expectedHdmdBalances.length,
-                  `actualHdmdBalances.length -> expected ${actualHdmdBlocks.length} to equal ${expectedHdmdBalances.length}`
+                  `actualHdmdBalances.length -> expected ${actualHdmdBalances.length} to equal ${expectedHdmdBalances.length}`
                );
 
                // TODO: test individual values not just how many were processed

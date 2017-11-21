@@ -113,7 +113,7 @@ module.exports = (function() {
          eventName: 'Transfer'
       },
       {
-         reconId: '1BB48217B0AB45B6B537E01C1A67E338',
+         reconId: 'C3D4BB05CE984074955611AC315079B7',
          dmdTxnHash: '0C62D3A9AB25483EB5FC2954DE996FE3',
          hdmdTxnHash: null,
          amount: 110,
@@ -122,7 +122,7 @@ module.exports = (function() {
          eventName: 'Mint'
       },
       {
-         reconId: '1BB48217B0AB45B6B537E01C1A67E338',
+         reconId: 'C3D4BB05CE984074955611AC315079B7',
          dmdTxnHash: null,
          hdmdTxnHash: 'D33B69845B5441149C83CC2035F4B78F',
          amount: 110,
@@ -132,8 +132,84 @@ module.exports = (function() {
       }
    ];
 
+   var expectedHdmdBalances = [
+      [
+         {
+            account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
+            balance: 0
+         },
+         {
+            account: '0xA7Bb5D4d546067782Dd4B5356D9e9771deBB06a3',
+            balance: 0
+         },
+         {
+            account: '0x114bcdDaB25dE00884755cf8643ED1ceA4093Fd1',
+            balance: 0
+         },
+         {
+            account: '0x1dd0ef06bAe0226C8165f3507F13c2ad8493e1e3',
+            balance: 0
+         }
+      ],
+      [
+         {
+            account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
+            balance: 2000
+         },
+         {
+            account: '0xA7Bb5D4d546067782Dd4B5356D9e9771deBB06a3',
+            balance: 1000
+         },
+         {
+            account: '0x114bcdDaB25dE00884755cf8643ED1ceA4093Fd1',
+            balance: 4000
+         },
+         {
+            account: '0x1dd0ef06bAe0226C8165f3507F13c2ad8493e1e3',
+            balance: 3000
+         }
+      ],
+      [
+         {
+            account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
+            balance: 2100
+         },
+         {
+            account: '0xA7Bb5D4d546067782Dd4B5356D9e9771deBB06a3',
+            balance: 1500
+         },
+         {
+            account: '0x114bcdDaB25dE00884755cf8643ED1ceA4093Fd1',
+            balance: 3500
+         },
+         {
+            account: '0x1dd0ef06bAe0226C8165f3507F13c2ad8493e1e3',
+            balance: 3000
+         }
+      ],
+      [
+         {
+            account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
+            balance: 2210
+         },
+         {
+            account: '0xA7Bb5D4d546067782Dd4B5356D9e9771deBB06a3',
+            balance: 1500
+         },
+         {
+            account: '0x114bcdDaB25dE00884755cf8643ED1ceA4093Fd1',
+            balance: 3500
+         },
+         {
+            account: '0x1dd0ef06bAe0226C8165f3507F13c2ad8493e1e3',
+            balance: 3000
+         }
+      ]
+   ];
+
    return {
       dmdBlockIntervals: dmdBlockIntervals,
-      reconTxns: reconTxns
+      reconTxns: reconTxns,
+      expectedHdmdBalances: expectedHdmdBalances
    };
 })();

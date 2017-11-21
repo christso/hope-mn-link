@@ -78,17 +78,18 @@ describe('DMD Interval Tests', () => {
    it('Gets previous HDMD block number from DMD block number', () => {
       let getPrevHdmdBlockByRecon = queries.recon.getPrevHdmdBlockByRecon;
       let getReconByDmdBlock = queries.recon.getReconByDmdBlock;
+      let getHdmdBalancesByBlock = queries.recon.getHdmdBalancesByBlock;
 
       var inputDmdBlocks = [1800, 1810, 1820, 1830];
-      var expectedHdmdBlocks = [];
-      var expectedHdmdBalances = []; // TODO: need to test balances of individual accounts
+      var expectedHdmdBlocks = [undefined, 2, 4, 5];
+      var expectedHdmdBalances = testData.expectedHdmdBalances;
 
       var actualHdmdBlocks = [];
       var actualHdmdBalances = [];
       var p = Promise.resolve();
 
       return new Promise((resolve, reject) => {
-         // Actions
+         // Compute Balances
          inputDmdBlocks.forEach(inputDmdBlock => {
             p = p
                .then(() => {
@@ -97,18 +98,23 @@ describe('DMD Interval Tests', () => {
                .then(recon => {
                   return getPrevHdmdBlockByRecon(recon[0].reconId);
                })
-               .then(hdmdBlockNum => {
+               .then(hdmdBlock => {
+                  let hdmdBlockNum = hdmdBlock[0].blockNumber;
                   actualHdmdBlocks.push(hdmdBlockNum);
                   return hdmdBlockNum;
                })
                .then(hdmdBlockNum => {
-                  return getPrevHdmdBlockByRecon(hdmdBlockNum);
+                  return getHdmdBalancesByBlock(hdmdBlockNum);
+               })
+               .then(hdmdBals => {
+                  return actualHdmdBalances.push(hdmdBals);
                });
          });
 
          // Assertions
          p
             .then(() => {
+               // test how many where processed
                assert.equal(
                   actualHdmdBlocks.length,
                   expectedHdmdBlocks.length,
@@ -120,7 +126,18 @@ describe('DMD Interval Tests', () => {
                   `actualHdmdBalances.length -> expected ${actualHdmdBalances.length} to equal ${expectedHdmdBalances.length}`
                );
 
-               // TODO: test individual values not just how many were processed
+               // test individual values
+               assert.equal(
+                  (a = JSON.stringify(actualHdmdBlocks)),
+                  (e = JSON.stringify(expectedHdmdBlocks)),
+                  `actualHdmdBlocks -> expected ${a} to equal ${e}`
+               );
+               assert.equal(
+                  (a = JSON.stringify(actualHdmdBalances)),
+                  (e = JSON.stringify(expectedHdmdBalances)),
+                  `actualHdmdBalances -> expected ${a} to equal ${e}`
+               );
+
                resolve();
             })
             .catch(err => {

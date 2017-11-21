@@ -79,13 +79,40 @@ var recon = (function() {
             }
          },
          {
-            $sort: -1
+            $sort: { blockNumber: -1 }
+         },
+         {
+            $limit: 1
          }
       ]);
    };
 
-   let getHdmdBalanceByBlock = blockNumber => {
-      return Promise.resolve();
+   let getHdmdBalancesByBlock = blockNumber => {
+      return reconTxns.aggregate([
+         {
+            $match: {
+               $and: [
+                  {
+                     blockNumber: { $lte: blockNumber }
+                  },
+                  { hdmdTxnHash: { $ne: null } },
+                  { hdmdTxnHash: { $ne: '' } }
+               ]
+            }
+         },
+         {
+            $group: {
+               _id: '$account',
+               balance: { $sum: '$amount' }
+            }
+         },
+         {
+            $project: {
+               account: '$_id',
+               balance: '$balance'
+            }
+         }
+      ]);
    };
 
    let hdmdFindByRecon = reconId => {
@@ -214,7 +241,8 @@ var recon = (function() {
       getLastMatchedDmd: getLastMatchedDmd,
       getFirstUnmatchedDmd: getFirstUnmatchedDmd,
       getNextUnmatchedDmdBlockInterval: getNextUnmatchedDmdBlockInterval,
-      getReconByDmdBlock: getReconByDmdBlock
+      getReconByDmdBlock: getReconByDmdBlock,
+      getHdmdBalancesByBlock: getHdmdBalancesByBlock
    };
 })();
 

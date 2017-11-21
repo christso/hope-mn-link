@@ -12,6 +12,9 @@ const hdmdContract = require('../client/hdmdContract');
 const hdmdClient = require('../client/hdmdClient');
 const hdmdEvents = require('../test_modules/hdmdEventModel');
 
+/**
+ * Get the latest block number in the HDMD event log
+ */
 function getLastHdmdBlockNumber() {
    return hdmdEvents
       .find({})

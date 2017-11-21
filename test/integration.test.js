@@ -21,12 +21,15 @@ var queries = require('../client/databaseQueries');
 var testData = require('../test_data/integrationData');
 const hdmdEvents = require('../test_modules/hdmdEventModel');
 const hdmdContractMocker = require('../test_modules/hdmdContractMocker');
+const dloadMocker = require('../test_modules/dloadMocker');
 
 const cleanup = false;
 
 describe('HDMD Integration Tests', () => {
    const initialSupply = testData.initialSupply;
    var hdmdContractMock = hdmdContractMocker(testData.initialSupply);
+   var downloadTxnsMock = dloadMocker.downloadTxnsMock;
+   var downloadHdmdsMock = dloadMocker.downloadHdmdsMock;
 
    var connection;
 
@@ -34,69 +37,8 @@ describe('HDMD Integration Tests', () => {
    var dmdTxnsData = testData.dmdTxnsData;
    var hdmdEventsData = testData.hdmdEventsData;
 
-   // Fake downloaders
-   // No need to download because mintDmdsMock will save directly to MongoDB
-   let downloadTxnsFaker = () => {
-      return downloadHdmdsFaker();
-   };
-
-   let downloadHdmdsFaker = () => {
-      return new Promise((resolve, reject) => {
-         let getLastHdmdBlockNumberSaved = () => {
-            return hdmdTxns
-               .find({})
-               .sort({ blockNumber: -1 })
-               .limit(1)
-               .then(found => {
-                  return found[0] ? found[0].blockNumber : 0;
-               });
-         };
-
-         let getHdmdEvents = startBlockNumber => {
-            return hdmdEvents.find({
-               blockNumber: { $gt: startBlockNumber ? startBlockNumber : 0 }
-            });
-         };
-
-         let newTxns = [];
-
-         getLastHdmdBlockNumberSaved()
-            .then(blockNumber => getHdmdEvents(blockNumber))
-            .then(hdmdEvents => {
-               hdmdEvents.forEach(event => {
-                  newTxns.push({
-                     txnHash: event.txnHash,
-                     blockNumber: event.blockNumber,
-                     amount: event.netAmount,
-                     eventName: event.eventName
-                  });
-               });
-               return hdmdTxns.create(newTxns);
-            })
-            .then(created => {
-               resolve(created);
-            })
-            .catch(err => reject(err));
-      });
-   };
-
    var createMocks = () => {
-      return new Promise(resolve => {
-         /**
-         * Get the latest block number in the HDMD event log
-         */
-         let getLastHdmdBlockNumber = () => {
-            return hdmdEvents
-               .find({})
-               .sort({ blockNumber: -1 })
-               .limit(1)
-               .then(found => (found[0] ? found[0].blockNumber : 0));
-         };
-
-         hdmdClient.init(hdmdContractMock.object);
-
-         resolve();
-      });
+      return hdmdClient.init(hdmdContractMock.object);
    };
 
    var createDatabase = done => {
@@ -139,7 +81,7 @@ describe('HDMD Integration Tests', () => {
    });
 
    it('Downloads HDMD events into database', () => {
-      return downloadHdmdsFaker();
+      return downloadHdmdsMock();
    });
 
    it('Saves HDMD total supply difference to agree hdmdTxns database to blockchain', () => {
@@ -246,7 +188,7 @@ describe('HDMD Integration Tests', () => {
                .then(values => {
                   [dmds, hdmds, minted] = values;
                   // download eth event log
-                  return downloadHdmdsFaker();
+                  return downloadHdmdsMock();
                })
                // reconcile hdmdTxns MongoDB to dmdTxns MongoDB
                .then(created => {
@@ -283,7 +225,7 @@ describe('HDMD Integration Tests', () => {
 
       let results = [];
 
-      let p = downloadTxnsFaker();
+      let p = downloadTxnsMock();
       for (let i = 0; i < expected.length; i++) {
          p = p.then(() => synchronize(i)).then(result => {
             results.push(result);

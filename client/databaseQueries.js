@@ -239,8 +239,35 @@ var recon = (function() {
     * @param {Number} bn - DMD Block Number 
     */
    //
-   let getReconByDmdBlock = bn =>
-      reconTxns.aggregate([
+   let getPrevReconByDmdBlock = bn => {
+      return reconTxns.aggregate([
+         {
+            $match: {
+               $and: [
+                  { blockNumber: { $lt: bn } },
+                  { dmdTxnHash: { $ne: '' } },
+                  { dmdTxnHash: { $ne: null } }
+               ]
+            }
+         },
+         {
+            $sort: {
+               blockNumber: 1 // get the minimum
+            }
+         },
+         {
+            $limit: 1
+         }
+      ]);
+   };
+
+   /**
+    * Get the latest reconTxn from dmdBlockNumber
+    * @param {Number} bn - DMD Block Number 
+    */
+   //
+   let getReconByDmdBlock = bn => {
+      return reconTxns.aggregate([
          {
             $match: {
                $and: [
@@ -252,13 +279,14 @@ var recon = (function() {
          },
          {
             $sort: {
-               blockNumber: -1
+               blockNumber: -1 // get the minimum
             }
          },
          {
             $limit: 1
          }
       ]);
+   };
 
    return {
       getDmdTotal: getDmdTotal,
@@ -270,7 +298,9 @@ var recon = (function() {
       getFirstUnmatchedDmd: getFirstUnmatchedDmd,
       getNextUnmatchedDmdBlockInterval: getNextUnmatchedDmdBlockInterval,
       getReconByDmdBlock: getReconByDmdBlock,
-      getHdmdBalancesByBlock: getHdmdBalancesByBlock
+      getHdmdBalancesByBlock: getHdmdBalancesByBlock,
+      getHdmdBlockByRecon: getHdmdBlockByRecon,
+      getPrevReconByDmdBlock: getPrevReconByDmdBlock
    };
 })();
 

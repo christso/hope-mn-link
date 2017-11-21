@@ -163,6 +163,30 @@ function unmint(amount) {
    });
 }
 
+/**
+* Transfer tokens from sender's address to a list of addresses
+* @param {String[]} addresses - array of addresses to receive the tokens
+* @param {<BigNumber>[]} values - amounts to transfer
+* @return {Promise} return value of the smart contract function
+*/
+function batchTransfer(addresses, values) {
+   return new Promise((resolve, reject) => {
+      let rawValues = values.map(value => getRawNumber(value).toNumber());
+      contractObj.batchTransfer(
+         addresses,
+         rawValues,
+         { gas: gasLimit },
+         (error, result) => {
+            if (error) {
+               reject(error);
+            } else {
+               resolve(result);
+            }
+         }
+      );
+   });
+}
+
 module.exports = {
    checkVersion: checkVersion,
    web3: web3,
@@ -173,5 +197,6 @@ module.exports = {
    allowMinter: allowMinter,
    canMint: canMint,
    mint: mint,
-   unmint: unmint
+   unmint: unmint,
+   batchTransfer: batchTransfer
 };

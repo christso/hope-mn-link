@@ -45,6 +45,10 @@ var unmint = amount => {
    return hdmdContract.unmint(amount);
 };
 
+let batchTransfer = (addresses, values) => {
+   return hdmdContract.batchTransfer(addresses, values);
+};
+
 // contract math
 const contractMath = require('../lib/contractMath');
 contractMath.decimals = decimals;
@@ -241,30 +245,6 @@ function apportion(amount, recipients, weights) {
    let applyWeights = util.applyWeights;
    let newAmounts = applyWeights(amount, weights);
    return batchTransfer(recipients, newAmounts);
-}
-
-/**
-* Transfer tokens from sender's address to a list of addresses
-* @param {String[]} addresses - array of addresses to receive the tokens
-* @param {Number[]} values - amounts to transfer
-* @return {Promise} return value of the smart contract function
-*/
-function batchTransfer(addresses, values) {
-   return new Promise((resolve, reject) => {
-      let rawValues = values.map(value => getRawNumber(value).toNumber());
-      hdmdContract.batchTransfer(
-         addresses,
-         rawValues,
-         { gas: gasLimit },
-         (error, result) => {
-            if (error) {
-               reject(error);
-            } else {
-               resolve(result);
-            }
-         }
-      );
-   });
 }
 
 /**

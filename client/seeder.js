@@ -21,9 +21,14 @@ const getLastSavedDmdBlockInterval = dmdClient.getLastSavedBlockInterval;
 const contribs = require('../data/hdmdContributions');
 const accounts = contribs.accounts;
 const decimals = config.hdmdDecimals;
+const Logger = require('../lib/logger');
+const logger = new Logger('Seed');
 
 // Initial contributions
-function seedHdmd() {
+function seedHdmd(contribData) {
+   if (contribData) {
+      contribs = contribData;
+   }
    let accounts = contribs.accounts;
    let balances = contribs.balances.map(
       value => new BigNumber(Math.round(value, decimals))
@@ -31,7 +36,7 @@ function seedHdmd() {
 
    // Initial contributions
    return batchTransfer(accounts, balances).catch(err => {
-      console.log(`Error seeding the smart contract: ${err.message}`);
+      logger.log(`Error in batch transfer: ${err.stack}`);
    });
    return p;
 }

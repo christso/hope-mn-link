@@ -81,19 +81,25 @@ describe('DMD Interval Tests', () => {
 
       var inputDmdBlocks = [1800, 1810, 1820, 1830];
       var expectedHdmdBlocks = [undefined, 2, 4, 5];
+      var expectedHdmdBalances = [{}, {}, {}, {}]; // TODO: need to test balances of individual accounts
 
       var actualHdmdBlocks = [];
+      var actualHdmdBalances = [];
       var p = Promise.resolve();
 
       return new Promise((resolve, reject) => {
-         for (var i = 0; i < actualHdmdBlocks.length; i++) {
+         for (var i = 0; i < inputDmdBlocks.length; i++) {
             p = p.then(() =>
                getReconByDmdBlock(inputDmdBlocks[i])
                   .then(recon => {
                      return getPrevHdmdBlockByRecon(recon.reconId);
                   })
                   .then(hdmdBlockNum => {
-                     return getHdmdBalanceByBlock(hdmdBlockNum);
+                     actualHdmdBlocks.push(hdmdBlockNum);
+                     return hdmdBlockNum;
+                  })
+                  .then(hdmdBlockNum => {
+                     return getPrevHdmdBlockByRecon(hdmdBlockNum);
                   })
             );
          }
@@ -105,6 +111,13 @@ describe('DMD Interval Tests', () => {
                   expectedHdmdBlocks.length,
                   `actualHdmdBlocks.length -> expected ${actualHdmdBlocks.length} to equal ${expectedHdmdBlocks.length}`
                );
+               assert.equal(
+                  actualHdmdBalances.length,
+                  expectedHdmdBalances.length,
+                  `actualHdmdBalances.length -> expected ${actualHdmdBlocks.length} to equal ${expectedHdmdBalances.length}`
+               );
+
+               // TODO: test individual values not just how many were processed
                resolve();
             })
             .catch(err => {

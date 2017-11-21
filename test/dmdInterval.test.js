@@ -81,7 +81,7 @@ describe('DMD Interval Tests', () => {
       let getHdmdBalancesByBlock = queries.recon.getHdmdBalancesByBlock;
 
       var inputDmdBlocks = [1800, 1810, 1820, 1830];
-      var expectedHdmdBlocks = [undefined, 2, 4, 5];
+      var expectedHdmdBlocks = [null, 2, 4, 5];
       var expectedHdmdBalances = testData.expectedHdmdBalances;
 
       var actualHdmdBlocks = [];
@@ -99,7 +99,9 @@ describe('DMD Interval Tests', () => {
                   return getPrevHdmdBlockByRecon(recon[0].reconId);
                })
                .then(hdmdBlock => {
-                  let hdmdBlockNum = hdmdBlock[0].blockNumber;
+                  let hdmdBlockNum = hdmdBlock[0]
+                     ? hdmdBlock[0].blockNumber
+                     : null;
                   actualHdmdBlocks.push(hdmdBlockNum);
                   return hdmdBlockNum;
                })

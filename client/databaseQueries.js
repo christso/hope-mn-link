@@ -65,7 +65,7 @@ var recon = (function() {
       ]);
    };
 
-   let getPrevHdmdBlockByRecon = reconId => {
+   let getHdmdBlockByRecon = reconId => {
       return reconTxns.aggregate([
          {
             $match: {
@@ -85,6 +85,34 @@ var recon = (function() {
             $limit: 1
          }
       ]);
+   };
+
+   let getPrevHdmdBlock = blockNumber => {
+      return reconTxns.aggregate([
+         {
+            $match: {
+               $and: [
+                  {
+                     blockNumber: { $lt: blockNumber }
+                  },
+                  { hdmdTxnHash: { $ne: null } },
+                  { hdmdTxnHash: { $ne: '' } }
+               ]
+            }
+         },
+         {
+            $sort: { blockNumber: -1 }
+         },
+         {
+            $limit: 1
+         }
+      ]);
+   };
+
+   let getPrevHdmdBlockByRecon = reconId => {
+      return getHdmdBlockByRecon(reconId).then(obj => {
+         return getPrevHdmdBlock(obj[0] ? obj[0].blockNumber : 0);
+      });
    };
 
    let getHdmdBalancesByBlock = blockNumber => {

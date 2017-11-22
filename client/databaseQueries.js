@@ -133,7 +133,7 @@ var recon = (function() {
          });
    };
 
-   let getHdmdBalancesByBlock = blockNumber => {
+   let getHdmdBalancesFromBlock = blockNumber => {
       return reconTxns.aggregate([
          {
             $match: {
@@ -316,7 +316,7 @@ var recon = (function() {
       getFirstUnmatchedDmd: getFirstUnmatchedDmd,
       getNextUnmatchedDmdBlockInterval: getNextUnmatchedDmdBlockInterval,
       getReconByDmdBlock: getReconByDmdBlock,
-      getHdmdBalancesByBlock: getHdmdBalancesByBlock,
+      getHdmdBalancesFromBlock: getHdmdBalancesFromBlock,
       getHdmdBlockByRecon: getHdmdBlockByRecon,
       getPrevReconByDmdBlock: getPrevReconByDmdBlock,
       getHdmdBlocksUpTo: getHdmdBlocksUpTo,

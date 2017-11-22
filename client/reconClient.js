@@ -17,6 +17,7 @@ var reconTxns = require('../models/reconTxn');
 
 const nothingToMint = 'nothing-to-mint';
 const formatter = require('../lib/formatter');
+var queries = require('../client/databaseQueries');
 
 var formatUuidv1 = formatter.formatUuidv1;
 
@@ -274,6 +275,51 @@ function distributeMint(amount, balances) {
    });
 }
 
+function getHdmdBlockNumFromDmd(dmdBlockNum, backsteps) {
+   let getHdmdBlocksByRecon = queries.recon.getHdmdBlocksUpToRecon;
+   let getReconByDmdBlock = queries.recon.getReconByDmdBlock;
+   let getHdmdBalancesByBlock = queries.recon.getHdmdBalancesFromBlock;
+   let getHdmdBlocksUpToRecon = queries.recon.getHdmdBlocksUpToRecon;
+
+   var p = Promise.resolve();
+   var matchedDmdBlockNum;
+
+   if (backsteps === undefined) {
+      backsteps = 0;
+   }
+   // Compute Balances
+   return getReconByDmdBlock(dmdBlockNum, backsteps)
+      .then(recon => {
+         // if inputDmdBlock greater than max(reconTxns.dmdBlock), get current
+         matchedDmdBlockNum = recon[0] ? recon[0].blockNumber : null;
+         return getHdmdBlocksUpToRecon(recon[0].reconId).then(hdmdBlocks => {
+            return hdmdBlocks ? hdmdBlocks : [];
+         });
+      })
+      .then(hdmdBlocks => {
+         let lookBack = 1 + backsteps;
+         if (dmdBlockNum > matchedDmdBlockNum) {
+            lookBack = 0 + backsteps;
+         }
+         let hdmdBlockNum = hdmdBlocks[lookBack]
+            ? hdmdBlocks[lookBack].blockNumber
+            : null;
+         return hdmdBlockNum;
+      });
+}
+
+function getHdmdBalancesFromDmd(dmdBlockNum, backsteps) {
+   let getHdmdBalancesFromBlock = queries.recon.getHdmdBalancesFromBlock;
+
+   return getHdmdBlockNumFromDmd(dmdBlockNum, backsteps)
+      .then(hdmdBlockNum => {
+         return getHdmdBalancesFromBlock(hdmdBlockNum);
+      })
+      .then(hdmdBals => {
+         return hdmdBals;
+      });
+}
+
 /**
 * Waits for downloads to complete,
 then finds unmatched dmdTxns and hdmdTxns in MongoDB
@@ -345,5 +391,7 @@ module.exports = {
    downloadDmdTxns: downloadDmdTxns,
    getLastSavedDmdBlockInterval: getLastSavedDmdBlockInterval,
    mintToDmd: mintToDmd,
-   nothingToMint: nothingToMint
+   nothingToMint: nothingToMint,
+   getHdmdBlockNumFromDmd: getHdmdBlockNumFromDmd,
+   getHdmdBalancesFromDmd: getHdmdBalancesFromDmd
 };

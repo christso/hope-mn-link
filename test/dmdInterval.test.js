@@ -128,7 +128,7 @@ describe('DMD Interval Tests', () => {
       let getHdmdBlockNumFromDmd = reconClient.getHdmdBlockNumFromDmd;
 
       var inputDmdBlocks = [1800, 1810, 1811, 1820, 1830];
-      var expectedHdmdBlocks = [null, 2, 3, 4, 5];
+      var expectedHdmdBlocks = [null, 2, 3, 4, 6];
       var expectedHdmdBalances = testData.expectedHdmdBalances_b0;
 
       var actualHdmdBlocks = [];
@@ -172,7 +172,7 @@ describe('DMD Interval Tests', () => {
       let getHdmdBlockNumFromDmd = reconClient.getHdmdBlockNumFromDmd;
 
       var inputDmdBlocks = [1800, 1810, 1811, 1820, 1830];
-      var expectedHdmdBlocks = [null, 1, 2, 3, 4];
+      var expectedHdmdBlocks = [null, 1, 2, 3, 5];
       var expectedHdmdBalances = testData.expectedHdmdBalances_b1;
 
       var actualHdmdBlocks = [];
@@ -207,5 +207,11 @@ describe('DMD Interval Tests', () => {
                reject(err);
             });
       });
+   });
+
+   it('Creates dmdInterval if balances have changed', () => {
+      var inputDmdBlocks = [1800, 1810, 1811, 1820, 1830];
+      var expectedChangeFlag = [false, true, true, true, true];
+      return Promise.reject(new Error('TODO'));
    });
 });

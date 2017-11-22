@@ -129,6 +129,69 @@ module.exports = (function() {
          blockNumber: 5,
          account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
          eventName: 'Mint'
+      },
+      {
+         reconId: '8829ED9077E64A069774B40AE2D28A3D',
+         dmdTxnHash: '421C080AE7C94ADEA58651BFB5F5645A',
+         hdmdTxnHash: null,
+         amount: 0,
+         blockNumber: 1825,
+         account: null,
+         eventName: 'Adjustment'
+      },
+      {
+         reconId: '8829ED9077E64A069774B40AE2D28A3D',
+         dmdTxnHash: null,
+         hdmdTxnHash: '5B5E462FEAEE4AD298B33BF2C90B7AEB',
+         amount: -87.1287128712871,
+         blockNumber: 6,
+         account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
+         eventName: 'Transfer'
+      },
+      {
+         reconId: '8829ED9077E64A069774B40AE2D28A3D',
+         dmdTxnHash: null,
+         hdmdTxnHash: '5B5E462FEAEE4AD298B33BF2C90B7AEB',
+         amount: 16.3366336633663,
+         blockNumber: 6,
+         account: '0xA7Bb5D4d546067782Dd4B5356D9e9771deBB06a3',
+         eventName: 'Transfer'
+      },
+      {
+         reconId: '8829ED9077E64A069774B40AE2D28A3D',
+         dmdTxnHash: null,
+         hdmdTxnHash: '5B5E462FEAEE4AD298B33BF2C90B7AEB',
+         amount: 38.1188118811881,
+         blockNumber: 6,
+         account: '0x114bcdDaB25dE00884755cf8643ED1ceA4093Fd1',
+         eventName: 'Transfer'
+      },
+      {
+         reconId: '8829ED9077E64A069774B40AE2D28A3D',
+         dmdTxnHash: null,
+         hdmdTxnHash: '5B5E462FEAEE4AD298B33BF2C90B7AEB',
+         amount: 32.6732673267327,
+         blockNumber: 6,
+         account: '0x1dd0ef06bAe0226C8165f3507F13c2ad8493e1e3',
+         eventName: 'Transfer'
+      },
+      {
+         reconId: '284C8AE3CC7E4CC4A434FA7463A29160',
+         dmdTxnHash: null,
+         hdmdTxnHash: '7704413B5FA649388FFFA150FF0E1715',
+         amount: 200,
+         blockNumber: 1829,
+         account: null,
+         eventName: 'Mint'
+      },
+      {
+         reconId: '284C8AE3CC7E4CC4A434FA7463A29160',
+         dmdTxnHash: null,
+         hdmdTxnHash: 'A8BD0A5F93114DE48AFB8F784A92A237',
+         amount: 200,
+         blockNumber: 7,
+         account: '0x1dd0ef06bAe0226C8165f3507F13c2ad8493e1e3',
+         eventName: 'Mint'
       }
    ];
 
@@ -191,19 +254,19 @@ module.exports = (function() {
       [
          {
             account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
-            balance: 2210
+            balance: 2122.87128712871
          },
          {
             account: '0xA7Bb5D4d546067782Dd4B5356D9e9771deBB06a3',
-            balance: 1500
+            balance: 1516.33663366337
          },
          {
             account: '0x114bcdDaB25dE00884755cf8643ED1ceA4093Fd1',
-            balance: 3500
+            balance: 3538.11881188119
          },
          {
             account: '0x1dd0ef06bAe0226C8165f3507F13c2ad8493e1e3',
-            balance: 3000
+            balance: 3032.67326732673
          }
       ]
    ];
@@ -255,7 +318,7 @@ module.exports = (function() {
       [
          {
             account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
-            balance: 2100
+            balance: 2210
          },
          {
             account: '0xA7Bb5D4d546067782Dd4B5356D9e9771deBB06a3',

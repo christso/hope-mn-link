@@ -65,6 +65,12 @@ describe('DMD Interval Tests', () => {
       * @param {<HdmdBalances>} expectedHdmdBalances 
       */
    function assertBalances(actualHdmdBalances, expectedHdmdBalances) {
+      assert.equal(
+         actualHdmdBalances.length,
+         expectedHdmdBalances.length,
+         `actualHdmdBalances.length -> expected ${actualHdmdBalances.length} to equal ${expectedHdmdBalances.length}`
+      );
+
       for (var i = 0; i < expectedHdmdBalances.length; i++) {
          for (var j = 0; j < expectedHdmdBalances[i].length; j++) {
             let expBals = expectedHdmdBalances[i];
@@ -74,13 +80,28 @@ describe('DMD Interval Tests', () => {
                   return expBal.account === actBal.account;
                });
                assert.equal(
-                  (a = expBal.account),
-                  (b = actAcc[0].account),
+                  (a = actAcc[0] ? actAcc[0].balance : null),
+                  (e = expBal.balance),
                   `actualHdmdBalances -> expected ${a} to equal ${e}`
                );
             });
          }
       }
+   }
+
+   function assertBlocks(actualHdmdBlocks, expectedHdmdBlocks) {
+      assert.equal(
+         actualHdmdBlocks.length,
+         expectedHdmdBlocks.length,
+         `actualHdmdBlocks.length -> expected ${actualHdmdBlocks.length} to equal ${expectedHdmdBlocks.length}`
+      );
+
+      // test individual blocks
+      assert.equal(
+         (a = JSON.stringify(actualHdmdBlocks)),
+         (e = JSON.stringify(expectedHdmdBlocks)),
+         `actualHdmdBlocks -> expected ${a} to equal ${e}`
+      );
    }
 
    before(() => {
@@ -102,17 +123,13 @@ describe('DMD Interval Tests', () => {
 
    it('Gets HDMD balances at 1 interval ago from DMD block number', () => {
       const backsteps = 0; // 1 interval ago
-      let getHdmdBlocksByRecon = queries.recon.getHdmdBlocksUpToRecon;
-      let getReconByDmdBlock = queries.recon.getReconByDmdBlock;
-      let getHdmdBalancesByBlock = queries.recon.getHdmdBalancesFromBlock;
-      let getHdmdBlocksUpToRecon = queries.recon.getHdmdBlocksUpToRecon;
-      let getHdmdBalancesFromBlock = queries.recon.getHdmdBalancesFromBlock;
 
+      let getHdmdBalancesFromBlock = queries.recon.getHdmdBalancesFromBlock;
       let getHdmdBlockNumFromDmd = reconClient.getHdmdBlockNumFromDmd;
 
       var inputDmdBlocks = [1800, 1810, 1811, 1820, 1830];
       var expectedHdmdBlocks = [null, 2, 3, 4, 5];
-      var expectedHdmdBalances = testData.expectedHdmdBalances;
+      var expectedHdmdBalances = testData.expectedHdmdBalances_b0;
 
       var actualHdmdBlocks = [];
       var actualHdmdBalances = [];
@@ -138,25 +155,7 @@ describe('DMD Interval Tests', () => {
          // Assertions
          p
             .then(() => {
-               // test how many where processed
-               assert.equal(
-                  actualHdmdBlocks.length,
-                  expectedHdmdBlocks.length,
-                  `actualHdmdBlocks.length -> expected ${actualHdmdBlocks.length} to equal ${expectedHdmdBlocks.length}`
-               );
-               assert.equal(
-                  actualHdmdBalances.length,
-                  expectedHdmdBalances.length,
-                  `actualHdmdBalances.length -> expected ${actualHdmdBalances.length} to equal ${expectedHdmdBalances.length}`
-               );
-
-               // test individual blocks
-               assert.equal(
-                  (a = JSON.stringify(actualHdmdBlocks)),
-                  (e = JSON.stringify(expectedHdmdBlocks)),
-                  `actualHdmdBlocks -> expected ${a} to equal ${e}`
-               );
-               // test individual balances
+               assertBlocks(actualHdmdBlocks, expectedHdmdBlocks);
                assertBalances(actualHdmdBalances, expectedHdmdBalances);
                resolve();
             })
@@ -167,14 +166,14 @@ describe('DMD Interval Tests', () => {
    });
 
    it('Gets HDMD balances at 2 intervals ago from DMD block number', () => {
-      let getHdmdBlocksByRecon = queries.recon.getHdmdBlocksUpToRecon;
-      let getReconByDmdBlock = queries.recon.getReconByDmdBlock;
-      let getHdmdBalancesByBlock = queries.recon.getHdmdBalancesFromBlock;
-      let getHdmdBlocksUpToRecon = queries.recon.getHdmdBlocksUpToRecon;
+      const backsteps = 1; // 2 interval ago
+
+      let getHdmdBalancesFromBlock = queries.recon.getHdmdBalancesFromBlock;
+      let getHdmdBlockNumFromDmd = reconClient.getHdmdBlockNumFromDmd;
 
       var inputDmdBlocks = [1800, 1810, 1811, 1820, 1830];
       var expectedHdmdBlocks = [null, 1, 2, 3, 4];
-      var expectedHdmdBalances = testData.expectedHdmdBalances;
+      var expectedHdmdBalances = testData.expectedHdmdBalances_b1;
 
       var actualHdmdBlocks = [];
       var actualHdmdBalances = [];
@@ -182,7 +181,31 @@ describe('DMD Interval Tests', () => {
       var p = Promise.resolve();
 
       return new Promise((resolve, reject) => {
-         reject(new Error('TODO'));
+         // Compute Balances
+         inputDmdBlocks.forEach(dmdBlockNum => {
+            p = p
+               .then(() => {
+                  return getHdmdBlockNumFromDmd(dmdBlockNum, backsteps);
+               })
+               .then(hdmdBlockNum => {
+                  actualHdmdBlocks.push(hdmdBlockNum);
+                  return getHdmdBalancesFromBlock(hdmdBlockNum);
+               })
+               .then(hdmdBals => {
+                  return actualHdmdBalances.push(hdmdBals);
+               });
+         });
+
+         // Assertions
+         p
+            .then(() => {
+               assertBlocks(actualHdmdBlocks, expectedHdmdBlocks);
+               assertBalances(actualHdmdBalances, expectedHdmdBalances);
+               resolve();
+            })
+            .catch(err => {
+               reject(err);
+            });
       });
    });
 });

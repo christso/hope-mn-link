@@ -87,13 +87,18 @@ var recon = (function() {
       ]);
    };
 
-   let getPrevHdmdBlock = blockNumber => {
+   /**
+    * 
+    * @param {*} blockNumber - Get HDMD recons up to block number
+    * @param {*} limit 
+    */
+   let getHdmdBlocksUpTo = blockNumber => {
       return reconTxns.aggregate([
          {
             $match: {
                $and: [
                   {
-                     blockNumber: { $lt: blockNumber }
+                     blockNumber: { $lte: blockNumber }
                   },
                   { hdmdTxnHash: { $ne: null } },
                   { hdmdTxnHash: { $ne: '' } }
@@ -101,18 +106,31 @@ var recon = (function() {
             }
          },
          {
-            $sort: { blockNumber: -1 }
+            $group: {
+               _id: { reconId: '$reconId', blockNumber: '$blockNumber' },
+               blockNumber: { $max: '$blockNumber' }
+            }
          },
          {
-            $limit: 1
+            $sort: { blockNumber: -1 }
          }
       ]);
    };
 
-   let getPrevHdmdBlockByRecon = reconId => {
+   let getHdmdBlocksUpToRecon = reconId => {
       return getHdmdBlockByRecon(reconId).then(obj => {
-         return getPrevHdmdBlock(obj[0] ? obj[0].blockNumber : 0);
+         return getHdmdBlocksUpTo(obj[0] ? obj[0].blockNumber : 0);
       });
+   };
+
+   let getPrevHdmdBlockByRecon = reconId => {
+      return getHdmdBlockByRecon(reconId)
+         .then(obj => {
+            return getHdmdBlocksUpTo(obj[0] ? obj[0].blockNumber : 0);
+         })
+         .then(blocks => {
+            return blocks[1];
+         });
    };
 
    let getHdmdBalancesByBlock = blockNumber => {
@@ -252,7 +270,7 @@ var recon = (function() {
          },
          {
             $sort: {
-               blockNumber: 1 // get the minimum
+               blockNumber: -1 // get the minimum
             }
          },
          {
@@ -279,7 +297,7 @@ var recon = (function() {
          },
          {
             $sort: {
-               blockNumber: -1 // get the minimum
+               blockNumber: -1
             }
          },
          {
@@ -300,7 +318,9 @@ var recon = (function() {
       getReconByDmdBlock: getReconByDmdBlock,
       getHdmdBalancesByBlock: getHdmdBalancesByBlock,
       getHdmdBlockByRecon: getHdmdBlockByRecon,
-      getPrevReconByDmdBlock: getPrevReconByDmdBlock
+      getPrevReconByDmdBlock: getPrevReconByDmdBlock,
+      getHdmdBlocksUpTo: getHdmdBlocksUpTo,
+      getHdmdBlocksUpToRecon: getHdmdBlocksUpToRecon
    };
 })();
 

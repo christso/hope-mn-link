@@ -23,6 +23,7 @@ const hdmdEvents = require('../test_modules/hdmdEventModel');
 const hdmdContractMocker = require('../test_modules/hdmdContractMocker');
 const dloadMocker = require('../test_modules/dloadMocker');
 const contribs = require('../test_data/hdmdContributions');
+const noBlockNumber = -1;
 
 const cleanup = false;
 
@@ -100,10 +101,10 @@ describe('DMD Interval Tests', () => {
    });
 
    it('Gets HDMD balances at 1 interval ago from DMD block number', () => {
-      let getPrevHdmdBlockByRecon = queries.recon.getPrevHdmdBlockByRecon;
+      let getHdmdBlocksByRecon = queries.recon.getHdmdBlocksUpToRecon;
       let getReconByDmdBlock = queries.recon.getReconByDmdBlock;
       let getHdmdBalancesByBlock = queries.recon.getHdmdBalancesByBlock;
-      let getHdmdBlockByRecon = queries.recon.getHdmdBlockByRecon;
+      let getHdmdBlocksUpToRecon = queries.recon.getHdmdBlocksUpToRecon;
 
       var inputDmdBlocks = [1800, 1810, 1811, 1820, 1830];
       var expectedHdmdBlocks = [null, 2, 3, 4, 5];
@@ -113,6 +114,7 @@ describe('DMD Interval Tests', () => {
       var actualHdmdBalances = [];
 
       var p = Promise.resolve();
+      var dmdBlockNumber;
 
       return new Promise((resolve, reject) => {
          // Compute Balances
@@ -123,15 +125,20 @@ describe('DMD Interval Tests', () => {
                })
                .then(recon => {
                   // if inputDmdBlock greater than max(reconTxns.dmdBlock), get current
-                  let dmdBlockNumber = recon[0].blockNumber;
-                  if (inputDmdBlock > dmdBlockNumber) {
-                     return getHdmdBlockByRecon(recon[0].reconId);
-                  }
-                  return getPrevHdmdBlockByRecon(recon[0].reconId);
+                  dmdBlockNumber = recon[0] ? recon[0].blockNumber : null;
+                  return getHdmdBlocksUpToRecon(
+                     recon[0].reconId
+                  ).then(hdmdBlocks => {
+                     return hdmdBlocks ? hdmdBlocks : [];
+                  });
                })
-               .then(hdmdBlock => {
-                  let hdmdBlockNum = hdmdBlock[0]
-                     ? hdmdBlock[0].blockNumber
+               .then(hdmdBlocks => {
+                  let lookBack = 1;
+                  if (inputDmdBlock > dmdBlockNumber) {
+                     lookBack = 0;
+                  }
+                  let hdmdBlockNum = hdmdBlocks[lookBack]
+                     ? hdmdBlocks[lookBack].blockNumber
                      : null;
                   actualHdmdBlocks.push(hdmdBlockNum);
                   return hdmdBlockNum;
@@ -176,10 +183,13 @@ describe('DMD Interval Tests', () => {
    });
 
    it('Gets HDMD balances at 2 intervals ago from DMD block number', () => {
-      let getPrevReconByDmdBlock = queries.recon.getPrevReconByDmdBlock;
+      let getHdmdBlocksByRecon = queries.recon.getHdmdBlocksUpToRecon;
+      let getReconByDmdBlock = queries.recon.getReconByDmdBlock;
+      let getHdmdBalancesByBlock = queries.recon.getHdmdBalancesByBlock;
+      let getHdmdBlocksUpToRecon = queries.recon.getHdmdBlocksUpToRecon;
 
-      var inputDmdBlocks = [1800, 1810, 1820, 1830];
-      var expectedHdmdBlocks = [null, null, 2, 4];
+      var inputDmdBlocks = [1800, 1810, 1811, 1820, 1830];
+      var expectedHdmdBlocks = [null, 1, 2, 3, 4];
       var expectedHdmdBalances = testData.expectedHdmdBalances;
 
       var actualHdmdBlocks = [];
@@ -188,59 +198,7 @@ describe('DMD Interval Tests', () => {
       var p = Promise.resolve();
 
       return new Promise((resolve, reject) => {
-         // Compute Balances
-         inputDmdBlocks.forEach(inputDmdBlock => {
-            p = p
-               .then(() => {
-                  return getPrevReconByDmdBlock(inputDmdBlock);
-               })
-               .then(recon => {
-                  // if inputDmdBlock greater than max(reconTxns.dmdBlock), get current
-                  let dmdBlockNumber = recon[0].blockNumber;
-                  if (inputDmdBlock > dmdBlockNumber) {
-                     return getHdmdBlockByRecon(recon[0].reconId);
-                  }
-                  return getPrevHdmdBlockByRecon(recon[0].reconId);
-               })
-               .then(hdmdBlock => {
-                  let hdmdBlockNum = hdmdBlock[0]
-                     ? hdmdBlock[0].blockNumber
-                     : null;
-                  actualHdmdBlocks.push(hdmdBlockNum);
-                  return hdmdBlockNum;
-               })
-               .then(hdmdBlockNum => {
-                  return getHdmdBalancesByBlock(hdmdBlockNum);
-               })
-               .then(hdmdBals => {
-                  return actualHdmdBalances.push(hdmdBals);
-               });
-         });
-         // Assertions
-         p
-            .then(() => {
-               actualHdmdBalances = standardizeBalancesResult(
-                  actualHdmdBalances
-               );
-               expectedHdmdBalances = standardizeBalancesResult(
-                  expectedHdmdBalances
-               );
-               assert.equal(
-                  (a = JSON.stringify(actualHdmdBlocks)),
-                  (e = JSON.stringify(expectedHdmdBlocks)),
-                  `actualHdmdBlocks -> expected ${a} to equal ${e}`
-               );
-               assert.equal(
-                  (a = JSON.stringify(actualHdmdBalances)),
-                  (e = JSON.stringify(expectedHdmdBalances)),
-                  `actualHdmdBalances -> expected ${a} to equal ${e}`
-               );
-
-               resolve();
-            })
-            .catch(err => {
-               reject(err);
-            });
+         reject(new Error('TODO'));
       });
    });
 });

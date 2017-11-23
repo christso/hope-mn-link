@@ -265,7 +265,7 @@ function distributeMint(amount, balances) {
    }
    let recipients = balances.map(b => b._id);
    let weights = balances.map(b =>
-      Math.round(b.totalAmount, config.hdmdDecimals)
+      formatter.round(b.totalAmount, config.hdmdDecimals)
    );
 
    return hdmdClient.apportion(amount, recipients, weights).catch(err => {

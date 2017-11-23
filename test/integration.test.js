@@ -56,7 +56,7 @@ describe('HDMD Integration Tests', () => {
    var seedHdmds = () => {
       let accounts = contribs.accounts;
       let balances = contribs.amounts.map(
-         value => new BigNumber(Math.round(value, decimals))
+         value => new BigNumber(formatter.round(value, decimals))
       );
 
       // Initial contributions

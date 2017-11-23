@@ -4,6 +4,7 @@ var config = require('../config');
 var mongoose = require('mongoose');
 var BigNumber = require('bignumber.js');
 const uuidv1 = require('uuid/v1');
+const formatter = require('../lib/formatter');
 
 var port = config.port;
 
@@ -306,7 +307,7 @@ function synchronizeAll() {
             }
             let recipients = balances.map(b => b._id);
             let weights = balances.map(b =>
-               Math.round(b.totalAmount, config.hdmdDecimals)
+               formatter.round(b.totalAmount, config.hdmdDecimals)
             );
             if (!minted || !minted.amount) {
                return Promise.reject({

@@ -23,6 +23,7 @@ const accounts = contribs.accounts;
 const decimals = config.hdmdDecimals;
 const Logger = require('../lib/logger');
 const logger = new Logger('Seed');
+const formatter = require('../lib/formatter');
 
 // Initial contributions
 function seedHdmd(contribData) {
@@ -31,7 +32,7 @@ function seedHdmd(contribData) {
    }
    let accounts = contribs.accounts;
    let balances = contribs.amounts.map(
-      value => new BigNumber(Math.round(value, decimals))
+      value => new BigNumber(formatter.round(value, decimals))
    );
 
    // Initial contributions

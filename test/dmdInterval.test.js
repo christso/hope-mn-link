@@ -289,8 +289,40 @@ describe('DMD Interval Tests', () => {
    });
 
    it('Creates dmdInterval if balances have changed', () => {
+      var didProportionalBalancesChange =
+         reconClient.didProportionalBalancesChange;
+
       var inputDmdBlocks = [1800, 1810, 1811, 1820, 1829, 1830];
-      var expectedChangeFlag = [false, true, true, true, false, true];
-      return Promise.reject(new Error('TODO'));
+      var expectedChangeFlags = [false, true, true, true, false, true];
+
+      var actualChangeFlags = [];
+
+      var p = Promise.resolve();
+
+      return new Promise((resolve, reject) => {
+         inputDmdBlocks.forEach(dmdBlockNum => {
+            p = p
+               .then(() => {
+                  return didProportionalBalancesChange(dmdBlockNum);
+               })
+               .then(hasChanged => {
+                  actualChangeFlags.push(hasChanged);
+               });
+         });
+
+         // Assertions
+         p
+            .then(() => {
+               assert.equal(
+                  (a = JSON.stringify(actualChangeFlags)),
+                  (e = JSON.stringify(expectedChangeFlags)),
+                  `actualChangeFlags -> expected ${a} to equal ${e}`
+               );
+               resolve();
+            })
+            .catch(err => {
+               reject(err);
+            });
+      });
    });
 });

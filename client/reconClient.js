@@ -320,6 +320,31 @@ function getHdmdBalancesFromDmd(dmdBlockNum, backsteps) {
       });
 }
 
+function didProportionalBalancesChange(dmdBlockNum) {
+   let curBals;
+   let prevBals;
+
+   return getHdmdBalancesFromDmd(dmdBlockNum, 0)
+      .then(bals => {
+         curBals = bals;
+         return getHdmdBalancesFromDmd(dmdBlockNum, 1);
+      })
+      .then(bals => {
+         prevBals = bals;
+         let hasChanged = compareProportionalBalances(curBals, prevBals);
+         return hasChanged;
+      });
+}
+
+/**
+ * @param {<HdmdBalances>} balances1 - HDMD balances to compare with balances2
+ * @param {<HdmdBalances>} balances2 - HDMD balances to compare with balances1
+ * @returns {bool} - 0 if no difference, 1 if different
+ */
+function compareProportionalBalances(balances1, balances2) {
+   return true; // TODO: implement
+}
+
 /**
 * Waits for downloads to complete,
 then finds unmatched dmdTxns and hdmdTxns in MongoDB
@@ -383,5 +408,6 @@ module.exports = {
    mintToDmd: mintToDmd,
    nothingToMint: nothingToMint,
    getHdmdBlockNumFromDmd: getHdmdBlockNumFromDmd,
-   getHdmdBalancesFromDmd: getHdmdBalancesFromDmd
+   getHdmdBalancesFromDmd: getHdmdBalancesFromDmd,
+   didProportionalBalancesChange: didProportionalBalancesChange
 };

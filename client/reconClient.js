@@ -372,15 +372,6 @@ function synchronizeAll() {
    return p;
 }
 
-/**
- * This will find the minimum dmdBlockInterval that is greater than the last reconciled DMD block.
- */
-function getLastSavedDmdBlockInterval() {
-   // TODO: the first DMD block is at 18386
-   let lastReconBlock = 10000; // TODO: replace this magic number
-   return dmdClient.getLastSavedBlockInterval(lastReconBlock);
-}
-
 module.exports = {
    synchronizeAll: synchronizeAll,
    getLastHdmdRecon: getLastHdmdRecon,
@@ -389,7 +380,6 @@ module.exports = {
    getUnmatchedTxns: getUnmatchedTxns,
    reconcile: reconcile,
    downloadDmdTxns: downloadDmdTxns,
-   getLastSavedDmdBlockInterval: getLastSavedDmdBlockInterval,
    mintToDmd: mintToDmd,
    nothingToMint: nothingToMint,
    getHdmdBlockNumFromDmd: getHdmdBlockNumFromDmd,

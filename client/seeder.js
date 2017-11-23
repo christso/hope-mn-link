@@ -60,7 +60,7 @@ function seedAll() {
    return p
       .then(() => downloadTxns())
       .catch(err => Promise.reject(new Error(`Error downloading transactions`)))
-      .then(() => saveTotalSupplyDiff()) // TODO: implement (currently 10000 is hard coded)
+      .then(() => saveTotalSupplyDiff())
       .then(() => reconcileTotalSupply())
       .catch(err =>
          Promise.reject(

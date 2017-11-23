@@ -1,5 +1,3 @@
-// TODO: enter list of accounts into MongoDB via JSON POST request
-
 module.exports = {
    initialSupply: 10000,
    accounts: [

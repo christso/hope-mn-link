@@ -289,8 +289,8 @@ describe('DMD Interval Tests', () => {
    });
 
    it('Creates dmdInterval if balances have changed', () => {
-      var inputDmdBlocks = [1800, 1810, 1811, 1820, 1830];
-      var expectedChangeFlag = [false, true, true, true, true];
+      var inputDmdBlocks = [1800, 1810, 1811, 1820, 1829, 1830];
+      var expectedChangeFlag = [false, true, true, true, false, true];
       return Promise.reject(new Error('TODO'));
    });
 });

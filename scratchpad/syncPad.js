@@ -303,7 +303,6 @@ function synchronizeAll() {
          )
          .then(balances => {
             if (!balances) {
-               // TODO: reconcile HDMD with DMD
             }
             let recipients = balances.map(b => b._id);
             let weights = balances.map(b =>

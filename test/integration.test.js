@@ -23,6 +23,7 @@ const hdmdEvents = require('../test_modules/hdmdEventModel');
 const hdmdContractMocker = require('../test_modules/hdmdContractMocker');
 const dloadMocker = require('../test_modules/dloadMocker');
 const contribs = require('../test_data/hdmdContributions');
+const dmdClient = require('../client/dmdClient');
 
 const cleanup = true;
 
@@ -154,7 +155,7 @@ describe('HDMD Integration Tests', () => {
                'No intervals were saved to DB'
             );
          })
-         .then(() => reconClient.getLastSavedDmdBlockInterval())
+         .then(() => dmdClient.getLastSavedBlockInterval())
          .then(block => {
             assert.equal(block, dmdBlockIntervals[0].blockNumber);
          });

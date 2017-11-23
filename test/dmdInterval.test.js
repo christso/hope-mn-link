@@ -289,11 +289,10 @@ describe('DMD Interval Tests', () => {
    });
 
    it('Creates dmdInterval if balances have changed', () => {
-      var didProportionalBalancesChange =
-         reconClient.didProportionalBalancesChange;
-
-      var inputDmdBlocks = [1800, 1810, 1811, 1820, 1829, 1830];
-      var expectedChangeFlags = [false, true, true, true, false, true];
+      var didRelativeBalancesChange = reconClient.didRelativeBalancesChange;
+      const tolerance = 0.005;
+      var inputDmdBlocks = [1829, 1800, 1810, 1811, 1820, 1829, 1830];
+      var expectedChangeFlags = [false, false, true, true, true, false, true];
 
       var actualChangeFlags = [];
 
@@ -303,7 +302,7 @@ describe('DMD Interval Tests', () => {
          inputDmdBlocks.forEach(dmdBlockNum => {
             p = p
                .then(() => {
-                  return didProportionalBalancesChange(dmdBlockNum);
+                  return didRelativeBalancesChange(dmdBlockNum, tolerance);
                })
                .then(hasChanged => {
                   actualChangeFlags.push(hasChanged);

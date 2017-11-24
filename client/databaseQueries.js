@@ -89,8 +89,8 @@ var recon = (function() {
 
    /**
     * 
-    * @param {*} blockNumber - Get HDMD recons up to block number
-    * @param {*} limit 
+    * @param {Number} blockNumber - Get HDMD recons up to block number
+    * @param {Number} limit 
     */
    let getHdmdBlocksUpTo = blockNumber => {
       return reconTxns.aggregate([
@@ -117,6 +117,65 @@ var recon = (function() {
       ]);
    };
 
+   /**
+    * Get recons where both HDMD and DMD txnHashes exist, and project the blockNumber and txnHash fields
+    */
+   let getIntersects = () => {
+      return reconTxns.aggregate([
+         // select all HDMD recons
+         {
+            $match: {
+               $and: [
+                  { hdmdTxnHash: { $ne: null } },
+                  { hdmdTxnHash: { $ne: '' } }
+               ]
+            }
+         },
+         // inner join with DMD recons
+         {
+            $lookup: {
+               from: 'recontxns',
+               localField: 'reconId',
+               foreignField: 'reconId',
+               as: 'recontxns'
+            }
+         },
+         {
+            $project: {
+               reconId: '$reconId',
+               hdmdTxnHash: '$hdmdTxnHash',
+               hdmdBlockNumber: '$blockNumber',
+               dmdrecons: {
+                  $filter: {
+                     input: '$recontxns',
+                     as: 'recon',
+                     cond: {
+                        $and: [
+                           { $ne: ['$$recon.dmdTxnHash', null] },
+                           { $ne: ['$$recon.dmdTxnHash', ''] }
+                        ]
+                     }
+                  }
+               }
+            }
+         },
+         // reformat
+         { $unwind: '$dmdrecons' },
+         {
+            $project: {
+               reconId: '$reconId',
+               hdmdTxnHash: '$hdmdTxnHash',
+               hdmdBlockNumber: '$hdmdBlockNumber',
+               dmdTxnHash: '$dmdrecons.dmdTxnHash',
+               dmdBlockNumber: '$dmdrecons.blockNumber'
+            }
+         },
+         {
+            $sort: { dmdBlockNumber: -1 }
+         }
+      ]);
+   };
+
    let getHdmdBlocksUpToRecon = reconId => {
       return getHdmdBlockByRecon(reconId).then(obj => {
          return getHdmdBlocksUpTo(obj[0] ? obj[0].blockNumber : 0);
@@ -133,6 +192,10 @@ var recon = (function() {
          });
    };
 
+   /**
+    * Gets the balance up to and including the specified block
+    * @param {Number} blockNumber 
+    */
    let getHdmdBalancesFromBlock = blockNumber => {
       return reconTxns.aggregate([
          {
@@ -320,7 +383,8 @@ var recon = (function() {
       getHdmdBlockByRecon: getHdmdBlockByRecon,
       getPrevReconByDmdBlock: getPrevReconByDmdBlock,
       getHdmdBlocksUpTo: getHdmdBlocksUpTo,
-      getHdmdBlocksUpToRecon: getHdmdBlocksUpToRecon
+      getHdmdBlocksUpToRecon: getHdmdBlocksUpToRecon,
+      getIntersects: getIntersects
    };
 })();
 

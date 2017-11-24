@@ -128,7 +128,42 @@ describe('DMD Interval Tests', () => {
       });
    });
 
-   it('Gets reconciled HDMD block from DMD block number - 1 step back', () => {
+   it('Gets reconciled HDMD block from DMD block number - 1 DMD step back', () => {
+      const backsteps = 1;
+
+      let getHdmdBlockNumFromDmdSteps = reconClient.getHdmdBlockNumFromDmdSteps;
+      var getIntersects = queries.recon.getIntersects;
+
+      var inputDmdBlocks = [1829, 1830];
+      var expectedHdmdBlocks = [3, 5];
+
+      var actualHdmdBlocks = [];
+
+      var p = Promise.resolve();
+      return new Promise((resolve, reject) => {
+         inputDmdBlocks.forEach(inputDmdBlock => {
+            p = p
+               .then(() =>
+                  getHdmdBlockNumFromDmdSteps(inputDmdBlock, backsteps)
+               )
+               .then(hdmdBlockNum => {
+                  actualHdmdBlocks.push(hdmdBlockNum);
+               });
+         });
+
+         // Assertions
+         p
+            .then(() => {
+               assertBlocks(actualHdmdBlocks, expectedHdmdBlocks);
+               resolve();
+            })
+            .catch(err => {
+               reject(err);
+            });
+      });
+   });
+
+   it('Gets reconciled HDMD block from DMD block number - 1 HDMD step back', () => {
       const backsteps = 1;
 
       let getHdmdBlockNumFromDmd = reconClient.getHdmdBlockNumFromDmd;
@@ -164,7 +199,7 @@ describe('DMD Interval Tests', () => {
       });
    });
 
-   it('Gets reconciled HDMD block from DMD block number - 0 steps back', () => {
+   it('Gets reconciled HDMD block from DMD block number - 0 HDMD steps back', () => {
       const backsteps = 0; // 1 interval ago
 
       let getHdmdBlockNumFromDmd = reconClient.getHdmdBlockNumFromDmd;
@@ -200,7 +235,7 @@ describe('DMD Interval Tests', () => {
       });
    });
 
-   it('Gets HDMD balances from DMD block number - 0 steps back', () => {
+   it('Gets HDMD balances from DMD block number - 0 HDMD steps back', () => {
       const backsteps = 0;
 
       let getHdmdBalancesFromBlock = queries.recon.getHdmdBalancesFromBlock;
@@ -244,7 +279,7 @@ describe('DMD Interval Tests', () => {
       });
    });
 
-   it('Gets HDMD balances from DMD block number - 1 step back', () => {
+   it('Gets HDMD balances from DMD block number - 1 HDMD step back', () => {
       const backsteps = 1;
 
       let getHdmdBalancesFromBlock = queries.recon.getHdmdBalancesFromBlock;

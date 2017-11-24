@@ -275,6 +275,11 @@ function distributeMint(amount, balances) {
    });
 }
 
+/**
+ If the dmdBlockNum is greater than the most recent DMD block number in recon txn, then it will be the most recent HDMD block number. Otherwise, it will be the the previous HDMD block number, looking back 'backsteps' steps.
+ * @param {Number} dmdBlockNum - DMD block number associated with the recon txn
+ * @param {Number} backsteps - number of HDMD block numbers to look back.
+ */
 function getHdmdBlockNumFromDmd(dmdBlockNum, backsteps) {
    let getHdmdBlocksByRecon = queries.recon.getHdmdBlocksUpToRecon;
    let getReconByDmdBlock = queries.recon.getReconByDmdBlock;
@@ -306,6 +311,29 @@ function getHdmdBlockNumFromDmd(dmdBlockNum, backsteps) {
             : null;
          return hdmdBlockNum;
       });
+}
+
+function getHdmdBlockNumFromDmdSteps(dmdBlockNum, backsteps) {
+   if (backsteps === undefined) {
+      backsteps = 0;
+   }
+   var getIntersects = queries.recon.getIntersects;
+   return getIntersects().then(recons => {
+      let hdmdBlockNum = recons.filter(r => r.dmdBlockNumber < dmdBlockNum)[1]
+         .hdmdBlockNumber;
+      return hdmdBlockNum;
+   });
+}
+
+function getHdmdBalancesFromDmdSteps(dmdBlockNum, backsteps) {
+   if (backsteps === undefined) {
+      backsteps = 0;
+   }
+   return getHdmdBlockNumFromDmdSteps(
+      dmdBlockNum.backsteps
+   ).then(hdmdBlockNum => {
+      return getHdmdBalancesFromBlock(hdmdBlockNum);
+   });
 }
 
 function getHdmdBalancesFromDmd(dmdBlockNum, backsteps) {
@@ -480,5 +508,7 @@ module.exports = {
    nothingToMint: nothingToMint,
    getHdmdBlockNumFromDmd: getHdmdBlockNumFromDmd,
    getHdmdBalancesFromDmd: getHdmdBalancesFromDmd,
-   didRelativeBalancesChange: didRelativeBalancesChange
+   didRelativeBalancesChange: didRelativeBalancesChange,
+   getHdmdBlockNumFromDmdSteps: getHdmdBlockNumFromDmdSteps,
+   getHdmdBalancesFromDmdSteps: getHdmdBalancesFromDmdSteps
 };

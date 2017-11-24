@@ -21,3 +21,57 @@ Find HDMDs in reconTxns collection
 ```
 db.getCollection('recontxns').find({hdmdTxnHash: { $ne: null }}).sort({blockNumber:-1})
 ```
+
+Get HDMDs in reconTxns and the associated DMD
+```
+db.getCollection('recontxns').aggregate([
+// select all HDMD recons
+{ 
+    $match: { $and: [ 
+        { hdmdTxnHash: { $ne: null } },
+        { hdmdTxnHash: { $ne: '' } }
+    ] } 
+},
+// inner join with DMD recons
+{
+    $lookup:
+    {
+        from: "recontxns",
+        localField: "reconId",
+        foreignField: "reconId",
+        as: "recontxns"
+    }
+},
+{
+    $project: {
+        reconId: '$reconId',
+        hdmdTxnHash: '$hdmdTxnHash',
+        hdmdBlockNumber: '$blockNumber',
+        dmdrecons: {
+            $filter: {
+                input: '$recontxns',
+                as: 'recon',
+                cond: { $and: [
+                    { $ne: [ '$$recon.dmdTxnHash', null ] },
+                    { $ne: [ '$$recon.dmdTxnHash', ''] }
+                ]}
+            }
+        }
+    }
+},
+// reformat
+{ $unwind : "$dmdrecons" },
+{
+    $project: {
+        reconId: '$reconId',
+        hdmdTxnHash: '$hdmdTxnHash',
+        hdmdBlockNumber: '$hdmdBlockNumber',
+        dmdTxnHash: '$dmdrecons.dmdTxnHash',
+        dmdBlockNumber: '$dmdrecons.blockNumber'
+    }
+},
+{
+    $sort: { dmdBlockNumber: -1 }
+}
+])
+```

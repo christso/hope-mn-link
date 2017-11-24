@@ -317,8 +317,8 @@ function getHdmdBlockNumFromDmdSteps(dmdBlockNum, backsteps) {
    if (backsteps === undefined) {
       backsteps = 0;
    }
-   var getIntersects = queries.recon.getIntersects;
-   return getIntersects().then(recons => {
+   var getDmdIntersects = queries.recon.getDmdIntersects;
+   return getDmdIntersects().then(recons => {
       let hdmdBlockNum = recons.filter(r => r.dmdBlockNumber < dmdBlockNum)[1]
          .hdmdBlockNumber;
       return hdmdBlockNum;
@@ -354,7 +354,7 @@ function didRelativeBalancesChange(dmdBlockNum, tolerance) {
    }
 
    let getRelativeBalances = (dmdBlockNum, backsteps) => {
-      return getHdmdBalancesFromDmd(dmdBlockNum, backsteps).then(bals => {
+      return getHdmdBalancesFromDmdSteps(dmdBlockNum, backsteps).then(bals => {
          if (bals.length === 0) {
             return [];
          }

@@ -118,9 +118,9 @@ var recon = (function() {
    };
 
    /**
-    * Get recons where both HDMD and DMD txnHashes exist, and project the blockNumber and txnHash fields
+    * Get DMD recons where HDMD recons exist, and outputs both block numbers
     */
-   let getIntersects = () => {
+   let getDmdIntersects = () => {
       return reconTxns.aggregate([
          // select all HDMD recons
          {
@@ -384,7 +384,7 @@ var recon = (function() {
       getPrevReconByDmdBlock: getPrevReconByDmdBlock,
       getHdmdBlocksUpTo: getHdmdBlocksUpTo,
       getHdmdBlocksUpToRecon: getHdmdBlocksUpToRecon,
-      getIntersects: getIntersects
+      getDmdIntersects: getDmdIntersects
    };
 })();
 

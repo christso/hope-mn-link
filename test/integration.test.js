@@ -170,17 +170,15 @@ describe('HDMD Integration Tests', () => {
       let dmdReconTotal = queries.recon.getDmdTotal;
       let hdmdReconTotal = queries.recon.getHdmdTotal;
       let nothingToMint = reconClient.nothingToMint;
+      let getBeginHdmdBalancesFromDmd = reconClient.getBeginHdmdBalancesFromDmd;
 
       // TODO: move this to codebase
-      let mintNewToDmd = () => {
+      let mintNewToDmd = dmdBlockNumber => {
          let dmds;
          let hdmds;
 
          return (
-            getNextUnmatchedDmdBlockInterval()
-               .then(dmdBlockNumber => {
-                  return getUnmatchedTxns(dmdBlockNumber - 1);
-               })
+            getUnmatchedTxns(dmdBlockNumber - 1)
                // Invoke mint to synchronize HDMDs with DMDs
                .then(values => {
                   dmds = values[0];
@@ -198,8 +196,11 @@ describe('HDMD Integration Tests', () => {
          let dmds;
          let hdmds;
          return (
-            // mint amount to sync with DMD
-            mintNewToDmd()
+            // mint amount to sync with
+            getNextUnmatchedDmdBlockInterval()
+               .then(dmdBlockNumber => {
+                  return mintNewToDmd(dmdBlockNumber);
+               })
                .then(values => {
                   [dmds, hdmds, minted] = values;
                   // download eth event log
@@ -207,9 +208,14 @@ describe('HDMD Integration Tests', () => {
                })
                // reconcile hdmdTxns MongoDB to dmdTxns MongoDB
                .then(created => {
-                  // nothing to mint if dmds.amount == hdmds.amount
+                  // dmds.amount == hdmds.amount in all cases because mint is done before the reconcile
                   if (minted === nothingToMint) {
+                     // TODO: why does the test fail if I reconcile?
                      return reconcile(dmds, hdmds);
+                  }
+               })
+               .then(() => {
+                  if (minted != nothingToMint) {
                   }
                })
                // get balance that was reconciled

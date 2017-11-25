@@ -344,7 +344,7 @@ var recon = (function() {
    };
 
    /**
-    * @returns {Promise.<number>} Resolves to the next unreconciled block number 
+    * @returns {Promise.<number>} Resolves to the next unreconciled DMD block number 
     */
    let getNextUnmatchedDmdBlockInterval = () => {
       return getFirstUnmatchedDmd()

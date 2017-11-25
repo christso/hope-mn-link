@@ -108,7 +108,7 @@ const unmatchedQueryDefs = {
 };
 
 /**
- * get DMD Txns that don't exist in HDMD Txns MongoDB
+ * get DMD Txns that don't exist in HDMD Txns MongoDB up to and including blockNumber
  * @param {Number} blockNumber
  */
 function getUnmatchedTxns(blockNumber) {

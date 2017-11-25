@@ -172,21 +172,29 @@ describe('HDMD Integration Tests', () => {
       let nothingToMint = reconClient.nothingToMint;
       let getBeginHdmdBalancesFromDmd = reconClient.getBeginHdmdBalancesFromDmd;
 
-      // TODO: move this to codebase
+      /**
+       * Mint HDMDs up to dmdBlockNumber to make HDMD balance equal to DMD balance
+       * @param {Number} dmdBlockNumber - THe maximum DMD Block number that minting will apply up to.
+       * @returns {([<DmdTxn>[], <HdmdTxn>[], {Object}])} - DmdTxn[] and HdmdTxn[] are txns that were reconciled
+       */
       let mintNewToDmd = dmdBlockNumber => {
          let dmds;
          let hdmds;
+         let minted;
 
          return (
-            getUnmatchedTxns(dmdBlockNumber - 1)
+            getUnmatchedTxns(dmdBlockNumber)
                // Invoke mint to synchronize HDMDs with DMDs
                .then(values => {
                   dmds = values[0];
                   hdmds = values[1];
-                  return mintToDmd(dmds, hdmds); // TODO: create mock mintDmds which will add to MongoDB
+                  return mintToDmd(dmds, hdmds); // mint the amount that DMD is higher than HDMD
                })
-               .then(mintTxn => {
-                  return [dmds, hdmds, mintTxn];
+               .then(value => {
+                  minted = value;
+               })
+               .then(() => {
+                  return [dmds, hdmds, minted];
                })
          );
       };
@@ -195,11 +203,13 @@ describe('HDMD Integration Tests', () => {
          let minted;
          let dmds;
          let hdmds;
+         let dmdBlockNumber;
          return (
             // mint amount to sync with
             getNextUnmatchedDmdBlockInterval()
-               .then(dmdBlockNumber => {
-                  return mintNewToDmd(dmdBlockNumber);
+               .then(value => {
+                  dmdBlockNumber = value;
+                  return mintNewToDmd(dmdBlockNumber - 1);
                })
                .then(values => {
                   [dmds, hdmds, minted] = values;
@@ -207,15 +217,18 @@ describe('HDMD Integration Tests', () => {
                   return downloadHdmdsMock();
                })
                // reconcile hdmdTxns MongoDB to dmdTxns MongoDB
-               .then(created => {
+               .then(saved => {
                   // dmds.amount == hdmds.amount in all cases because mint is done before the reconcile
                   if (minted === nothingToMint) {
                      // TODO: why does the test fail if I reconcile?
                      return reconcile(dmds, hdmds);
-                  }
-               })
-               .then(() => {
-                  if (minted != nothingToMint) {
+                  } else {
+                     // what we do if a mint has occured
+                     return getUnmatchedTxns(dmdBlockNumber).then(values => {
+                        dmds = values[0];
+                        hdmds = values[1];
+                        return reconcile(dmds, hdmds);
+                     });
                   }
                })
                // get balance that was reconciled
@@ -237,11 +250,11 @@ describe('HDMD Integration Tests', () => {
 
       // Assert
       let expected = [];
-      expected.push({ dmd: 0, hdmd: 0 });
-      expected.push({ dmd: 10000, hdmd: 10000 });
       expected.push({ dmd: 10000, hdmd: 10000 });
       expected.push({ dmd: 10400, hdmd: 10400 });
-      expected.push({ dmd: 10400, hdmd: 10400 });
+      expected.push({ dmd: 10600, hdmd: 10600 });
+      expected.push({ dmd: 10600, hdmd: 10600 });
+      expected.push({ dmd: 10600, hdmd: 10600 });
       expected.push({ dmd: 10600, hdmd: 10600 });
       expected.push({ dmd: 10600, hdmd: 10600 });
 

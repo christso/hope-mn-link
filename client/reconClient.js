@@ -206,7 +206,7 @@ function getLastHdmdRecon(dmdBlockNumber) {
 * @param {number} blockNumber - DMD blockNumber to get the balance for
 * @return {{addresses: string[], balances: number[]}}  - { addresses[], balances[] }
 */
-function getHdmdBalancesFromDmd(blockNumber) {
+function getBeginHdmdBalancesFromDmd(blockNumber) {
    let matchStage = {
       $match: {
          hdmdTxnHash: { $ne: null },
@@ -278,70 +278,44 @@ function distributeMint(amount, balances) {
 /**
  If the dmdBlockNum is greater than the most recent DMD block number in recon txn, then it will be the most recent HDMD block number. Otherwise, it will be the the previous HDMD block number, looking back 'backsteps' steps.
  * @param {Number} dmdBlockNum - DMD block number associated with the recon txn
- * @param {Number} backsteps - number of HDMD block numbers to look back.
+ * @param {Number} dmdBackSteps - number of HDMD block numbers to look back.
  */
-function getHdmdBlockNumFromDmd(dmdBlockNum, backsteps) {
-   let getHdmdBlocksByRecon = queries.recon.getHdmdBlocksUpToRecon;
-   let getReconByDmdBlock = queries.recon.getReconByDmdBlock;
-   let getHdmdBalancesByBlock = queries.recon.getHdmdBalancesFromBlock;
-   let getHdmdBlocksUpToRecon = queries.recon.getHdmdBlocksUpToRecon;
+function getHdmdBlockNumFromDmd(dmdBlockNum, dmdBackSteps, HdmdBackSteps) {
+   let getDmdIntersects = queries.recon.getDmdIntersects;
 
    var p = Promise.resolve();
    var matchedDmdBlockNum;
 
-   if (backsteps === undefined) {
-      backsteps = 0;
+   if (dmdBackSteps === undefined) {
+      dmdBackSteps = 0;
    }
-   // Compute Balances
-   return getReconByDmdBlock(dmdBlockNum, backsteps)
-      .then(recon => {
-         // if inputDmdBlock greater than max(reconTxns.dmdBlock), get current
-         matchedDmdBlockNum = recon[0] ? recon[0].blockNumber : null;
-         return getHdmdBlocksUpToRecon(recon[0].reconId).then(hdmdBlocks => {
-            return hdmdBlocks ? hdmdBlocks : [];
-         });
-      })
-      .then(hdmdBlocks => {
-         let lookBack = 1 + backsteps;
-         if (dmdBlockNum > matchedDmdBlockNum) {
-            lookBack = 0 + backsteps;
-         }
-         let hdmdBlockNum = hdmdBlocks[lookBack]
-            ? hdmdBlocks[lookBack].blockNumber
-            : null;
-         return hdmdBlockNum;
-      });
-}
+   if (HdmdBackSteps === undefined) {
+      HdmdBackSteps = 0;
+   }
 
-function getHdmdBlockNumFromDmdSteps(dmdBlockNum, backsteps) {
-   if (backsteps === undefined) {
-      backsteps = 0;
-   }
-   var getDmdIntersects = queries.recon.getDmdIntersects;
+   // Compute Balances
+   // get the latest block number that was reconciled (up to backsteps ago)
    return getDmdIntersects().then(recons => {
-      let hdmdBlockNum = recons.filter(r => r.dmdBlockNumber < dmdBlockNum)[1]
-         .hdmdBlockNumber;
+      let filtered = recons[0]
+         ? recons.filter(r => {
+              return r.dmdBlockNumber <= dmdBlockNum;
+           })
+         : null;
+
+      let hdmdBlockNum = filtered[dmdBackSteps]
+         ? filtered[dmdBackSteps].hdmdBlockNumber
+         : null;
       return hdmdBlockNum;
    });
 }
 
-function getHdmdBalancesFromDmdSteps(dmdBlockNum, backsteps) {
-   if (backsteps === undefined) {
-      backsteps = 0;
-   }
-   return getHdmdBlockNumFromDmdSteps(
-      dmdBlockNum.backsteps
-   ).then(hdmdBlockNum => {
-      return getHdmdBalancesFromBlock(hdmdBlockNum);
-   });
-}
-
-function getHdmdBalancesFromDmd(dmdBlockNum, backsteps) {
-   let getHdmdBalancesFromBlock = queries.recon.getHdmdBalancesFromBlock;
+function getBeginHdmdBalancesFromDmd(dmdBlockNum, backsteps) {
+   let getBeginHdmdBalancesFromBlock =
+      queries.recon.getBeginHdmdBalancesFromBlock;
 
    return getHdmdBlockNumFromDmd(dmdBlockNum, backsteps)
       .then(hdmdBlockNum => {
-         return getHdmdBalancesFromBlock(hdmdBlockNum);
+         return getBeginHdmdBalancesFromBlock(hdmdBlockNum);
       })
       .then(hdmdBals => {
          return hdmdBals;
@@ -354,7 +328,7 @@ function didRelativeBalancesChange(dmdBlockNum, tolerance) {
    }
 
    let getRelativeBalances = (dmdBlockNum, backsteps) => {
-      return getHdmdBalancesFromDmdSteps(dmdBlockNum, backsteps).then(bals => {
+      return getBeginHdmdBalancesFromDmd(dmdBlockNum, backsteps).then(bals => {
          if (bals.length === 0) {
             return [];
          }
@@ -489,7 +463,9 @@ function synchronizeAll() {
       }
       getLastHdmdRecon()
          .then(reconObj =>
-            getHdmdBalancesFromDmd(reconObj ? reconObj.blockNumber : undefined)
+            getBeginHdmdBalancesFromDmd(
+               reconObj ? reconObj.blockNumber : undefined
+            )
          )
          .then(balances => distributeMint(minted.amount, balances));
    });
@@ -499,7 +475,7 @@ function synchronizeAll() {
 module.exports = {
    synchronizeAll: synchronizeAll,
    getLastHdmdRecon: getLastHdmdRecon,
-   getBalancesDmdToHdmd: getHdmdBalancesFromDmd,
+   getBalancesDmdToHdmd: getBeginHdmdBalancesFromDmd,
    downloadTxns: downloadTxns,
    getUnmatchedTxns: getUnmatchedTxns,
    reconcile: reconcile,
@@ -507,8 +483,6 @@ module.exports = {
    mintToDmd: mintToDmd,
    nothingToMint: nothingToMint,
    getHdmdBlockNumFromDmd: getHdmdBlockNumFromDmd,
-   getHdmdBalancesFromDmd: getHdmdBalancesFromDmd,
-   didRelativeBalancesChange: didRelativeBalancesChange,
-   getHdmdBlockNumFromDmdSteps: getHdmdBlockNumFromDmdSteps,
-   getHdmdBalancesFromDmdSteps: getHdmdBalancesFromDmdSteps
+   getBeginHdmdBalancesFromDmd: getBeginHdmdBalancesFromDmd,
+   didRelativeBalancesChange: didRelativeBalancesChange
 };

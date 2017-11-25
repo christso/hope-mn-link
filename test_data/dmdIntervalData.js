@@ -218,7 +218,7 @@ module.exports = (function() {
       [
          {
             account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
-            balance: 2100
+            balance: 2000
          },
          {
             account: '0xA7Bb5D4d546067782Dd4B5356D9e9771deBB06a3',
@@ -272,7 +272,7 @@ module.exports = (function() {
       [
          {
             account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
-            balance: 2322.87128712871
+            balance: 2122.87128712871
          },
          {
             account: '0xA7Bb5D4d546067782Dd4B5356D9e9771deBB06a3',
@@ -291,12 +291,8 @@ module.exports = (function() {
 
    var expectedHdmdBalances_b1 = [
       [], // the app will return null instead of zero balances if no txns with the account is found
-      [
-         {
-            account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
-            balance: 10000
-         }
-      ],
+      [],
+      [],
       [
          {
             account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
@@ -322,24 +318,6 @@ module.exports = (function() {
          },
          {
             account: '0xA7Bb5D4d546067782Dd4B5356D9e9771deBB06a3',
-            balance: 1000
-         },
-         {
-            account: '0x114bcdDaB25dE00884755cf8643ED1ceA4093Fd1',
-            balance: 4000
-         },
-         {
-            account: '0x1dd0ef06bAe0226C8165f3507F13c2ad8493e1e3',
-            balance: 3000
-         }
-      ],
-      [
-         {
-            account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
-            balance: 2210
-         },
-         {
-            account: '0xA7Bb5D4d546067782Dd4B5356D9e9771deBB06a3',
             balance: 1500
          },
          {
@@ -354,19 +332,19 @@ module.exports = (function() {
       [
          {
             account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
-            balance: 2122.87128712871
+            balance: 2100
          },
          {
             account: '0xA7Bb5D4d546067782Dd4B5356D9e9771deBB06a3',
-            balance: 1516.33663366337
+            balance: 1500
          },
          {
             account: '0x114bcdDaB25dE00884755cf8643ED1ceA4093Fd1',
-            balance: 3538.11881188119
+            balance: 3500
          },
          {
             account: '0x1dd0ef06bAe0226C8165f3507F13c2ad8493e1e3',
-            balance: 3032.67326732673
+            balance: 3000
          }
       ]
    ];

@@ -76,7 +76,7 @@ db.getCollection('recontxns').aggregate([
 ])
 ```
 
-Get DMDs in reconTxns and the most latest associated HDMD
+Get DMDs in reconTxns and the most latest associated HDMD.
 ```
 db.getCollection('recontxns').aggregate([
    // select all HDMD recons
@@ -100,31 +100,49 @@ db.getCollection('recontxns').aggregate([
          dmdTxnHash: '$dmdTxnHash',
          dmdBlockNumber: '$blockNumber',
          hdmdrecons: {
-            $let: {
-               vars: {
-                  obj: {
-                     $arrayElemAt: [
-                        {
-                           $filter: {
-                              input: '$recons',
-                              as: 'recon',
-                              cond: {
-                                 $and: [
-                                    { $ne: ['$$recon.hdmdTxnHash', null] },
-                                    { $ne: ['$$recon.hdmdTxnHash', ''] },
-                                    { $eq: ['$$recon.blockNumber', { $max: '$$recon.blockNumber' }] } 
-                                 ]
-                              }
-                           }
-                        },
-                        0
-                     ]
-                  }
-               },
-               in: { blockNumber: '$$obj.blockNumber' }
+            $filter: {
+               input: '$recons',
+               as: 'recon',
+               cond: {
+                  $and: [
+                     { $ne: ['$$recon.hdmdTxnHash', null] },
+                     { $ne: ['$$recon.hdmdTxnHash', ''] },
+                     {
+                        $eq: [
+                           '$$recon.blockNumber',
+                           { $max: '$$recon.blockNumber' }
+                        ]
+                     }
+                  ]
+               }
             }
          }
       }
+   },
+   // flatten
+   { $unwind: '$hdmdrecons' },
+   // get the maximum hdmdBlockNumber for each dmdBlockNumber
+   {
+      $project: {
+         dmdBlockNumber: '$dmdBlockNumber',
+         hdmdBlockNumber: '$hdmdrecons.blockNumber'
+      }
+   },
+   {
+      $group: {
+         _id: { dmdBlockNumber: '$dmdBlockNumber' },
+         hdmdBlockNumber: { $max: '$hdmdBlockNumber' }
+      }
+   },
+   // flatten
+   {
+      $project: {
+         dmdBlockNumber: '$_id.dmdBlockNumber',
+         hdmdBlockNumber: '$hdmdBlockNumber'
+      }
+   },
+   {
+      $sort: { dmdBlockNumber: -1 }
    }
 ])
 ```

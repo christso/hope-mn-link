@@ -126,8 +126,8 @@ var recon = (function() {
          {
             $match: {
                $and: [
-                  { hdmdTxnHash: { $ne: null } },
-                  { hdmdTxnHash: { $ne: '' } }
+                  { dmdTxnHash: { $ne: null } },
+                  { dmdTxnHash: { $ne: '' } }
                ]
             }
          },
@@ -137,37 +137,54 @@ var recon = (function() {
                from: 'recontxns',
                localField: 'reconId',
                foreignField: 'reconId',
-               as: 'recontxns'
+               as: 'recons'
             }
          },
          {
             $project: {
                reconId: '$reconId',
-               hdmdTxnHash: '$hdmdTxnHash',
-               hdmdBlockNumber: '$blockNumber',
-               dmdrecons: {
+               dmdTxnHash: '$dmdTxnHash',
+               dmdBlockNumber: '$blockNumber',
+               hdmdrecons: {
                   $filter: {
-                     input: '$recontxns',
+                     input: '$recons',
                      as: 'recon',
                      cond: {
                         $and: [
-                           { $ne: ['$$recon.dmdTxnHash', null] },
-                           { $ne: ['$$recon.dmdTxnHash', ''] }
+                           { $ne: ['$$recon.hdmdTxnHash', null] },
+                           { $ne: ['$$recon.hdmdTxnHash', ''] },
+                           {
+                              $eq: [
+                                 '$$recon.blockNumber',
+                                 { $max: '$$recon.blockNumber' }
+                              ]
+                           }
                         ]
                      }
                   }
                }
             }
          },
-         // reformat
-         { $unwind: '$dmdrecons' },
+         // flatten
+         { $unwind: '$hdmdrecons' },
+         // get the maximum hdmdBlockNumber for each dmdBlockNumber
          {
             $project: {
-               reconId: '$reconId',
-               hdmdTxnHash: '$hdmdTxnHash',
-               hdmdBlockNumber: '$hdmdBlockNumber',
-               dmdTxnHash: '$dmdrecons.dmdTxnHash',
-               dmdBlockNumber: '$dmdrecons.blockNumber'
+               dmdBlockNumber: '$dmdBlockNumber',
+               hdmdBlockNumber: '$hdmdrecons.blockNumber'
+            }
+         },
+         {
+            $group: {
+               _id: { dmdBlockNumber: '$dmdBlockNumber' },
+               hdmdBlockNumber: { $max: '$hdmdBlockNumber' }
+            }
+         },
+         // flatten
+         {
+            $project: {
+               dmdBlockNumber: '$_id.dmdBlockNumber',
+               hdmdBlockNumber: '$hdmdBlockNumber'
             }
          },
          {
@@ -190,6 +207,38 @@ var recon = (function() {
          .then(blocks => {
             return blocks[1];
          });
+   };
+
+   /**
+    * Gets the balance up to and excluding the specified block
+    * @param {Number} blockNumber 
+    */
+   let getBeginHdmdBalancesFromBlock = blockNumber => {
+      return reconTxns.aggregate([
+         {
+            $match: {
+               $and: [
+                  {
+                     blockNumber: { $lt: blockNumber }
+                  },
+                  { hdmdTxnHash: { $ne: null } },
+                  { hdmdTxnHash: { $ne: '' } }
+               ]
+            }
+         },
+         {
+            $group: {
+               _id: '$account',
+               balance: { $sum: '$amount' }
+            }
+         },
+         {
+            $project: {
+               account: '$_id',
+               balance: '$balance'
+            }
+         }
+      ]);
    };
 
    /**
@@ -380,6 +429,7 @@ var recon = (function() {
       getNextUnmatchedDmdBlockInterval: getNextUnmatchedDmdBlockInterval,
       getReconByDmdBlock: getReconByDmdBlock,
       getHdmdBalancesFromBlock: getHdmdBalancesFromBlock,
+      getBeginHdmdBalancesFromBlock: getBeginHdmdBalancesFromBlock,
       getHdmdBlockByRecon: getHdmdBlockByRecon,
       getPrevReconByDmdBlock: getPrevReconByDmdBlock,
       getHdmdBlocksUpTo: getHdmdBlocksUpTo,

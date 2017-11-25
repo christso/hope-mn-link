@@ -7,6 +7,7 @@ var hdmdEventSchema = new mongoose.Schema({
    blockNumber: Number,
    amount: Number,
    netAmount: Number,
+   account: String,
    eventName: String
 });
 module.exports = mongoose.model('HdmdEvent', hdmdEventSchema);

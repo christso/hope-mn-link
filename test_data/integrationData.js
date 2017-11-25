@@ -1,5 +1,6 @@
 module.exports = (function() {
    const initialSupply = 12000;
+   const ownerAccount = '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC';
 
    //[18386, 18388, 18584, 23742, 27962, 28022]
    var dmdBlockIntervals = [18386, 18388, 18584, 23730].map(b => {
@@ -46,11 +47,13 @@ module.exports = (function() {
          blockNumber: 1,
          amount: 150,
          netAmount: 150,
+         account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
          eventName: 'Mint'
       }
    ];
    return {
       initialSupply: initialSupply,
+      ownerAccount: ownerAccount,
       dmdBlockIntervals: dmdBlockIntervals,
       dmdTxnsData: dmdTxnsData,
       hdmdEventsData: hdmdEventsData

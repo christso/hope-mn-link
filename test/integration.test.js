@@ -112,6 +112,7 @@ describe('HDMD Integration Tests', () => {
       let getTotalSupply = hdmdClient.getTotalSupply;
       let initialHdmdSavedTotal = 0; // what was saved already in MongoDB
       let getTotalSupplyNotSaved = hdmdClient.getTotalSupplyNotSaved;
+      let ownerAccount = testData.ownerAccount;
 
       return getHdmdSavedTotal()
          .then(total => {
@@ -128,7 +129,7 @@ describe('HDMD Integration Tests', () => {
                   initialHdmdSavedTotal
             );
          })
-         .then(() => hdmdClient.saveTotalSupplyDiff())
+         .then(() => hdmdClient.saveTotalSupplyDiff(ownerAccount))
          .then(txn => {
             // The amount saved to HDMD should equal the actual initial supply of HDMD
             // This should be the only difference between the hdmdEvents and the total supply
@@ -204,6 +205,7 @@ describe('HDMD Integration Tests', () => {
          let dmds;
          let hdmds;
          let dmdBlockNumber;
+         let balancesResult;
          return (
             // mint amount to sync with
             getNextUnmatchedDmdBlockInterval()
@@ -232,7 +234,12 @@ describe('HDMD Integration Tests', () => {
                   }
                })
                // get balance that was reconciled
-
+               .then(() => {
+                  return getBeginHdmdBalancesFromDmd(dmdBlockNumber, 0);
+               })
+               .then(balances => {
+                  balancesResult = balances;
+               })
                // Save assertion data
                .then(() => {
                   return Promise.all([
@@ -241,7 +248,8 @@ describe('HDMD Integration Tests', () => {
                   ]).then(([dmds, hdmds]) => {
                      return {
                         dmd: dmds[0] ? dmds[0].totalAmount : 0,
-                        hdmd: hdmds[0] ? hdmds[0].totalAmount : 0
+                        hdmd: hdmds[0] ? hdmds[0].totalAmount : 0,
+                        balances: balancesResult
                      };
                   });
                })

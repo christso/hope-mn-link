@@ -285,7 +285,7 @@ function getTotalSupplyNotSaved() {
 /**
  * @returns {Promise.<HdmdTxn>}
  */
-function saveTotalSupplyDiff() {
+function saveTotalSupplyDiff(account) {
    return new Promise((resolve, reject) => {
       if (!config.saveInitialSupply) {
          return;
@@ -296,6 +296,7 @@ function saveTotalSupplyDiff() {
                blockNumber: -1,
                amount: supply.toNumber(),
                txnHash: contractAddress,
+               account: account,
                eventName: 'Adjustment'
             })
             .then(created => resolve(created))

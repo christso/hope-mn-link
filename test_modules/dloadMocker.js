@@ -40,6 +40,7 @@ module.exports = (function() {
                      txnHash: event.txnHash,
                      blockNumber: event.blockNumber,
                      amount: event.netAmount,
+                     account: event.account,
                      eventName: event.eventName
                   });
                });

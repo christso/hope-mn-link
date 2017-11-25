@@ -12,6 +12,8 @@ const hdmdContract = require('../client/hdmdContract');
 const hdmdClient = require('../client/hdmdClient');
 const hdmdEvents = require('../test_modules/hdmdEventModel');
 
+var defaultAccount = '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC';
+
 /**
  * Get the latest block number in the HDMD event log
  */
@@ -59,6 +61,7 @@ module.exports = function(initialSupply) {
             blockNumber: blockNumber + 1,
             amount: eventAmount,
             netAmount: eventAmount * -1,
+            account: defaultAccount,
             eventName: 'Unmint'
          })
       );
@@ -72,6 +75,7 @@ module.exports = function(initialSupply) {
             blockNumber: blockNumber + 1,
             amount: eventAmount,
             netAmount: eventAmount,
+            account: defaultAccount,
             eventName: 'Mint'
          })
       );
@@ -84,6 +88,7 @@ module.exports = function(initialSupply) {
             blockNumber: blockNumber + 1,
             amount: eventAmount,
             netAmount: eventAmount,
+            account: defaultAccount,
             eventName: 'Mint'
          })
       );

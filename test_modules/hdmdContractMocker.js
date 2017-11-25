@@ -82,16 +82,39 @@ module.exports = function(initialSupply) {
    });
 
    sinon.stub(mocked.object, 'batchTransfer').callsFake((addresses, values) => {
-      return getLastHdmdBlockNumber().then(blockNumber =>
-         hdmdEvents.create({
-            txnHash: formatter.formatUuidv1(uuidv1()),
+      // TODO: this should create multiple transfer events based on the address and value array
+      let events = [];
+      let txnHash = formatter.formatUuidv1(uuidv1());
+      let bnTotalAmount = new BigNumber(0);
+      if (values != undefined && values != null) {
+         values.forEach(value => {
+            return (bnTotalAmount = bnTotalAmount.plus(value));
+         });
+      }
+
+      return getLastHdmdBlockNumber().then(blockNumber => {
+         events.push({
+            txnHash: txnHash,
             blockNumber: blockNumber + 1,
-            amount: eventAmount,
-            netAmount: eventAmount,
+            amount: bnTotalAmount.toNumber() * -1,
+            netAmount: bnTotalAmount.toNumber() * -1,
             account: defaultAccount,
-            eventName: 'Mint'
-         })
-      );
+            eventName: 'Transfer'
+         });
+
+         for (let i = 0; i < addresses.length; i++) {
+            events.push({
+               txnHash: txnHash,
+               blockNumber: blockNumber + 1,
+               amount: values[i].toNumber(),
+               netAmount: values[i].toNumber(),
+               account: addresses[i],
+               eventName: 'Transfer'
+            });
+         }
+
+         return hdmdEvents.create(events);
+      });
    });
 
    return { mocked: mocked };

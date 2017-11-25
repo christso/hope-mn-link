@@ -13,6 +13,8 @@ const reconTxns = require('../models/reconTxn');
 const dmdIntervals = require('../models/dmdInterval');
 const seeder = require('../client/seeder');
 const formatter = require('../lib/formatter');
+var Logger = require('../lib/logger');
+var logger = new Logger('TEST');
 
 var mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
@@ -24,8 +26,11 @@ const hdmdContractMocker = require('../test_modules/hdmdContractMocker');
 const dloadMocker = require('../test_modules/dloadMocker');
 const contribs = require('../test_data/hdmdContributions');
 const dmdClient = require('../client/dmdClient');
+const config = require('../config');
 
-const cleanup = true;
+const decimals = config.hdmdDecimals;
+
+const cleanup = false;
 
 describe('HDMD Integration Tests', () => {
    const initialSupply = testData.initialSupply;
@@ -172,6 +177,7 @@ describe('HDMD Integration Tests', () => {
       let hdmdReconTotal = queries.recon.getHdmdTotal;
       let nothingToMint = reconClient.nothingToMint;
       let getBeginHdmdBalancesFromDmd = reconClient.getBeginHdmdBalancesFromDmd;
+      let distributeMint = reconClient.distributeMint;
 
       /**
        * Mint HDMDs up to dmdBlockNumber to make HDMD balance equal to DMD balance
@@ -226,19 +232,23 @@ describe('HDMD Integration Tests', () => {
                      return reconcile(dmds, hdmds);
                   } else {
                      // what we do if a mint has occured
-                     return getUnmatchedTxns(dmdBlockNumber).then(values => {
-                        dmds = values[0];
-                        hdmds = values[1];
-                        return reconcile(dmds, hdmds);
-                     });
+                     return getUnmatchedTxns(dmdBlockNumber)
+                        .then(values => {
+                           dmds = values[0];
+                           hdmds = values[1];
+                           return reconcile(dmds, hdmds);
+                        }) // get balance that was reconciled
+                        .then(() => {
+                           return getBeginHdmdBalancesFromDmd(
+                              dmdBlockNumber,
+                              0
+                           );
+                        })
+                        .then(balances => {
+                           balancesResult = balances;
+                           return distributeMint(minted.amount, balances);
+                        });
                   }
-               })
-               // get balance that was reconciled
-               .then(() => {
-                  return getBeginHdmdBalancesFromDmd(dmdBlockNumber, 0);
-               })
-               .then(balances => {
-                  balancesResult = balances;
                })
                // Save assertion data
                .then(() => {
@@ -268,7 +278,9 @@ describe('HDMD Integration Tests', () => {
 
       let results = [];
 
-      let p = downloadTxnsMock();
+      let p = seedHdmds().then(() => {
+         return downloadTxnsMock();
+      });
       for (let i = 0; i < expected.length; i++) {
          p = p.then(() => synchronize(i)).then(result => {
             results.push(result);

@@ -264,11 +264,19 @@ function distributeMint(amount, balances) {
       return Promise.reject(new Error(`Balances cannot be undefined`));
    }
    let recipients = balances.map(b => b._id);
-   let weights = balances.map(b =>
-      formatter.round(b.totalAmount, config.hdmdDecimals)
-   );
+   let weights = balances.map(b => {
+      let roundedBal = formatter.round(b.balance, config.hdmdDecimals);
+      if (!(b.balance instanceof BigNumber)) {
+         return new BigNumber(roundedBal);
+      }
+      return roundedBal;
+   });
+   let bnAmount =
+      amount instanceof BigNumber
+         ? amount
+         : new BigNumber(formatter.round(amount, config.hdmdDecimals));
 
-   return hdmdClient.apportion(amount, recipients, weights).catch(err => {
+   return hdmdClient.apportion(bnAmount, recipients, weights).catch(err => {
       return Promise.reject(
          new Error(`Error apportioning minted amount: ${err.stack}`)
       );
@@ -484,5 +492,6 @@ module.exports = {
    nothingToMint: nothingToMint,
    getHdmdBlockNumFromDmd: getHdmdBlockNumFromDmd,
    getBeginHdmdBalancesFromDmd: getBeginHdmdBalancesFromDmd,
-   didRelativeBalancesChange: didRelativeBalancesChange
+   didRelativeBalancesChange: didRelativeBalancesChange,
+   distributeMint: distributeMint
 };

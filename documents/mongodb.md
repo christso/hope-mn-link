@@ -146,3 +146,100 @@ db.getCollection('recontxns').aggregate([
    }
 ])
 ```
+
+Get HDMD account movements by block number
+```
+db.getCollection('recontxns').aggregate([
+{
+    $match: { $and: [ 
+        { hdmdTxnHash: { $ne: null } },
+        { hdmdTxnHash: { $ne: '' } }
+    ] }
+},
+{
+  $group: {
+           _id : { account: '$account', blockNumber: '$blockNumber' },
+           totalAmount: { $sum: '$amount' }
+        }
+},
+{
+  $project: {
+      account: '$_id.account',
+      blockNumber: '$_id.blockNumber',
+      totalAmount: '$totalAmount'
+  }
+},
+{
+   $sort: {
+       blockNumber: 1
+   }
+}])
+```
+
+Get the latest reconTxn from dmdBlockNumber
+```
+/**
+* Get the latest reconTxn from dmdBlockNumber
+* @param {Number} bn - DMD Block Number 
+*/
+
+function getReconByDmdBlock(bn) {
+   return db.getCollection('recontxns').aggregate([
+      {
+         $match: {
+            $and: [
+               { blockNumber: { $lte: bn } },
+               { dmdTxnHash: { $ne: '' } },
+               { dmdTxnHash: { $ne: null } }
+            ]
+         }
+      },
+      {
+         $sort: {
+            blockNumber: -1
+         }
+      },
+      {
+         $limit: 1
+      }
+   ]);
+}
+
+getPrevReconByDmdBlock(bn);
+```
+
+Get HDMD recons up to block number 10
+```
+var reconTxns = db.getCollection('recontxns');
+
+/**
+* @param {Number} blockNumber - Get HDMD recons up to block number
+* @param {Number} limit 
+*/
+function getHdmdBlocksUpTo(blockNumber) {
+   return reconTxns.aggregate([
+      {
+         $match: {
+            $and: [
+               {
+                  blockNumber: { $lte: blockNumber }
+               },
+               { hdmdTxnHash: { $ne: null } },
+               { hdmdTxnHash: { $ne: '' } }
+            ]
+         }
+      },
+      {
+         $group: {
+            _id: { reconId: '$reconId', blockNumber: '$blockNumber' },
+            blockNumber: { $max: '$blockNumber' }
+         }
+      },
+      {
+         $sort: { blockNumber: -1 }
+      }
+   ]);
+}
+
+getHdmdBlocksUpTo(10);
+```

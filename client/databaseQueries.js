@@ -3,40 +3,6 @@ var dmdTxns = require('../models/dmdTxn');
 var dmdIntervals = require('../models/dmdInterval');
 
 var recon = (function() {
-   let getDmdIntervalMatchDef = (fromBlockNumber, toBlockNumber) => {
-      return {
-         $match: {
-            $and: [
-               {
-                  blockNumber: { $gte: fromBlockNumber, $lte: toBlockNumber }
-               },
-               { dmdTxnHash: { $ne: null } },
-               { dmdTxnHash: { $ne: '' } }
-            ]
-         }
-      };
-   };
-
-   let getDmdIntervalGroupDef = (fromBlockNumber, toBlockNumber) => {
-      return {
-         $group: {
-            _id: null,
-            totalAmount: { $sum: '$amount' }
-         }
-      };
-   };
-
-   let getDmdTotalByInterval = (fromBlockNumber, toBlockNumber) => {
-      return reconTxns.aggregate([
-         getDmdIntervalMatchDef(),
-         getDmdIntervalGroupDef()
-      ]);
-   };
-
-   let dmdFindByInterval = (fromBlockNumber, toBlockNumber) => {
-      return reconTxns.aggregate([getDmdIntervalMatchDef()]);
-   };
-
    let getHdmdReconMatchDef = reconId => {
       return {
          $match: {
@@ -83,36 +49,6 @@ var recon = (function() {
          },
          {
             $limit: 1
-         }
-      ]);
-   };
-
-   /**
-    * 
-    * @param {Number} blockNumber - Get HDMD recons up to block number
-    * @param {Number} limit 
-    */
-   let getHdmdBlocksUpTo = blockNumber => {
-      return reconTxns.aggregate([
-         {
-            $match: {
-               $and: [
-                  {
-                     blockNumber: { $lte: blockNumber }
-                  },
-                  { hdmdTxnHash: { $ne: null } },
-                  { hdmdTxnHash: { $ne: '' } }
-               ]
-            }
-         },
-         {
-            $group: {
-               _id: { reconId: '$reconId', blockNumber: '$blockNumber' },
-               blockNumber: { $max: '$blockNumber' }
-            }
-         },
-         {
-            $sort: { blockNumber: -1 }
          }
       ]);
    };
@@ -191,22 +127,6 @@ var recon = (function() {
             $sort: { dmdBlockNumber: -1 }
          }
       ]);
-   };
-
-   let getHdmdBlocksUpToRecon = reconId => {
-      return getHdmdBlockByRecon(reconId).then(obj => {
-         return getHdmdBlocksUpTo(obj[0] ? obj[0].blockNumber : 0);
-      });
-   };
-
-   let getPrevHdmdBlockByRecon = reconId => {
-      return getHdmdBlockByRecon(reconId)
-         .then(obj => {
-            return getHdmdBlocksUpTo(obj[0] ? obj[0].blockNumber : 0);
-         })
-         .then(blocks => {
-            return blocks[1];
-         });
    };
 
    /**
@@ -314,13 +234,6 @@ var recon = (function() {
          }
       );
 
-   let getLastMatchedDmd = () => {
-      return reconTxns
-         .find({ dmdTxnHash: { $ne: null } })
-         .sort({ blockNumber: -1 })
-         .limit(1);
-   };
-
    let getFirstUnmatchedDmd = () => {
       return dmdTxns.aggregate([
          {
@@ -371,76 +284,12 @@ var recon = (function() {
          });
    };
 
-   /**
-    * Get the latest reconTxn from dmdBlockNumber
-    * @param {Number} bn - DMD Block Number 
-    */
-   //
-   let getPrevReconByDmdBlock = bn => {
-      return reconTxns.aggregate([
-         {
-            $match: {
-               $and: [
-                  { blockNumber: { $lt: bn } },
-                  { dmdTxnHash: { $ne: '' } },
-                  { dmdTxnHash: { $ne: null } }
-               ]
-            }
-         },
-         {
-            $sort: {
-               blockNumber: -1 // get the minimum
-            }
-         },
-         {
-            $limit: 1
-         }
-      ]);
-   };
-
-   /**
-    * Get the latest reconTxn from dmdBlockNumber
-    * @param {Number} bn - DMD Block Number 
-    */
-   //
-   let getReconByDmdBlock = bn => {
-      return reconTxns.aggregate([
-         {
-            $match: {
-               $and: [
-                  { blockNumber: { $lte: bn } },
-                  { dmdTxnHash: { $ne: '' } },
-                  { dmdTxnHash: { $ne: null } }
-               ]
-            }
-         },
-         {
-            $sort: {
-               blockNumber: -1
-            }
-         },
-         {
-            $limit: 1
-         }
-      ]);
-   };
-
    return {
       getDmdTotal: getDmdTotal,
       getHdmdTotal: getHdmdTotal,
-      getDmdTotalByInterval: getDmdTotalByInterval,
-      getHdmdTotalByRecon: getHdmdTotalByRecon,
-      getPrevHdmdBlockByRecon: getPrevHdmdBlockByRecon,
-      getLastMatchedDmd: getLastMatchedDmd,
-      getFirstUnmatchedDmd: getFirstUnmatchedDmd,
       getNextUnmatchedDmdBlockInterval: getNextUnmatchedDmdBlockInterval,
-      getReconByDmdBlock: getReconByDmdBlock,
       getHdmdBalancesFromBlock: getHdmdBalancesFromBlock,
       getBeginHdmdBalancesFromBlock: getBeginHdmdBalancesFromBlock,
-      getHdmdBlockByRecon: getHdmdBlockByRecon,
-      getPrevReconByDmdBlock: getPrevReconByDmdBlock,
-      getHdmdBlocksUpTo: getHdmdBlocksUpTo,
-      getHdmdBlocksUpToRecon: getHdmdBlocksUpToRecon,
       getDmdIntersects: getDmdIntersects
    };
 })();

@@ -147,7 +147,7 @@ db.getCollection('recontxns').aggregate([
 ])
 ```
 
-Get HDMD account movements by block number
+Get reconciled HDMD account movements by block number and account
 ```
 db.getCollection('recontxns').aggregate([
 {

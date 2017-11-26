@@ -208,50 +208,115 @@ describe('HDMD Integration Tests', () => {
          );
       };
 
-      // Assert
-      // TODO: put individual balances here
-      let expectedBals = [
-         {
-            account: '',
-            balance: 2345
-         }
-      ];
-
-      let expected = [];
-      expected.push({ dmd: 10000, hdmd: 10000 });
-      expected.push({ dmd: 10400, hdmd: 10400 });
-      expected.push({ dmd: 10600, hdmd: 10600 });
-      expected.push({ dmd: 10600, hdmd: 10600 });
-      expected.push({ dmd: 10600, hdmd: 10600 });
-      expected.push({ dmd: 10600, hdmd: 10600 });
-      expected.push({ dmd: 10600, hdmd: 10600 });
-
-      let results = [];
-
       let p = seedHdmds().then(() => {
          return downloadTxns();
       });
-      for (let i = 0; i < expected.length; i++) {
+      let expectedBals = [
+         { dmd: 10000, hdmd: 10000 },
+         { dmd: 10400, hdmd: 10400 },
+         { dmd: 10600, hdmd: 10600 },
+         { dmd: 10600, hdmd: 10600 },
+         { dmd: 10600, hdmd: 10600 },
+         { dmd: 10600, hdmd: 10600 },
+         { dmd: 10600, hdmd: 10600 }
+      ];
+      let actualBals = [];
+      for (let i = 0; i < expectedBals.length; i++) {
          p = p.then(() => syncTask(i)).then(result => {
-            results.push(result);
+            actualBals.push(result);
          });
       }
-      // TODO: remove the round function and see if we can still make the test pass
-      return p.then(() => {
-         for (let i = 0; i < results.length; i++) {
+
+      let assertBals = actualBals => {
+         for (let i = 0; i < actualBals.length; i++) {
             assert.equal(
-               formatter.round(results[i].hdmd, config.hdmdDecimals),
-               formatter.round(expected[i].hdmd, config.hdmdDecimals),
-               `Assertion error -> expected HDMD ${results[i]
-                  .hdmd} to equal ${expected[i].hdmd} at iteration ${i}`
+               formatter.round(actualBals[i].hdmd, config.hdmdDecimals),
+               formatter.round(expectedBals[i].hdmd, config.hdmdDecimals),
+               `Assertion error -> expected HDMD ${actualBals[i]
+                  .hdmd} to equal ${expectedBals[i].hdmd} at iteration ${i}`
             );
             assert.equal(
-               formatter.round(results[i].dmd, config.hdmdDecimals),
-               formatter.round(expected[i].dmd, config.hdmdDecimals),
-               `Assertion error -> expected DMD ${results[i]
-                  .dmd} to equal ${expected[i].dmd} at iteration ${i}`
+               formatter.round(actualBals[i].dmd, config.hdmdDecimals),
+               formatter.round(expectedBals[i].dmd, config.hdmdDecimals),
+               `Assertion error -> expected DMD ${actualBals[i]
+                  .dmd} to equal ${expectedBals[i].dmd} at iteration ${i}`
             );
          }
-      });
+      };
+
+      let assertReconAmounts = () => {
+         var expectedReconAmounts = testData.expectedReconAmounts;
+         /**
+          * Get reconciled HDMD account movements by block number and account
+          */
+         let getReconAmounts = () => {
+            return reconTxns.aggregate([
+               {
+                  $match: {
+                     $and: [
+                        { hdmdTxnHash: { $ne: null } },
+                        { hdmdTxnHash: { $ne: '' } }
+                     ]
+                  }
+               },
+               {
+                  $group: {
+                     _id: { account: '$account', blockNumber: '$blockNumber' },
+                     totalAmount: { $sum: '$amount' }
+                  }
+               },
+               {
+                  $project: {
+                     account: '$_id.account',
+                     blockNumber: '$_id.blockNumber',
+                     totalAmount: '$totalAmount'
+                  }
+               },
+               {
+                  $sort: {
+                     blockNumber: 1,
+                     account: 1
+                  }
+               }
+            ]);
+         };
+         return getReconAmounts().then(actuals => {
+            for (var i = 0; i < expectedReconAmounts.length; i++) {
+               let expected = expectedReconAmounts[i];
+               let actual = actuals[i];
+               assert.equal(
+                  (a = formatter.round(actual.account, config.hdmdDecimals)),
+                  (e = formatter.round(expected.account, config.hdmdDecimals)),
+                  `Assertion error -> expected recontxn.account ${a} to equal ${e} at iteration ${i}`
+               );
+               assert.equal(
+                  (a = formatter.round(
+                     actual.blockNumber,
+                     config.hdmdDecimals
+                  )),
+                  (e = formatter.round(
+                     expected.blockNumber,
+                     config.hdmdDecimals
+                  )),
+                  `Assertion error -> expected recontxn.blockNumber ${a} to equal ${e} at iteration ${i}`
+               );
+               assert.equal(
+                  (a = formatter.round(
+                     actual.totalAmount,
+                     config.hdmdDecimals
+                  )),
+                  (e = formatter.round(
+                     expected.totalAmount,
+                     config.hdmdDecimals
+                  )),
+                  `Assertion error -> expected recontxn.totalAmount ${a} to equal ${e} at iteration ${i}`
+               );
+            }
+         });
+      };
+
+      return p
+         .then(() => assertBals(actualBals))
+         .then(() => assertReconAmounts());
    });
 });

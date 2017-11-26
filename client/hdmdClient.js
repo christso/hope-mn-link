@@ -5,8 +5,6 @@
 const BigNumber = require('bignumber.js');
 const config = require('../config');
 const hdmdTxns = require('../models/hdmdTxn');
-const burnTxns = require('../models/burn');
-const mintTxns = require('../models/mint');
 var hdmdContract = require('./hdmdContract');
 
 const wallet = require('../client/dmdWallet');

@@ -12,7 +12,6 @@ var port = config.port;
 let dmdClient = require('../client/dmdClient');
 let hdmdClient = require('../client/hdmdClient');
 
-var mintDocs = require('../models/mint');
 var reconTxns = require('../models/reconTxn');
 
 const nothingToMint = 'nothing-to-mint';

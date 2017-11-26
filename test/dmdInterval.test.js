@@ -21,7 +21,6 @@ var queries = require('../client/databaseQueries');
 var testData = require('../test_data/dmdIntervalData');
 const hdmdEvents = require('../test_modules/hdmdEventModel');
 const hdmdContractMocker = require('../test_modules/hdmdContractMocker');
-const dloadMocker = require('../test_modules/dloadMocker');
 const contribs = require('../test_data/hdmdContributions');
 const noBlockNumber = -1;
 

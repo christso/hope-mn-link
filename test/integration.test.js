@@ -23,11 +23,10 @@ var testData = require('../test_data/integrationData');
 const hdmdEvents = require('../test_modules/hdmdEventModel');
 
 const hdmdContractMocker = require('../test_modules/hdmdContractMocker');
-const dloadMocker = require('../test_modules/dloadMocker');
 const hdmdClientMocker = require('../test_modules/hdmdClientMocker');
+const dmdClientMocker = require('../test_modules/dmdClientMocker');
 
 const contribs = require('../test_data/hdmdContributions');
-const dmdClient = require('../client/dmdClient');
 const config = require('../config');
 
 const decimals = config.hdmdDecimals;
@@ -36,11 +35,15 @@ const cleanup = false;
 
 describe('HDMD Integration Tests', () => {
    const initialSupply = testData.initialSupply;
+
+   // create mock clients
    var hdmdContractMock = hdmdContractMocker(testData.initialSupply);
    var hdmdClient = hdmdClientMocker(hdmdContractMock.mocked.object).mocked
       .object;
-   var downloadTxnsMock = dloadMocker.downloadTxnsMock;
-   var downloadHdmdsMock = dloadMocker.downloadHdmdsMock;
+   var dmdClient = dmdClientMocker().mocked.object;
+
+   var downloadTxns = reconClient.downloadTxns;
+   var downloadHdmdTxns = hdmdClient.downloadTxns;
 
    var connection;
 
@@ -48,7 +51,9 @@ describe('HDMD Integration Tests', () => {
    var dmdTxnsData = testData.dmdTxnsData;
    var hdmdEventsData = testData.hdmdEventsData;
 
-   var createMocks = () => {};
+   var initMocks = () => {
+      return reconClient.init(dmdClient, hdmdClient);
+   };
 
    var createDatabase = done => {
       // drop existing db and create new one
@@ -74,7 +79,7 @@ describe('HDMD Integration Tests', () => {
    };
 
    before(() => {
-      return createDatabase();
+      return initMocks().then(() => createDatabase());
    });
 
    after(done => {
@@ -103,7 +108,7 @@ describe('HDMD Integration Tests', () => {
    });
 
    it('Downloads HDMD events into database', () => {
-      return downloadHdmdsMock();
+      return downloadHdmdTxns();
    });
 
    it('Saves HDMD total supply difference to agree hdmdTxns database to blockchain', () => {
@@ -224,7 +229,7 @@ describe('HDMD Integration Tests', () => {
       let results = [];
 
       let p = seedHdmds().then(() => {
-         return downloadTxnsMock();
+         return downloadTxns();
       });
       for (let i = 0; i < expected.length; i++) {
          p = p.then(() => syncTask(i)).then(result => {

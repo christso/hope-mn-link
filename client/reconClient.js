@@ -592,5 +592,6 @@ module.exports = {
    getBeginHdmdBalancesFromDmd: getBeginHdmdBalancesFromDmd,
    didRelativeBalancesChange: didRelativeBalancesChange,
    distributeMint: distributeMint,
-   mintNewToDmd: mintNewToDmd
+   mintNewToDmd: mintNewToDmd,
+   init: init
 };

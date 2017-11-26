@@ -214,7 +214,7 @@ var recon = (function() {
     * @param {Number} blockNumber 
     */
    let getBeginHdmdBalancesFromBlock = blockNumber => {
-      return reconTxns.aggregate([
+      let cmd = [
          {
             $match: {
                $and: [
@@ -238,7 +238,14 @@ var recon = (function() {
                balance: '$balance'
             }
          }
-      ]);
+      ];
+
+      // TODO: the below results in failed DMD Interval Test
+      if (blockNumber === undefined || blockNumber === null) {
+         cmd[0].$match.$and.splice(0, 1); // delete blockNumber
+      }
+
+      return reconTxns.aggregate(cmd);
    };
 
    /**

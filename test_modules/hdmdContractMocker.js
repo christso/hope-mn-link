@@ -12,7 +12,7 @@ const hdmdContract = require('../client/hdmdContract');
 const hdmdClient = require('../client/hdmdClient');
 const hdmdEvents = require('../test_modules/hdmdEventModel');
 
-var defaultAccount = '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC';
+var ownerAccount = '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC';
 
 /**
  * Get the latest block number in the HDMD event log
@@ -61,7 +61,7 @@ module.exports = function(initialSupply) {
             blockNumber: blockNumber + 1,
             amount: eventAmount,
             netAmount: eventAmount * -1,
-            account: defaultAccount,
+            account: ownerAccount,
             eventName: 'Unmint'
          })
       );
@@ -75,14 +75,17 @@ module.exports = function(initialSupply) {
             blockNumber: blockNumber + 1,
             amount: eventAmount,
             netAmount: eventAmount,
-            account: defaultAccount,
+            account: ownerAccount,
             eventName: 'Mint'
          })
       );
    });
 
    sinon.stub(mocked.object, 'batchTransfer').callsFake((addresses, values) => {
-      // TODO: this should create multiple transfer events based on the address and value array
+      if (addresses.length != values.length) {
+         throw new Error('addresses must have the seame length as values');
+      }
+
       let events = [];
       let txnHash = formatter.formatUuidv1(uuidv1());
       let bnTotalAmount = new BigNumber(0);
@@ -96,9 +99,9 @@ module.exports = function(initialSupply) {
          events.push({
             txnHash: txnHash,
             blockNumber: blockNumber + 1,
-            amount: bnTotalAmount.toNumber() * -1,
-            netAmount: bnTotalAmount.toNumber() * -1,
-            account: defaultAccount,
+            amount: bnTotalAmount.times(-1).toNumber(),
+            netAmount: bnTotalAmount.times(-1).toNumber(),
+            account: ownerAccount,
             eventName: 'Transfer'
          });
 

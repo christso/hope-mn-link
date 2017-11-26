@@ -50,7 +50,7 @@ describe('DMD Interval Tests', () => {
    var seedHdmds = () => {
       let accounts = contribs.accounts;
       let balances = contribs.amounts.map(
-         value => new BigNumber(formatter.round(value, decimals))
+         value => new BigNumber(formatter.toBigNumberPrecision(value))
       );
 
       // Initial contributions

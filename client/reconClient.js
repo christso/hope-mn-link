@@ -72,12 +72,12 @@ function downloadHdmdTxns() {
 function getRequiredMintingAmount(dmds, hdmds) {
    dmdTotal = new BigNumber(0);
    dmds.forEach(txn => {
-      dmdTotal = dmdTotal.plus(txn.amount);
+      dmdTotal = dmdTotal.plus(formatter.toBigNumberPrecision(txn.amount));
    });
 
    hdmdTotal = new BigNumber(0);
    hdmds.forEach(txn => {
-      hdmdTotal = hdmdTotal.plus(txn.amount);
+      hdmdTotal = hdmdTotal.plus(formatter.toBigNumberPrecision(txn.amount));
    });
 
    return dmdTotal.minus(hdmdTotal);
@@ -122,7 +122,7 @@ function reconcile(dmds, hdmds) {
    * Invoke mint on HDMD smart contract and reconcile with DMDs
    * @param {<Dmd>[]} dmds - DMD transactions to be matched
    * @param {<Hdmd>[]} hdmds - HDMD transactions to be matched
-   * @return {Promise.<{txnHash: string, amount: number}>} result of the promise
+   * @return {Promise.<{txnHash: string, amount: <BigNumber>}>} result of the promise
    */
 function mintToDmd(dmds, hdmds) {
    return new Promise((resolve, reject) => {
@@ -134,19 +134,23 @@ function mintToDmd(dmds, hdmds) {
             .then(txnHash => {
                let mintTxn = {
                   txnHash: txnHash,
-                  amount: amount.toNumber()
+                  amount: amount,
+                  netAmount: amount,
+                  eventName: 'Mint'
                };
                logger.log(`Mint invoked = ${JSON.stringify(mintTxn)}`);
                resolve(mintTxn);
             })
             .catch(err => reject(err));
       } else if (amount.lt(0)) {
-         txnHashResolved = hdmdClient.unmint(amount.mul(-1));
+         txnHashResolved = hdmdClient.unmint(amount.times(-1));
          txnHashResolved
             .then(txnHash => {
                let mintTxn = {
                   txnHash: txnHash,
-                  amount: amount.mul(-1).toNumber()
+                  amount: amount.mul(-1),
+                  netAmount: amount,
+                  eventName: 'Unmint'
                };
                logger.log(`Unmint invoked = ${JSON.stringify(mintTxn)}`);
                resolve(mintTxn);
@@ -265,7 +269,7 @@ function distributeMint(amount, balances) {
    }
    let recipients = balances.map(b => b._id);
    let weights = balances.map(b => {
-      let roundedBal = formatter.round(b.balance, config.hdmdDecimals);
+      let roundedBal = formatter.toBigNumberPrecision(b.balance);
       if (!(b.balance instanceof BigNumber)) {
          return new BigNumber(roundedBal);
       }
@@ -274,7 +278,7 @@ function distributeMint(amount, balances) {
    let bnAmount =
       amount instanceof BigNumber
          ? amount
-         : new BigNumber(formatter.round(amount, config.hdmdDecimals));
+         : new BigNumber(formatter.toBigNumberPrecision(amount));
 
    return hdmdClient.apportion(bnAmount, recipients, weights).catch(err => {
       return Promise.reject(

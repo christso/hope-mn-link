@@ -6,6 +6,8 @@ const BigNumber = require('bignumber.js');
 const config = require('../config');
 const hdmdTxns = require('../models/hdmdTxn');
 var hdmdContract = require('./hdmdContract');
+var Logger = require('../lib/logger');
+var logger = new Logger('hdmdClient');
 
 const wallet = require('../client/dmdWallet');
 
@@ -355,11 +357,11 @@ function allowThisMinter() {
    // Allow this node to mint
    return allowMinter(defaultAccount)
       .then(txnHash => {
-         console.log(`Allowed account ${defaultAccount} to mint`);
+         logger.log(`Allowed account ${defaultAccount} to mint`);
          return txnHash;
       })
       .catch(err => {
-         console.log(`Error allowing minter ${defaultAccount}`);
+         logger.log(`Error allowing minter ${defaultAccount}`);
          return err;
       });
 }
@@ -386,7 +388,7 @@ function downloadTxns() {
                saveTxns(newTxns)
             )
             .catch(error =>
-               console.log('--- Error downloading DMD Txn Log ---', error)
+               logger.log('--- Error downloading HDMD Txn Log ---', error)
             )
       );
 }

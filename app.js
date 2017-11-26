@@ -1,5 +1,7 @@
 var config = require('./config');
 var port = config.port;
+var Logger = require('./lib/logger');
+var logger = new Logger('App');
 
 var express = require('express');
 var bodyParser = require('body-parser');
@@ -13,25 +15,35 @@ var database = require('./client/database');
 var contract = require('./client/hdmdContract');
 
 var seedAll = seeder.seedAll;
-var synchronizeAll = reconClient.synchronizeAll;
+var synchronizeNext = reconClient.synchronizeNext;
+var downloadTxns = reconClient.downloadTxns;
 var allowThisMinter = hdmdClient.allowThisMinter;
 var saveInitialSupply = hdmdClient.saveTotalSupplyDiff;
 
 // reconcile transactions at each interval
 let watchInterval = config.dmdWatchInterval;
 
+let syncTask = downloadTxns()
+   .then(() => synchronizeNext())
+   .then(() => {
+      if (config.requireSeed) {
+         config.requireSeed = false;
+      }
+   })
+   .catch(err => logger.log(err));
+
 contract
    .checkVersion()
    .then(() => allowThisMinter())
    .then(() => seedAll())
-   .then(() =>
-      setInterval(() => {
-         return synchronizeAll()
-            .then(() => (config.requireSeed = false))
-            .catch(err => console.log(err));
-      }, watchInterval)
-   )
-   .catch(err => console.log(err));
+   .then(() => {
+      return syncTask().then(() => {
+         return setInterval(() => {
+            return syncTask();
+         }, watchInterval);
+      });
+   })
+   .catch(err => logger.log(err));
 
 // allows you to parse JSON into req.body.field
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -53,5 +65,5 @@ app.use('/api/hdmd', hdmdRoutes);
 app.use('/api/recon', reconRoutes);
 
 app.listen(port, function() {
-   console.log(`HTTP Server is listening on http://localhost:${port}`);
+   logger.log(`HTTP Server is listening on http://localhost:${port}`);
 });

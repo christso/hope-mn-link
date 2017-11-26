@@ -18,7 +18,7 @@ var reconcile = reconClient.reconcile;
 
 var dmdInterval = require('../models/dmdInterval');
 const getLastSavedDmdBlockInterval = dmdClient.getLastSavedBlockInterval;
-const contribs = require('../data/hdmdContributions');
+var contribs = require('../data/hdmdContributions');
 const accounts = contribs.accounts;
 const decimals = config.hdmdDecimals;
 const Logger = require('../lib/logger');
@@ -32,29 +32,28 @@ function seedHdmd(contribData) {
    }
    let accounts = contribs.accounts;
    let balances = contribs.amounts.map(
-      value => new BigNumber(formatter.round(value, decimals))
+      value => new BigNumber(formatter.toBigNumberPrecision(value))
    );
 
    // Initial contributions
    return batchTransfer(accounts, balances).catch(err => {
       logger.log(`Error in batch transfer: ${err.stack}`);
    });
-   return p;
 }
 
 // Seed DB for DMD Block Intervals
 const dmdBlockIntervals = require('../data/dbSeeds').dmdBlockIntervals;
 
-function seedDmd() {
+function seedDmdIntervals() {
    return dmdInterval.create(dmdBlockIntervals);
 }
 
 function seedAll() {
    let p = Promise.resolve();
    if (requireSeed) {
-      p = seedDmd()
+      p = seedDmdIntervals()
          .then(() => seedHdmd())
-         .then(() => console.log('Seeding successful'))
+         .then(() => logger.log('Seeding successful'))
          .catch(err => Promise.reject(new Error(`Error seeding: ${err}`)));
    }
    return p
@@ -80,7 +79,7 @@ function reconcileTotalSupply() {
 }
 
 module.exports = {
-   seedDmd: seedDmd,
+   seedDmd: seedDmdIntervals,
    seedHdmd: seedHdmd,
    seedAll: seedAll,
    reconcileTotalSupply: reconcileTotalSupply

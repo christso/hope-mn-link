@@ -66,16 +66,8 @@ describe('HDMD Integration Tests', () => {
    };
 
    // Initial contributions
-   var seedHdmds = () => {
-      let accounts = contribs.accounts;
-      let balances = contribs.amounts.map(
-         value => new BigNumber(formatter.toBigNumberPrecision(value))
-      );
-
-      // Initial contributions
-      return hdmdClient.batchTransfer(accounts, balances).catch(err => {
-         logger.log(`Error in batch transfer: ${err.stack}`);
-      });
+   var seedHdmd = () => {
+      return seeder.seedHdmd(contribs);
    };
 
    before(() => {
@@ -187,6 +179,8 @@ describe('HDMD Integration Tests', () => {
       let mintNewToDmd = reconClient.mintNewToDmd;
       let balancesResult = [];
 
+      // Actions
+
       let syncTask = () => {
          let balances;
          return (
@@ -208,7 +202,7 @@ describe('HDMD Integration Tests', () => {
          );
       };
 
-      let p = seedHdmds().then(() => {
+      let p = seedHdmd().then(() => {
          return downloadTxns();
       });
       let expectedBals = [
@@ -226,6 +220,8 @@ describe('HDMD Integration Tests', () => {
             actualBals.push(result);
          });
       }
+
+      // Assertions
 
       let assertBals = actualBals => {
          for (let i = 0; i < actualBals.length; i++) {

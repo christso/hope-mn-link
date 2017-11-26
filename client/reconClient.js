@@ -446,60 +446,6 @@ function compareBalances(balances1, balances2) {
 }
 
 /**
-* Waits for downloads to complete,
-then finds unmatched dmdTxns and hdmdTxns in MongoDB
-then invokes mint and unmint on HDMD eth smart contract
-* @return {Promise} - returns an empty promise if resolved
-*/
-function synchronizeAll() {
-   let dmds;
-   let hdmds;
-
-   // Download transactions and get what is unmatched
-   let p = downloadTxns()
-      .then(() => getLastSavedDmdBlockInterval())
-      .then(dmdBlockNumber => getUnmatchedTxns(dmdBlockNumber));
-
-   // Invoke mint to synchronize HDMDs with DMDs
-   p = p.then(values => {
-      dmds = values[0];
-      hdmds = values[1];
-      return mintToDmd(dmds, hdmds);
-   });
-
-   // Reconcile Txns if minting not required
-   p = p.then(minted => {
-      if (minted === nothingToMint) {
-         reconcile(dmds, hdmds).then(recs => {
-            let length = recs ? recs.length : 0;
-            logger.log(`Reconciled ${length} transactions`);
-         });
-      }
-      return minted;
-   });
-
-   // If we have just minted, then distribute the minted amount to entitled recipients
-   p = p.then(minted => {
-      if (minted == nothingToMint) {
-         return;
-      }
-      if (!minted || !minted.amount) {
-         return Promise.reject(
-            new Error('Expected minted amount to be non-zero')
-         );
-      }
-      getLastHdmdRecon()
-         .then(reconObj =>
-            getBeginHdmdBalancesFromDmd(
-               reconObj ? reconObj.blockNumber : undefined
-            )
-         )
-         .then(balances => distributeMint(minted.amount, balances));
-   });
-   return p;
-}
-
-/**
  * Mint HDMDs up to dmdBlockNumber to make HDMD balance equal to DMD balance
  * @param {Number} dmdBlockNumber - THe maximum DMD Block number that minting will apply up to.
  * @returns {([<DmdTxn>[], <HdmdTxn>[], {Object}])} - DmdTxn[] and HdmdTxn[] are txns that were reconciled
@@ -526,6 +472,11 @@ function mintNewToDmd(dmdBlockNumber) {
    );
 }
 
+/**
+Finds unmatched dmdTxns and hdmdTxns in MongoDB
+then invokes mint and unmint on HDMD eth smart contract
+* @return {Promise} - returns an empty promise if resolved
+*/
 function synchronizeNext() {
    let getNextUnmatchedDmdBlockInterval =
       queries.recon.getNextUnmatchedDmdBlockInterval;
@@ -577,7 +528,6 @@ function synchronizeNext() {
 }
 
 module.exports = {
-   synchronizeAll: synchronizeAll,
    synchronizeNext: synchronizeNext,
    getLastHdmdRecon: getLastHdmdRecon,
    getBalancesDmdToHdmd: getBeginHdmdBalancesFromDmd,

@@ -2,6 +2,8 @@ const BigNumber = require('bignumber.js');
 const Web3 = require('web3');
 const abi = require('./hdmdABI')();
 const config = require('../config');
+var Logger = require('../lib/logger');
+var logger = new Logger('hdmdContract');
 
 const abiDecoder = require('abi-decoder');
 
@@ -39,9 +41,9 @@ function checkVersion() {
    return new Promise(resolve => {
       var hdmdVersionDeployed = contractObj.version.call();
       if (hdmdVersionDeployed == hdmdVersion) {
-         console.log('HDMD contract matched.');
+         logger.log('HDMD contract matched.');
       } else {
-         console.log(
+         logger.log(
             `WARNING: HDMD contract version deployed is ${hdmdVersionDeployed} but app version is ${hdmdVersion}`
          );
       }

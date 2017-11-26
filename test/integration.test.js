@@ -103,6 +103,9 @@ describe('HDMD Integration Tests', () => {
       return downloadHdmdTxns();
    });
 
+   /**
+    * Test hdmdClient.saveTotalSupplyDiff(ownerAccount)
+    */
    it('Saves HDMD total supply difference to agree hdmdTxns database to blockchain', () => {
       let getHdmdSavedTotal = () => {
          return hdmdTxns.aggregate({
@@ -133,7 +136,7 @@ describe('HDMD Integration Tests', () => {
                   initialHdmdSavedTotal
             );
          })
-         .then(() => hdmdClient.saveTotalSupplyDiff(ownerAccount))
+         .then(() => hdmdClient.saveTotalSupplyDiff(ownerAccount)) // This is what we are testing
          .then(txn => {
             // The amount saved to HDMD should equal the actual initial supply of HDMD
             // This should be the only difference between the hdmdEvents and the total supply

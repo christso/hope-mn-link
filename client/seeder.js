@@ -60,7 +60,6 @@ function seedAll() {
       .then(() => downloadTxns())
       .catch(err => Promise.reject(new Error(`Error downloading transactions`)))
       .then(() => saveTotalSupplyDiff())
-      .then(() => reconcileTotalSupply())
       .catch(err =>
          Promise.reject(
             new Error(
@@ -70,17 +69,8 @@ function seedAll() {
       );
 }
 
-function reconcileTotalSupply() {
-   return getLastSavedDmdBlockInterval()
-      .then(dmdBlockNumber => {
-         return getUnmatchedTxns(dmdBlockNumber);
-      })
-      .then(([dmds, hdmds]) => reconcile(dmds, hdmds));
-}
-
 module.exports = {
    seedDmd: seedDmdIntervals,
    seedHdmd: seedHdmd,
-   seedAll: seedAll,
-   reconcileTotalSupply: reconcileTotalSupply
+   seedAll: seedAll
 };

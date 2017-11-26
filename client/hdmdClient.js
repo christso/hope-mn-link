@@ -289,6 +289,9 @@ function saveTotalSupplyDiff(account) {
       if (!config.saveInitialSupply) {
          return;
       }
+      if (account === undefined) {
+         account = ownerAddress;
+      }
       getTotalSupplyNotSaved().then(supply =>
          hdmdTxns
             .create({

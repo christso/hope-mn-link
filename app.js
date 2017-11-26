@@ -29,8 +29,7 @@ let syncTask = downloadTxns()
       if (config.requireSeed) {
          config.requireSeed = false;
       }
-   })
-   .catch(err => logger.log(err));
+   });
 
 contract
    .checkVersion()
@@ -43,7 +42,7 @@ contract
          }, watchInterval);
       });
    })
-   .catch(err => logger.log(err));
+   .catch(err => logger.log(err.stack));
 
 // allows you to parse JSON into req.body.field
 app.use(bodyParser.urlencoded({ extended: true }));

@@ -55,7 +55,7 @@ contractMath.decimals = decimals;
 let getParsedNumber = contractMath.getParsedNumber;
 let getRawNumber = contractMath.getRawNumber;
 
-var init = newHdmdContract => {
+function init(newHdmdContract) {
    let assign = () => {
       return new Promise(resolve => {
          if (newHdmdContract) {
@@ -72,7 +72,7 @@ var init = newHdmdContract => {
             throw new Error(`Error getting owner address: ${err.stack}`);
          });
    });
-};
+}
 
 init();
 

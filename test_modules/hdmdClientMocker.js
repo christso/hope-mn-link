@@ -1,19 +1,21 @@
+var sinon = require('sinon');
+const uuidv1 = require('uuid/v1');
+const BigNumber = require('bignumber.js');
+const hdmdTxns = require('../models/hdmdTxn');
+const hdmdEvents = require('../test_modules/hdmdEventModel');
+
 var mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 
-const dmdTxns = require('../models/dmdTxn');
-const hdmdTxns = require('../models/hdmdTxn');
-const hdmdEvents = require('../test_modules/hdmdEventModel');
+const formatter = require('../lib/formatter');
 const hdmdClient = require('../client/hdmdClient');
 
-module.exports = (function() {
-   // Fake downloaders
-   // No need to download because mintDmdsMock will save directly to MongoDB
-   let downloadTxnsMock = () => {
-      return downloadHdmdsMock();
-   };
-
-   let downloadHdmdsMock = () => {
+module.exports = function(newHdmdContract) {
+   let mocked = sinon.mock(hdmdClient);
+   if (newHdmdContract) {
+      hdmdClient.init(newHdmdContract);
+   }
+   sinon.stub(mocked.object, 'downloadTxns').callsFake(() => {
       return new Promise((resolve, reject) => {
          let getLastHdmdBlockNumberSaved = () => {
             return hdmdTxns
@@ -52,9 +54,7 @@ module.exports = (function() {
             })
             .catch(err => reject(err));
       });
-   };
-   return {
-      downloadTxnsMock: downloadTxnsMock,
-      downloadHdmdsMock: downloadHdmdsMock
-   };
-})();
+   });
+
+   return { mocked: mocked };
+};

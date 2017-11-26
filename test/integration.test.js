@@ -3,7 +3,6 @@ var sinon = require('sinon');
 var proxyquire = require('proxyquire');
 
 const uuidv1 = require('uuid/v1');
-const hdmdClient = require('../client/hdmdClient');
 const hdmdContract = require('../client/hdmdContract');
 const reconClient = require('../client/reconClient');
 const BigNumber = require('bignumber.js');
@@ -22,8 +21,11 @@ var database = require('../client/database');
 var queries = require('../client/databaseQueries');
 var testData = require('../test_data/integrationData');
 const hdmdEvents = require('../test_modules/hdmdEventModel');
+
 const hdmdContractMocker = require('../test_modules/hdmdContractMocker');
 const dloadMocker = require('../test_modules/dloadMocker');
+const hdmdClientMocker = require('../test_modules/hdmdClientMocker');
+
 const contribs = require('../test_data/hdmdContributions');
 const dmdClient = require('../client/dmdClient');
 const config = require('../config');
@@ -35,6 +37,8 @@ const cleanup = false;
 describe('HDMD Integration Tests', () => {
    const initialSupply = testData.initialSupply;
    var hdmdContractMock = hdmdContractMocker(testData.initialSupply);
+   var hdmdClient = hdmdClientMocker(hdmdContractMock.mocked.object).mocked
+      .object;
    var downloadTxnsMock = dloadMocker.downloadTxnsMock;
    var downloadHdmdsMock = dloadMocker.downloadHdmdsMock;
 
@@ -44,9 +48,7 @@ describe('HDMD Integration Tests', () => {
    var dmdTxnsData = testData.dmdTxnsData;
    var hdmdEventsData = testData.hdmdEventsData;
 
-   var createMocks = () => {
-      return hdmdClient.init(hdmdContractMock.object);
-   };
+   var createMocks = () => {};
 
    var createDatabase = done => {
       // drop existing db and create new one
@@ -72,7 +74,7 @@ describe('HDMD Integration Tests', () => {
    };
 
    before(() => {
-      return createMocks().then(() => createDatabase());
+      return createDatabase();
    });
 
    after(done => {
@@ -168,90 +170,25 @@ describe('HDMD Integration Tests', () => {
    });
 
    it('Mints and apportions at each DMD block interval', () => {
-      let getUnmatchedTxns = reconClient.getUnmatchedTxns;
-      let getNextUnmatchedDmdBlockInterval =
-         queries.recon.getNextUnmatchedDmdBlockInterval;
-      let reconcile = reconClient.reconcile;
-      let mintToDmd = reconClient.mintToDmd;
       let dmdReconTotal = queries.recon.getDmdTotal;
       let hdmdReconTotal = queries.recon.getHdmdTotal;
-      let nothingToMint = reconClient.nothingToMint;
-      let getBeginHdmdBalancesFromDmd = reconClient.getBeginHdmdBalancesFromDmd;
-      let distributeMint = reconClient.distributeMint;
+      let synchronizeNext = reconClient.synchronizeNext;
 
       /**
        * Mint HDMDs up to dmdBlockNumber to make HDMD balance equal to DMD balance
        * @param {Number} dmdBlockNumber - THe maximum DMD Block number that minting will apply up to.
        * @returns {([<DmdTxn>[], <HdmdTxn>[], {Object}])} - DmdTxn[] and HdmdTxn[] are txns that were reconciled
        */
-      let mintNewToDmd = dmdBlockNumber => {
-         let dmds;
-         let hdmds;
-         let minted;
+      let mintNewToDmd = reconClient.mintNewToDmd;
+      let balancesResult = [];
 
+      let syncTask = () => {
+         let balances;
          return (
-            getUnmatchedTxns(dmdBlockNumber)
-               // Invoke mint to synchronize HDMDs with DMDs
-               .then(values => {
-                  dmds = values[0];
-                  hdmds = values[1];
-                  return mintToDmd(dmds, hdmds); // mint the amount that DMD is higher than HDMD
-               })
-               .then(value => {
-                  minted = value;
-               })
-               .then(() => {
-                  return [dmds, hdmds, minted];
-               })
-         );
-      };
-
-      let synchronize = i => {
-         let minted;
-         let dmds;
-         let hdmds;
-         let dmdBlockNumber;
-         let balancesResult;
-         return (
-            // mint amount to sync with
-            getNextUnmatchedDmdBlockInterval()
-               .then(value => {
-                  dmdBlockNumber = value;
-                  return mintNewToDmd(dmdBlockNumber - 1);
-               })
-               .then(values => {
-                  [dmds, hdmds, minted] = values;
-                  // download eth event log
-                  return downloadHdmdsMock();
-               })
-               // reconcile hdmdTxns MongoDB to dmdTxns MongoDB
-               .then(saved => {
-                  // dmds.amount == hdmds.amount in all cases because mint is done before the reconcile
-                  if (minted === nothingToMint) {
-                     // TODO: why does the test fail if I reconcile?
-                     return reconcile(dmds, hdmds);
-                  } else {
-                     // what we do if a mint has occured
-                     return getUnmatchedTxns(dmdBlockNumber)
-                        .then(values => {
-                           dmds = values[0];
-                           hdmds = values[1];
-                           return reconcile(dmds, hdmds);
-                        }) // get balance that was reconciled
-                        .then(() => {
-                           return getBeginHdmdBalancesFromDmd(
-                              dmdBlockNumber,
-                              0
-                           );
-                        })
-                        .then(balances => {
-                           balancesResult = balances;
-                           return distributeMint(minted.netAmount, balances);
-                        });
-                  }
-               })
+            synchronizeNext()
                // Save assertion data
-               .then(() => {
+               .then(bals => {
+                  balancesResult = bals;
                   return Promise.all([
                      dmdReconTotal(),
                      hdmdReconTotal()
@@ -267,6 +204,7 @@ describe('HDMD Integration Tests', () => {
       };
 
       // Assert
+      // TODO: put individual balances here
       let expectedBals = [
          {
             account: '',
@@ -289,7 +227,7 @@ describe('HDMD Integration Tests', () => {
          return downloadTxnsMock();
       });
       for (let i = 0; i < expected.length; i++) {
-         p = p.then(() => synchronize(i)).then(result => {
+         p = p.then(() => syncTask(i)).then(result => {
             results.push(result);
          });
       }

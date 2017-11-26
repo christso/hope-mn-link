@@ -19,7 +19,23 @@ const nothingToMint = 'nothing-to-mint';
 const formatter = require('../lib/formatter');
 var queries = require('../client/databaseQueries');
 
-var formatUuidv1 = formatter.formatUuidv1;
+// Constructor
+function init(newDmdClient, newHdmdClient) {
+   let assign = () => {
+      return new Promise(resolve => {
+         if (newDmdClient) {
+            dmdClient = newDmdClient;
+         }
+         if (newHdmdClient) {
+            hdmdClient = newHdmdClient;
+         }
+         resolve();
+      });
+   };
+
+   return assign();
+}
+init();
 
 function downloadDmdTxns() {
    return dmdClient
@@ -93,7 +109,7 @@ function reconcile(dmds, hdmds) {
    if (dmds === undefined || hdmds === undefined) {
       return Promise.reject(`parameters dmds and hdmds cannot be undefined`);
    }
-   let reconId = formatUuidv1(uuidv4());
+   let reconId = formatter.formatUuidv1(uuidv4());
    let dmdRecs = dmds.map(txn => {
       return {
          reconId: reconId,
@@ -484,8 +500,86 @@ function synchronizeAll() {
    return p;
 }
 
+/**
+ * Mint HDMDs up to dmdBlockNumber to make HDMD balance equal to DMD balance
+ * @param {Number} dmdBlockNumber - THe maximum DMD Block number that minting will apply up to.
+ * @returns {([<DmdTxn>[], <HdmdTxn>[], {Object}])} - DmdTxn[] and HdmdTxn[] are txns that were reconciled
+ */
+function mintNewToDmd(dmdBlockNumber) {
+   let dmds;
+   let hdmds;
+   let minted;
+
+   return (
+      getUnmatchedTxns(dmdBlockNumber)
+         // Invoke mint to synchronize HDMDs with DMDs
+         .then(values => {
+            dmds = values[0];
+            hdmds = values[1];
+            return mintToDmd(dmds, hdmds); // mint the amount that DMD is higher than HDMD
+         })
+         .then(value => {
+            minted = value;
+         })
+         .then(() => {
+            return [dmds, hdmds, minted];
+         })
+   );
+}
+
+function synchronizeNext() {
+   let getNextUnmatchedDmdBlockInterval =
+      queries.recon.getNextUnmatchedDmdBlockInterval;
+
+   let minted;
+   let dmds;
+   let hdmds;
+   let dmdBlockNumber;
+   let balancesResult;
+   return (
+      // mint amount to sync with
+      getNextUnmatchedDmdBlockInterval()
+         .then(value => {
+            dmdBlockNumber = value;
+            return mintNewToDmd(dmdBlockNumber - 1);
+         })
+         .then(values => {
+            [dmds, hdmds, minted] = values;
+            // download eth event log
+            return downloadHdmdTxns();
+         })
+         // reconcile hdmdTxns MongoDB to dmdTxns MongoDB
+         .then(saved => {
+            // dmds.amount == hdmds.amount in all cases because mint is done before the reconcile
+            if (minted === nothingToMint) {
+               // TODO: why does the test fail if I reconcile?
+               return reconcile(dmds, hdmds);
+            } else {
+               // what we do if a mint has occured
+               return getUnmatchedTxns(dmdBlockNumber)
+                  .then(values => {
+                     dmds = values[0];
+                     hdmds = values[1];
+                     return reconcile(dmds, hdmds);
+                  }) // get balance that was reconciled
+                  .then(() => {
+                     return getBeginHdmdBalancesFromDmd(dmdBlockNumber, 0);
+                  })
+                  .then(balances => {
+                     balancesResult = balances;
+                     return distributeMint(minted.netAmount, balances);
+                  });
+            }
+         })
+         .then(() => {
+            return balancesResult;
+         })
+   );
+}
+
 module.exports = {
    synchronizeAll: synchronizeAll,
+   synchronizeNext: synchronizeNext,
    getLastHdmdRecon: getLastHdmdRecon,
    getBalancesDmdToHdmd: getBeginHdmdBalancesFromDmd,
    downloadTxns: downloadTxns,
@@ -497,5 +591,6 @@ module.exports = {
    getHdmdBlockNumFromDmd: getHdmdBlockNumFromDmd,
    getBeginHdmdBalancesFromDmd: getBeginHdmdBalancesFromDmd,
    didRelativeBalancesChange: didRelativeBalancesChange,
-   distributeMint: distributeMint
+   distributeMint: distributeMint,
+   mintNewToDmd: mintNewToDmd
 };

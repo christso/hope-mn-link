@@ -3,6 +3,7 @@
 var express = require('express');
 var router = express.Router();
 var reconClient = require('../client/reconClient');
+var synchronizeNext = reconClient.synchronizeNext;
 
 router.post('/reconcile', function(req, res) {});
 

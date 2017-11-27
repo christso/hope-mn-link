@@ -25,6 +25,45 @@ function getLastHdmdBlockNumber() {
       .then(found => (found[0] ? found[0].blockNumber : 0));
 }
 
+function batchTransferFaker(addresses, values) {
+   if (addresses.length != values.length) {
+      throw new Error('addresses must have the seame length as values');
+   }
+
+   let events = [];
+   let txnHash = formatter.formatUuidv1(uuidv1());
+   let bnTotalAmount = new BigNumber(0);
+   if (values != undefined && values != null) {
+      values.forEach(value => {
+         return (bnTotalAmount = bnTotalAmount.plus(value));
+      });
+   }
+
+   return getLastHdmdBlockNumber().then(blockNumber => {
+      events.push({
+         txnHash: txnHash,
+         blockNumber: blockNumber + 1,
+         amount: bnTotalAmount.times(-1).toNumber(),
+         netAmount: bnTotalAmount.times(-1).toNumber(),
+         account: ownerAccount,
+         eventName: 'Transfer'
+      });
+
+      for (let i = 0; i < addresses.length; i++) {
+         events.push({
+            txnHash: txnHash,
+            blockNumber: blockNumber + 1,
+            amount: values[i].toNumber(),
+            netAmount: values[i].toNumber(),
+            account: addresses[i],
+            eventName: 'Transfer'
+         });
+      }
+
+      return hdmdEvents.create(events);
+   });
+}
+
 module.exports = function(initialSupply) {
    let mocked = sinon.mock(hdmdContract);
 
@@ -82,43 +121,14 @@ module.exports = function(initialSupply) {
    });
 
    sinon.stub(mocked.object, 'batchTransfer').callsFake((addresses, values) => {
-      if (addresses.length != values.length) {
-         throw new Error('addresses must have the seame length as values');
-      }
-
-      let events = [];
-      let txnHash = formatter.formatUuidv1(uuidv1());
-      let bnTotalAmount = new BigNumber(0);
-      if (values != undefined && values != null) {
-         values.forEach(value => {
-            return (bnTotalAmount = bnTotalAmount.plus(value));
-         });
-      }
-
-      return getLastHdmdBlockNumber().then(blockNumber => {
-         events.push({
-            txnHash: txnHash,
-            blockNumber: blockNumber + 1,
-            amount: bnTotalAmount.times(-1).toNumber(),
-            netAmount: bnTotalAmount.times(-1).toNumber(),
-            account: ownerAccount,
-            eventName: 'Transfer'
-         });
-
-         for (let i = 0; i < addresses.length; i++) {
-            events.push({
-               txnHash: txnHash,
-               blockNumber: blockNumber + 1,
-               amount: values[i].toNumber(),
-               netAmount: values[i].toNumber(),
-               account: addresses[i],
-               eventName: 'Transfer'
-            });
-         }
-
-         return hdmdEvents.create(events);
-      });
+      return batchTransferFaker(addresses, values);
    });
+
+   sinon
+      .stub(mocked.object, 'reverseBatchTransfer')
+      .callsFake((addresses, values) => {
+         return batchTransferFaker(addresses, values);
+      });
 
    return { mocked: mocked };
 };

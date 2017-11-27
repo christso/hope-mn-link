@@ -173,8 +173,46 @@ function unmint(amount) {
 */
 function batchTransfer(addresses, values) {
    return new Promise((resolve, reject) => {
-      let rawValues = values.map(value => getRawNumber(value).toNumber());
+      let rawValues = values.map(value => {
+         if (value.lessThan(0)) {
+            throw new Error(
+               `batchTransfer value of ${value} must be greater than zero`
+            );
+         }
+         return getRawNumber(value).toNumber();
+      });
       contractObj.batchTransfer(
+         addresses,
+         rawValues,
+         { gas: gasLimit },
+         (error, result) => {
+            if (error) {
+               reject(error);
+            } else {
+               resolve(result);
+            }
+         }
+      );
+   });
+}
+
+/**
+* Transfer tokens from a list of addresses to the owner's address
+* @param {String[]} addresses - array of addresses to receive the tokens
+* @param {<BigNumber>[]} values - amounts to transfer
+* @return {Promise} return value of the smart contract function
+*/
+function reverseBatchTransfer(addresses, values) {
+   return new Promise((resolve, reject) => {
+      let rawValues = values.map(value => {
+         if (value.greaterThan(0)) {
+            throw new Error(
+               `reverseBatchTransfer value of ${value} must be less than zero`
+            );
+         }
+         return getRawNumber(value).toNumber();
+      });
+      contractObj.reverseBatchTransfer(
          addresses,
          rawValues,
          { gas: gasLimit },
@@ -200,5 +238,6 @@ module.exports = {
    canMint: canMint,
    mint: mint,
    unmint: unmint,
-   batchTransfer: batchTransfer
+   batchTransfer: batchTransfer,
+   reverseBatchTransfer: reverseBatchTransfer
 };

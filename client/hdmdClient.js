@@ -53,6 +53,10 @@ let batchTransfer = (addresses, values) => {
    return hdmdContract.batchTransfer(addresses, values);
 };
 
+let reverseBatchTransfer = (addresses, values) => {
+   return hdmdContract.reverseBatchTransfer(addresses, values);
+};
+
 // contract math
 const contractMath = require('../lib/contractMath');
 contractMath.decimals = decimals;
@@ -248,7 +252,11 @@ function getTotalSupplySaved() {
 */
 function apportion(amount, recipients, weights) {
    let newAmounts = contractMath.applyWeights(amount, weights);
-   return batchTransfer(recipients, newAmounts);
+   if (amount.greaterThan(0)) {
+      return batchTransfer(recipients, newAmounts);
+   } else {
+      return reverseBatchTransfer(recipients, newAmounts);
+   }
 }
 
 /**
@@ -410,6 +418,7 @@ module.exports = {
    hdmdContract: hdmdContract,
    getBalances: getBalances,
    batchTransfer: batchTransfer,
+   reverseBatchTransfer: reverseBatchTransfer,
    mint: mint,
    unmint: unmint,
    downloadTxns: downloadTxns,

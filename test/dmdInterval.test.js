@@ -13,6 +13,7 @@ const reconTxns = require('../models/reconTxn');
 const dmdIntervals = require('../models/dmdInterval');
 const seeder = require('../client/seeder');
 const formatter = require('../lib/formatter');
+const typeConverter = require('../lib/typeConverter');
 
 var mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
@@ -48,8 +49,8 @@ describe('DMD Interval Tests', () => {
    // Initial contributions
    var seedHdmds = () => {
       let accounts = contribs.accounts;
-      let balances = contribs.amounts.map(
-         value => new BigNumber(formatter.toBigNumberPrecision(value))
+      let balances = contribs.amounts.map(value =>
+         typeConverter.numberDecimal(value)
       );
 
       // Initial contributions
@@ -122,8 +123,15 @@ describe('DMD Interval Tests', () => {
    });
 
    it('Seeds databases', () => {
+      var newReconTxns = testData.reconTxns.map(txn => {
+         let newTxn = {};
+         Object.assign(newTxn, txn);
+         newTxn.amount = typeConverter.numberDecimal(txn.amount);
+         return newTxn;
+      });
+
       return dmdIntervals.create(dmdBlockIntervals).then(intervals => {
-         return reconTxns.create(testData.reconTxns);
+         return reconTxns.create(newReconTxns);
       });
    });
 
@@ -226,7 +234,15 @@ describe('DMD Interval Tests', () => {
                   return getBeginHdmdBalancesFromBlock(hdmdBlockNum);
                })
                .then(hdmdBals => {
-                  return actualHdmdBalances.push(hdmdBals);
+                  let newHdmdBals = hdmdBals.map(bal => {
+                     let newBal = {};
+                     Object.assign(newBal, bal);
+                     newBal.balance = typeConverter
+                        .toBigNumber(bal.balance)
+                        .toNumber();
+                     return newBal;
+                  });
+                  return actualHdmdBalances.push(newHdmdBals);
                });
          });
 

@@ -3,6 +3,7 @@
  */
 
 const BigNumber = require('bignumber.js');
+const typeConverter = require('../lib/typeConverter');
 const config = require('../config');
 const hdmdTxns = require('../models/hdmdTxn');
 var hdmdContract = require('./hdmdContract');
@@ -292,18 +293,18 @@ function saveTotalSupplyDiff(account) {
       if (account === undefined) {
          account = ownerAddress;
       }
-      getTotalSupplyNotSaved().then(supply =>
-         hdmdTxns
+      getTotalSupplyNotSaved().then(supply => {
+         return hdmdTxns
             .create({
                blockNumber: -1,
-               amount: supply.toNumber(),
+               amount: typeConverter.numberDecimal(supply),
                txnHash: contractAddress,
                account: account,
                eventName: 'Adjustment'
             })
             .then(created => resolve(created))
-            .catch(err => reject(err))
-      );
+            .catch(err => reject(err));
+      });
    });
 }
 

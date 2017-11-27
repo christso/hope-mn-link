@@ -6,7 +6,7 @@ var reconTxnSchema = new mongoose.Schema({
    reconId: String,
    dmdTxnHash: String,
    hdmdTxnHash: String,
-   amount: Number,
+   amount: mongoose.SchemaTypes.Decimal128,
    account: String,
    blockNumber: Number,
    eventName: String

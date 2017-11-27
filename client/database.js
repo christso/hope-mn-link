@@ -2,7 +2,8 @@ var config = require('../config');
 var mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 var Logger = require('../lib/logger');
-var logger = new Logger('DB');
+var logger = new Logger('MongoDB');
+var mongodb = require('mongodb');
 
 function connect() {
    let databaseName = config.mongodbUri;
@@ -11,13 +12,11 @@ function connect() {
       promiseLibrary: global.Promise
    });
    var db = mongoose.connection;
-   db.on(
-      'error',
-      console.error.bind(console, '# MongoDB - connection error: ') // TODO: replace with logger
+   db.on('error', logger.error.bind(console, `connection error:`));
+   db.once(
+      'open',
+      logger.log.bind(console, `We are connected to database ${databaseName}`)
    );
-   db.once('open', function() {
-      logger.log(`We are connected to database ${databaseName}`);
-   });
 }
 
 function createTestConnection() {
@@ -33,12 +32,15 @@ function createTestConnection() {
             if (err) {
                reject(err);
             } else {
-               db.on(
-                  'error',
-                  console.error.bind(console, '# MongoDB - connection error: ')
-               );
+               db.on('error', logger.error.bind(console, `connection error:`));
                db.once('open', function() {
-                  logger.log(`We are connected to database ${databaseName}`);
+                  db.once(
+                     'open',
+                     logger.log.bind(
+                        console,
+                        `We are connected to database ${databaseName}`
+                     )
+                  );
                });
                resolve(db);
             }

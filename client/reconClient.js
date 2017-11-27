@@ -6,6 +6,9 @@ var BigNumber = require('bignumber.js');
 const uuidv4 = require('uuid/v4');
 var Logger = require('../lib/logger');
 var logger = new Logger('RECON');
+var mongodb = require('mongodb');
+var typeConverter = require('../lib/typeConverter');
+var toBigNumber = typeConverter.toBigNumber;
 
 var port = config.port;
 
@@ -87,12 +90,12 @@ function downloadHdmdTxns() {
 function getRequiredMintingAmount(dmds, hdmds) {
    dmdTotal = new BigNumber(0);
    dmds.forEach(txn => {
-      dmdTotal = dmdTotal.plus(formatter.toBigNumberPrecision(txn.amount));
+      dmdTotal = dmdTotal.plus(toBigNumber(txn.amount));
    });
 
    hdmdTotal = new BigNumber(0);
    hdmds.forEach(txn => {
-      hdmdTotal = hdmdTotal.plus(formatter.toBigNumberPrecision(txn.amount));
+      hdmdTotal = hdmdTotal.plus(toBigNumber(txn.amount));
    });
 
    return dmdTotal.minus(hdmdTotal);
@@ -284,16 +287,9 @@ function distributeMint(amount, balances) {
    }
    let recipients = balances.map(b => b._id);
    let weights = balances.map(b => {
-      let roundedBal = formatter.toBigNumberPrecision(b.balance);
-      if (!(b.balance instanceof BigNumber)) {
-         return new BigNumber(roundedBal);
-      }
-      return roundedBal;
+      return toBigNumber(b.balance);
    });
-   let bnAmount =
-      amount instanceof BigNumber
-         ? amount
-         : new BigNumber(formatter.toBigNumberPrecision(amount));
+   let bnAmount = amount instanceof BigNumber ? amount : toBigNumber(amount);
 
    return hdmdClient.apportion(bnAmount, recipients, weights).catch(err => {
       return Promise.reject(

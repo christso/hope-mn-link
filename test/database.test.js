@@ -1,6 +1,7 @@
 const assert = require('chai').assert;
 var sinon = require('sinon');
 var proxyquire = require('proxyquire');
+var typeConverter = require('../lib/typeConverter');
 
 const hdmdClient = require('../client/hdmdClient');
 const hdmdContract = require('../client/hdmdContract');
@@ -106,11 +107,23 @@ describe('HDMD Database Tests', () => {
    });
 
    it('Saves dmdTxns', () => {
-      return dmdTxns.create(dmdTxnsData);
+      let data = dmdTxnsData.map(txn => {
+         let newTxn = {};
+         Object.assign(newTxn, txn);
+         newTxn.amount = typeConverter.numberDecimal(txn.amount);
+         return newTxn;
+      });
+      return dmdTxns.create(data);
    });
 
    it('Saves reconTxns', () => {
-      return reconTxns.create(reconTxnsData);
+      let data = reconTxnsData.map(txn => {
+         let newTxn = {};
+         Object.assign(newTxn, txn);
+         newTxn.amount = typeConverter.numberDecimal(txn.amount);
+         return newTxn;
+      });
+      return reconTxns.create(data);
    });
 
    it('Saves dmdIntervals', () => {

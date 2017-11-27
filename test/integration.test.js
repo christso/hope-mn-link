@@ -14,6 +14,7 @@ const seeder = require('../client/seeder');
 const formatter = require('../lib/formatter');
 var Logger = require('../lib/logger');
 var logger = new Logger('TEST');
+var typeConverter = require('../lib/typeConverter');
 
 var mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
@@ -82,8 +83,14 @@ describe('HDMD Integration Tests', () => {
    });
 
    it('Seed DMDs to database', () => {
+      let data = dmdTxnsData.map(txn => {
+         let newTxn = {};
+         Object.assign(newTxn, txn);
+         newTxn.amount = typeConverter.numberDecimal(txn.amount);
+         return newTxn;
+      });
       return dmdTxns
-         .create(dmdTxnsData)
+         .create(data)
          .then(created => {
             assert.notEqual(created, undefined);
          })
@@ -150,7 +157,8 @@ describe('HDMD Integration Tests', () => {
                totalSupply ? totalSupply.toNumber() : 0,
                hdmdTotal[0] ? hdmdTotal[0].totalAmount : 0
             );
-         });
+         })
+         .catch(err => reject(err));
    });
 
    it('Get initial DMD block interval', () => {

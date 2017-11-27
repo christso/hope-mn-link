@@ -9,6 +9,7 @@ mongoose.Promise = global.Promise;
 
 const formatter = require('../lib/formatter');
 const hdmdClient = require('../client/hdmdClient');
+const typeConverter = require('../lib/typeConverter');
 
 module.exports = function(newHdmdContract) {
    let mocked = sinon.mock(hdmdClient);
@@ -42,7 +43,7 @@ module.exports = function(newHdmdContract) {
                   newTxns.push({
                      txnHash: event.txnHash,
                      blockNumber: event.blockNumber,
-                     amount: event.netAmount,
+                     amount: typeConverter.numberDecimal(event.netAmount),
                      account: event.account,
                      eventName: event.eventName
                   });

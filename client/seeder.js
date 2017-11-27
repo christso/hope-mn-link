@@ -1,3 +1,4 @@
+var typeConverter = require('../lib/typeConverter');
 var BigNumber = require('bignumber.js');
 var config = require('../config');
 var requireSeed = config.requireSeed;
@@ -32,12 +33,12 @@ function seedHdmd(contribData) {
    }
    let accounts = contribs.accounts;
    let balances = contribs.amounts.map(
-      value => new BigNumber(formatter.toBigNumberPrecision(value))
+      value => new typeConverter.toBigNumber(value)
    );
 
    // Initial contributions
    return batchTransfer(accounts, balances).catch(err => {
-      logger.log(`Error in batch transfer: ${err.stack}`);
+      throw new Error(`Error in batch transfer: ${err.stack}`);
    });
 }
 
@@ -49,24 +50,35 @@ function seedDmdIntervals() {
 }
 
 function seedAll() {
-   let p = Promise.resolve();
-   if (requireSeed) {
-      p = seedDmdIntervals()
+   let pSeed = () => {
+      return seedDmdIntervals()
          .then(() => seedHdmd())
          .then(() => logger.log('Seeding successful'))
          .catch(err => Promise.reject(new Error(`Error seeding: ${err}`)));
-   }
-   return p
-      .then(() => downloadTxns())
-      .catch(err => Promise.reject(new Error(`Error downloading transactions`)))
-      .then(() => saveTotalSupplyDiff())
-      .catch(err =>
-         Promise.reject(
-            new Error(
-               `Error retrieving unmatched transactions from MongoDB: ${err}`
-            )
+   };
+
+   let pTotal = () => {
+      return downloadTxns()
+         .catch(err =>
+            Promise.reject(new Error(`Error downloading transactions`))
          )
-      );
+         .then(() => {
+            return saveTotalSupplyDiff();
+         })
+         .catch(err =>
+            Promise.reject(
+               new Error(
+                  `Error retrieving unmatched transactions from MongoDB: ${err}`
+               )
+            )
+         );
+   };
+
+   return pTotal().then(() => {
+      if (requireSeed) {
+         return pSeed();
+      }
+   });
 }
 
 module.exports = {

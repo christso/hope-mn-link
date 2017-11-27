@@ -18,18 +18,19 @@ var seedAll = seeder.seedAll;
 var synchronizeNext = reconClient.synchronizeNext;
 var downloadTxns = reconClient.downloadTxns;
 var allowThisMinter = hdmdClient.allowThisMinter;
-var saveInitialSupply = hdmdClient.saveTotalSupplyDiff;
 
 // reconcile transactions at each interval
 let watchInterval = config.dmdWatchInterval;
 
-let syncTask = downloadTxns()
-   .then(() => synchronizeNext())
-   .then(() => {
-      if (config.requireSeed) {
-         config.requireSeed = false;
-      }
-   });
+function syncTask() {
+   return downloadTxns()
+      .then(() => synchronizeNext())
+      .then(() => {
+         if (config.requireSeed) {
+            config.requireSeed = false;
+         }
+      });
+}
 
 contract
    .checkVersion()
@@ -42,7 +43,7 @@ contract
          }, watchInterval);
       });
    })
-   .catch(err => logger.log(err.stack));
+   .catch(err => logger.error(err.stack));
 
 // allows you to parse JSON into req.body.field
 app.use(bodyParser.urlencoded({ extended: true }));

@@ -64,6 +64,14 @@ Error: invalid address
 * Cause: The address of the wallet is not authorized to mint.
 * Solution: Invoke the allowMinter function in truffle or other client where you are the contract owner, and pass the address of web3.eth.defaultAccount as a parameter. After that, the address should be allowed to invoke the mint function.
 
+### Error on Contribution Seed
+```
+Error: VM Exception while processing transaction: invalid opcode
+    at batchTransfer
+```
+* Cause: The initial contribution needs to add up exactly to the balance of the account that you are transferring from. The contract only supports 8 decimal places, and due to roudning, you may end up transferring more than the available balance in your account.
+* Solution: Ensure that your total transfer amount (in hdmdContributions.js) when rounded to 8 decimals does not result in exceeding the balance of the contract owner's account.
+
 ### MongoDB query returns empty result
 
 * Cause: Object names are case-sensitive in MongoDB, but the Moongoose package changes your collection names to lowercase.

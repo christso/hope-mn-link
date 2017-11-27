@@ -4,6 +4,9 @@
 
 const BigNumber = require('bignumber.js');
 const typeConverter = require('../lib/typeConverter');
+var numberDecimal = typeConverter.numberDecimal;
+var toBigNumber = typeConverter.toBigNumber;
+
 const config = require('../config');
 const hdmdTxns = require('../models/hdmdTxn');
 var hdmdContract = require('./hdmdContract');
@@ -33,8 +36,8 @@ var getContractOwner = () => {
    return hdmdContract.getContractOwner();
 };
 var ownerAddress;
-var allowMinter = () => {
-   return hdmdContract.allowMinter();
+var allowMinter = account => {
+   return hdmdContract.allowMinter(account);
 };
 var getTotalSupply = () => {
    return hdmdContract.getTotalSupply();
@@ -101,6 +104,12 @@ function parseEventLog(eventLog) {
       let decodedLog = abiDecoder.decodeLogs(eventLog);
       let newTxns = [];
 
+      let toDbNumberDecimal = amount => {
+         return numberDecimal(
+            getParsedNumber(new BigNumber(amount ? amount : 0))
+         );
+      };
+
       const assignBaseTxn = (target, event, decoded) => {
          target.txnHash = event.transactionHash;
          target.blockNumber = event.blockNumber;
@@ -113,8 +122,7 @@ function parseEventLog(eventLog) {
          assignBaseTxn(newTxn, event, decoded);
          newTxn.sender = decoded.events[0].value;
          newTxn.account = ownerAddress;
-         let amount = decoded.events[1].value;
-         newTxn.amount = getParsedNumber(new BigNumber(amount ? amount : 0));
+         newTxn.amount = toDbNumberDecimal(decoded.events[1].value);
          newTxns.push(newTxn);
       };
       parsers['Unmint'] = (event, decoded) => {
@@ -122,8 +130,7 @@ function parseEventLog(eventLog) {
          assignBaseTxn(newTxn, event, decoded);
          newTxn.sender = decoded.events[0].value;
          newTxn.account = ownerAddress;
-         let amount = decoded.events[1].value * -1;
-         newTxn.amount = getParsedNumber(new BigNumber(amount ? amount : 0));
+         newTxn.amount = toDbNumberDecimal(decoded.events[1].value * -1);
          newTxns.push(newTxn);
       };
       parsers['Burn'] = (event, decoded) => {
@@ -132,8 +139,7 @@ function parseEventLog(eventLog) {
          newTxn.sender = decoded.events[0].value;
          newTxn.account = decoded.events[0].value;
          newTxn.dmdAddress = decoded.events[1].value;
-         amount = decoded.events[2].value * -1;
-         newTxn.amount = getParsedNumber(new BigNumber(amount ? amount : 0));
+         newTxn.amount = toDbNumberDecimal(decoded.events[2].value * -1);
          newTxns.push(newTxn);
       };
       parsers['Transfer'] = (event, decoded) => {
@@ -144,15 +150,13 @@ function parseEventLog(eventLog) {
          let txnFrom = {};
          assignBaseTxn(txnFrom, event, decoded);
          txnFrom.account = fromAccount;
-         txnFrom.amount = getParsedNumber(
-            new BigNumber(amount ? amount : 0).mul(-1)
-         );
+         txnFrom.amount = toDbNumberDecimal(amount * -1);
          newTxns.push(txnFrom);
 
          let txnTo = {};
          assignBaseTxn(txnTo, event, decoded);
          txnTo.account = toAccount;
-         txnTo.amount = getParsedNumber(new BigNumber(amount ? amount : 0));
+         txnTo.amount = toDbNumberDecimal(amount);
          newTxns.push(txnTo);
       };
 
@@ -272,7 +276,10 @@ function getTotalSupplyNotSaved() {
       })
       .then(() => {
          return pSavedTotal.then(doc => {
-            savedTotal = doc[0] ? doc[0].totalAmount : 0;
+            savedTotal = doc[0]
+               ? toBigNumber(doc[0].totalAmount)
+               : toBigNumber(0);
+            // logger.log(toBigNumber(savedTotal).toNumber());
             return savedTotal;
          });
       })

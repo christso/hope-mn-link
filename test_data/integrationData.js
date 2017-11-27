@@ -1,3 +1,5 @@
+var typeConverter = require('../lib/typeConverter');
+
 module.exports = (function() {
    const initialSupply = 12000;
    const ownerAccount = '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC';

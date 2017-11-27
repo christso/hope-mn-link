@@ -65,7 +65,9 @@ function downloadHdmdTxns() {
       .downloadTxns()
       .then(result => {
          if (result) {
-            logger.log('Downloaded HDMD Transactions from Ethereum network');
+            logger.log(
+               `Downloaded ${result.length} HDMD Transactions from Ethereum network`
+            );
          } else {
             logger.log(
                'Downloaded HDMD Transactions from Ethereum network - no changes found'

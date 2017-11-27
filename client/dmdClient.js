@@ -6,6 +6,8 @@ var mongoose = require('mongoose');
 const dmdUrl = config.cryptoidDmdUri;
 var hdmdClient = require('../client/hdmdClient');
 var dmdInterval = require('../models/dmdInterval');
+var typeConverter = require('../lib/typeConverter');
+var numberDecimal = typeConverter.numberDecimal;
 
 /*----- Create DMD listener -----*/
 
@@ -21,8 +23,8 @@ function parseRawTxns(rawTxns) {
       return {
          txnHash: rawTxn[1],
          blockNumber: rawTxn[2],
-         amount: rawTxn[4],
-         balance: rawTxn[5]
+         amount: numberDecimal(rawTxn[4]),
+         balance: numberDecimal(rawTxn[5])
       };
    });
    return newTxns;

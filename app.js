@@ -15,7 +15,7 @@ var database = require('./client/database');
 var contract = require('./client/hdmdContract');
 
 var seedAll = seeder.seedAll;
-var synchronizeNext = reconClient.synchronizeNext;
+var synchronizeAll = reconClient.synchronizeAll;
 var downloadTxns = reconClient.downloadTxns;
 var allowThisMinter = hdmdClient.allowThisMinter;
 
@@ -23,13 +23,8 @@ var allowThisMinter = hdmdClient.allowThisMinter;
 let watchInterval = config.dmdWatchInterval;
 
 function syncTask() {
-   return downloadTxns()
-      .then(() => synchronizeNext())
-      .then(() => {
-         if (config.requireSeed) {
-            config.requireSeed = false;
-         }
-      });
+   logger.log('Starting Sync...');
+   return downloadTxns().then(() => synchronizeAll());
 }
 
 contract
@@ -37,8 +32,10 @@ contract
    .then(() => allowThisMinter())
    .then(() => seedAll())
    .then(() => {
-      return syncTask().then(() => {
+      return Promise.resolve().then(() => {
+         logger.log(`Setting Interval of ${watchInterval}...`);
          return setInterval(() => {
+            logger.log('Within Interval...');
             return syncTask();
          }, watchInterval);
       });

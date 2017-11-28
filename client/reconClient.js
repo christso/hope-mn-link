@@ -422,35 +422,9 @@ function compareBalances(balances1, balances2) {
 }
 
 /**
- * Mint HDMDs up to dmdBlockNumber to make HDMD balance equal to DMD balance
- * @param {Number} dmdBlockNumber - THe maximum DMD Block number that minting will apply up to.
- * @returns {([<DmdTxn>[], <HdmdTxn>[], {Object}])} - DmdTxn[] and HdmdTxn[] are txns that were reconciled
- */
-function mintNewToDmd(dmdBlockNumber) {
-   let dmds;
-   let hdmds;
-   let minted;
-
-   return (
-      getUnmatchedTxns(dmdBlockNumber)
-         // Invoke mint to synchronize HDMDs with DMDs
-         .then(values => {
-            dmds = values[0];
-            hdmds = values[1];
-            return mintToDmd(dmds, hdmds); // mint the amount that DMD is higher than HDMD
-         })
-         .then(value => {
-            minted = value;
-         })
-         .then(() => {
-            return [dmds, hdmds, minted];
-         })
-   );
-}
-
-/**
 Finds unmatched dmdTxns and hdmdTxns in MongoDB
 then invokes mint and unmint on HDMD eth smart contract
+Mint HDMDs up to dmdBlockNumber to make HDMD balance equal to DMD balance
 * @return {Promise} - returns an empty promise if resolved
 */
 function synchronizeNext(dmdBlockNumber) {
@@ -463,11 +437,14 @@ function synchronizeNext(dmdBlockNumber) {
       ? dmdBlockNumber - prevOffset
       : undefined;
    return (
-      // mint amount to sync with
-
-      mintNewToDmd(mintUpToDmdBlockNumber)
+      getUnmatchedTxns(mintUpToDmdBlockNumber)
          .then(values => {
-            [dmds, hdmds, minted] = values;
+            dmds = values[0];
+            hdmds = values[1];
+            return mintToDmd(dmds, hdmds); // mint the amount that DMD is higher than HDMD
+         })
+         .then(value => {
+            minted = value;
             // download eth event log
             return downloadHdmdTxns();
          })
@@ -521,6 +498,7 @@ function synchronizeAll() {
    return getUnmatchedDmdBlockIntervals().then(dmdBlockNumbers => {
       let p = Promise.resolve();
       dmdBlockNumbers.push(null); // null or undefined means there's no next blocknumber to be used in the filter
+      dmdBlockNumbers.push(null); // push again so it gets the updated hdmd and dmds
       dmdBlockNumbers.forEach(dmdBlockNumber => {
          p = p.then(() => synchronizeNext(dmdBlockNumber));
       });
@@ -543,6 +521,5 @@ module.exports = {
    getBeginHdmdBalancesFromDmd: getBeginHdmdBalancesFromDmd,
    didRelativeBalancesChange: didRelativeBalancesChange,
    distributeMint: distributeMint,
-   mintNewToDmd: mintNewToDmd,
    init: init
 };

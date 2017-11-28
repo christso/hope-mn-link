@@ -288,22 +288,25 @@ var recon = (function() {
     * @returns {Promise.<number>} Resolves to an array of unreconciled DMD block numbers at the end of each interval
     */
    let getUnmatchedDmdBlockIntervals = () => {
-      return getFirstUnmatchedDmd()
-         .then(dmd => {
-            return dmdIntervals.aggregate([
+      return getFirstUnmatchedDmd().then(dmd => {
+         if (dmd.length === 0) {
+            return []; // all dmdTxns reconciled already
+         }
+         return dmdIntervals
+            .aggregate([
                {
                   $match: {
                      blockNumber: { $gt: dmd[0] ? dmd[0].blockNumber : -1 }
                   }
                },
                { $sort: { blockNumber: 1 } }
-            ]);
-         })
-         .then(docs => {
-            return docs.map(doc => {
-               return doc.blockNumber;
+            ])
+            .then(docs => {
+               return docs.map(doc => {
+                  return doc.blockNumber;
+               });
             });
-         });
+      });
    };
 
    return {

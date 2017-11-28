@@ -91,7 +91,28 @@ describe('HDMD Recon Balance Tests', () => {
                .toNumber(),
             8
          );
-         assert.equal(bal, 6602.19318937);
+         assert.equal(bal, 6602.19318938);
+      });
+   });
+
+   it('Gets beginning balance from HDMD block number', () => {
+      let getBeginHdmdBalancesFromBlock =
+         queries.recon.getBeginHdmdBalancesFromBlock;
+      return getBeginHdmdBalancesFromBlock(7).then(bals => {
+         let bal = formatter.round(
+            typeConverter
+               .toBigNumber(
+                  bals.filter(b => {
+                     return (
+                        b.account ===
+                        '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC'
+                     );
+                  })[0].balance
+               )
+               .toNumber(),
+            8
+         );
+         assert.equal(bal, 6602.19318938);
       });
    });
 });

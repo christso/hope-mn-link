@@ -143,7 +143,7 @@ module.exports = (function() {
       {
          account: '0x114bcdDaB25dE00884755cf8643ED1ceA4093Fd1',
          blockNumber: '8',
-         totalAmount: 7.85752795506173
+         totalAmount: 7.85752795
       },
       {
          account: '0x1dd0ef06bAe0226C8165f3507F13c2ad8493e1e3',

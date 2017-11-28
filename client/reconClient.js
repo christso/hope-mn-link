@@ -274,7 +274,7 @@ function distributeMint(amount, balances) {
 }
 
 /**
- If the dmdBlockNum is greater than the most recent DMD block number in recon txn, then it will be the most recent HDMD block number. Otherwise, it will be the the previous HDMD block number, looking back 'backsteps' steps.
+ If the dmdBlockNum is greater than the most recent DMD block number in recon txn, then it will be the most recent HDMD block number.
  * @param {Number} dmdBlockNum - DMD block number associated with the recon txn
  * @param {Number} dmdBackSteps - number of HDMD block numbers to look back.
  */
@@ -294,11 +294,16 @@ function getHdmdBlockNumFromDmd(dmdBlockNum, dmdBackSteps, HdmdBackSteps) {
    // Compute Balances
    // get the latest block number that was reconciled (up to backsteps ago)
    return getDmdIntersects().then(recons => {
-      let filtered = recons[0]
-         ? recons.filter(r => {
-              return r.dmdBlockNumber <= dmdBlockNum;
-           })
-         : null;
+      let filtered;
+      if (dmdBlockNum === undefined || dmdBlockNum === null) {
+         filtered = recons;
+      } else {
+         filtered = recons[0]
+            ? recons.filter(r => {
+                 return r.dmdBlockNumber <= dmdBlockNum;
+              })
+            : null;
+      }
 
       let hdmdBlockNum = filtered[dmdBackSteps]
          ? filtered[dmdBackSteps].hdmdBlockNumber

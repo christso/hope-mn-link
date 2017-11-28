@@ -280,7 +280,7 @@ function getUnmatchedTxns(dmdBlockNumber) {
 /**
  * distribute the minted amount to entitled recipients
  * @param {<BigNumber>} amount 
- * @param {{_id: string, totalAmount: number}[]} balances 
+ * @param {{_id: string, totalAmount: <BigNumber>}[]} balances 
  * @returns {Promise}
  */
 function distributeMint(amount, balances) {
@@ -289,7 +289,7 @@ function distributeMint(amount, balances) {
    }
    let recipients = balances.map(b => b._id);
    let weights = balances.map(b => {
-      return toBigNumber(b.balance);
+      return b.balance;
    });
    let bnAmount = amount instanceof BigNumber ? amount : toBigNumber(amount);
 
@@ -475,22 +475,19 @@ Finds unmatched dmdTxns and hdmdTxns in MongoDB
 then invokes mint and unmint on HDMD eth smart contract
 * @return {Promise} - returns an empty promise if resolved
 */
-function synchronizeNext() {
-   let getNextUnmatchedDmdBlockInterval =
-      queries.recon.getNextUnmatchedDmdBlockInterval;
-
+function synchronizeNext(dmdBlockNumber) {
    let minted;
    let dmds;
    let hdmds;
-   let dmdBlockNumber;
    let balancesResult;
+   let prevOffset = 1;
+   let mintUpToDmdBlockNumber = dmdBlockNumber
+      ? dmdBlockNumber - prevOffset
+      : undefined;
    return (
       // mint amount to sync with
-      getNextUnmatchedDmdBlockInterval()
-         .then(value => {
-            dmdBlockNumber = value;
-            return mintNewToDmd(dmdBlockNumber - 1);
-         })
+
+      mintNewToDmd(mintUpToDmdBlockNumber)
          .then(values => {
             [dmds, hdmds, minted] = values;
             // download eth event log
@@ -514,19 +511,49 @@ function synchronizeNext() {
                      return getBeginHdmdBalancesFromDmd(dmdBlockNumber, 0);
                   })
                   .then(balances => {
-                     balancesResult = balances;
-                     return distributeMint(minted.netAmount, balances);
+                     balancesResult = balances.map(bal => {
+                        var newBal = {};
+                        Object.assign(newBal, bal);
+                        newBal.balance = typeConverter.toBigNumber(bal.balance);
+                        if (newBal.balance.lessThan(0)) {
+                           let acc = newBal.account;
+                           let bal = newBal.balance;
+                           throw new Error(
+                              `Balance of account '${acc}' is ${bal} which is negative and not allowed`
+                           );
+                        }
+                        return newBal;
+                     });
+                     return distributeMint(minted.netAmount, balancesResult);
                   });
             }
          })
          .then(() => {
-            return balancesResult;
+            return {
+               balances: balancesResult
+            };
          })
    );
 }
 
+function synchronizeAll() {
+   let getUnmatchedDmdBlockIntervals =
+      queries.recon.getUnmatchedDmdBlockIntervals;
+
+   return getUnmatchedDmdBlockIntervals().then(dmdBlockNumbers => {
+      let p = Promise.resolve();
+      dmdBlockNumbers.push(null); // null or undefined means there's no next blocknumber to be used in the filter
+      dmdBlockNumbers.forEach(dmdBlockNumber => {
+         p = p.then(() => synchronizeNext(dmdBlockNumber));
+      });
+
+      return p;
+   });
+}
+
 module.exports = {
    synchronizeNext: synchronizeNext,
+   synchronizeAll: synchronizeAll,
    getLastHdmdRecon: getLastHdmdRecon,
    getBalancesDmdToHdmd: getBeginHdmdBalancesFromDmd,
    downloadTxns: downloadTxns,

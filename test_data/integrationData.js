@@ -159,31 +159,6 @@ module.exports = (function() {
          account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
          blockNumber: '8',
          totalAmount: -68.24329864
-      },
-      {
-         account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
-         blockNumber: '9',
-         totalAmount: 0
-      },
-      {
-         account: '0x114bcdDaB25dE00884755cf8643ED1ceA4093Fd1',
-         blockNumber: '10',
-         totalAmount: 0
-      },
-      {
-         account: '0x1dd0ef06bAe0226C8165f3507F13c2ad8493e1e3',
-         blockNumber: '10',
-         totalAmount: 0
-      },
-      {
-         account: '0xA7Bb5D4d546067782Dd4B5356D9e9771deBB06a3',
-         blockNumber: '10',
-         totalAmount: 0
-      },
-      {
-         account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
-         blockNumber: '10',
-         totalAmount: 0
       }
    ];
 

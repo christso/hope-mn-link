@@ -98,8 +98,15 @@ describe('HDMD Integration Tests', () => {
    });
 
    it('Seed HDMD events to database', () => {
+      let data = hdmdEventsData.map(event => {
+         let newEvent = {};
+         Object.assign(newEvent, event);
+         newEvent.amount = typeConverter.numberDecimal(event.amount);
+         newEvent.netAmount = typeConverter.numberDecimal(event.netAmount);
+         return newEvent;
+      });
       return hdmdEvents
-         .create(hdmdEventsData)
+         .create(data)
          .then(created => {
             assert.notEqual(created, undefined);
          })
@@ -180,7 +187,7 @@ describe('HDMD Integration Tests', () => {
    it('Mints and apportions at each DMD block interval', () => {
       let dmdReconTotal = queries.recon.getDmdTotal;
       let hdmdReconTotal = queries.recon.getHdmdTotal;
-      let synchronizeNext = reconClient.synchronizeNext;
+      let synchronizeAll = reconClient.synchronizeAll;
 
       /**
        * Mint HDMDs up to dmdBlockNumber to make HDMD balance equal to DMD balance
@@ -191,65 +198,18 @@ describe('HDMD Integration Tests', () => {
       let balancesResult = [];
 
       // Actions
-
-      let syncTask = () => {
-         let balances;
-         return (
-            synchronizeNext()
-               // Save assertion data
-               .then(bals => {
-                  balancesResult = bals;
-                  return Promise.all([
-                     dmdReconTotal(),
-                     hdmdReconTotal()
-                  ]).then(([dmds, hdmds]) => {
-                     return {
-                        dmd: dmds[0] ? dmds[0].totalAmount : 0,
-                        hdmd: hdmds[0] ? hdmds[0].totalAmount : 0,
-                        balances: balancesResult
-                     };
-                  });
-               })
-         );
-      };
-
-      let p = seedHdmd().then(() => {
-         return downloadTxns();
-      });
-      let expectedBals = [
-         { dmd: 10000, hdmd: 10000 },
-         { dmd: 10400, hdmd: 10400 },
-         { dmd: 10600, hdmd: 10600 },
-         { dmd: 10600, hdmd: 10600 },
-         { dmd: 10600, hdmd: 10600 },
-         { dmd: 10600, hdmd: 10600 },
-         { dmd: 10600, hdmd: 10600 }
-      ];
-      let actualBals = [];
-      for (let i = 0; i < expectedBals.length; i++) {
-         p = p.then(() => syncTask(i)).then(result => {
-            actualBals.push(result);
+      let p = seedHdmd()
+         .then(() => {
+            return downloadTxns();
+         })
+         .then(() => {
+            return synchronizeAll();
+         })
+         .then(() => {
+            return synchronizeAll(); // 2nd iteration will download from hdmdEvents to do the reconciliation
          });
-      }
 
       // Assertions
-
-      let assertBals = actualBals => {
-         for (let i = 0; i < actualBals.length; i++) {
-            assert.equal(
-               formatter.round(actualBals[i].hdmd, config.hdmdDecimals),
-               formatter.round(expectedBals[i].hdmd, config.hdmdDecimals),
-               `Assertion error -> expected HDMD ${actualBals[i]
-                  .hdmd} to equal ${expectedBals[i].hdmd} at iteration ${i}`
-            );
-            assert.equal(
-               formatter.round(actualBals[i].dmd, config.hdmdDecimals),
-               formatter.round(expectedBals[i].dmd, config.hdmdDecimals),
-               `Assertion error -> expected DMD ${actualBals[i]
-                  .dmd} to equal ${expectedBals[i].dmd} at iteration ${i}`
-            );
-         }
-      };
 
       let assertReconAmounts = () => {
          var expectedReconAmounts = testData.expectedReconAmounts;
@@ -288,6 +248,11 @@ describe('HDMD Integration Tests', () => {
             ]);
          };
          return getReconAmounts().then(actuals => {
+            assert.equal(
+               (a = actuals.length),
+               (e = expectedReconAmounts.length),
+               `Assertion error -> expected actuals.length ${a} to equal ${e}`
+            );
             for (var i = 0; i < expectedReconAmounts.length; i++) {
                let expected = expectedReconAmounts[i];
                let actual = actuals[i];
@@ -297,14 +262,8 @@ describe('HDMD Integration Tests', () => {
                   `Assertion error -> expected recontxn.account ${a} to equal ${e} at iteration ${i}`
                );
                assert.equal(
-                  (a = formatter.round(
-                     actual.blockNumber,
-                     config.hdmdDecimals
-                  )),
-                  (e = formatter.round(
-                     expected.blockNumber,
-                     config.hdmdDecimals
-                  )),
+                  (a = actual.blockNumber),
+                  (e = expected.blockNumber),
                   `Assertion error -> expected recontxn.blockNumber ${a} to equal ${e} at iteration ${i}`
                );
                assert.equal(
@@ -322,8 +281,6 @@ describe('HDMD Integration Tests', () => {
          });
       };
 
-      return p
-         .then(() => assertBals(actualBals))
-         .then(() => assertReconAmounts());
+      return p.then(() => assertReconAmounts());
    });
 });

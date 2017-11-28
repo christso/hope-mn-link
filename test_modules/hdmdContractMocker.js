@@ -8,6 +8,7 @@ var database = require('../client/database');
 var queries = require('../client/databaseQueries');
 
 const formatter = require('../lib/formatter');
+var typeConverter = require('../lib/typeConverter');
 const hdmdContract = require('../client/hdmdContract');
 const hdmdClient = require('../client/hdmdClient');
 const hdmdEvents = require('../test_modules/hdmdEventModel');
@@ -40,11 +41,13 @@ function batchTransferFaker(addresses, values) {
    }
 
    return getLastHdmdBlockNumber().then(blockNumber => {
+      let newBlockNumber = blockNumber + 1;
+
       events.push({
          txnHash: txnHash,
-         blockNumber: blockNumber + 1,
-         amount: bnTotalAmount.times(-1).toNumber(),
-         netAmount: bnTotalAmount.times(-1).toNumber(),
+         blockNumber: newBlockNumber,
+         amount: typeConverter.numberDecimal(bnTotalAmount.times(-1)),
+         netAmount: typeConverter.numberDecimal(bnTotalAmount.times(-1)),
          account: ownerAccount,
          eventName: 'Transfer'
       });
@@ -52,9 +55,9 @@ function batchTransferFaker(addresses, values) {
       for (let i = 0; i < addresses.length; i++) {
          events.push({
             txnHash: txnHash,
-            blockNumber: blockNumber + 1,
-            amount: values[i].toNumber(),
-            netAmount: values[i].toNumber(),
+            blockNumber: newBlockNumber,
+            amount: typeConverter.numberDecimal(values[i]),
+            netAmount: typeConverter.numberDecimal(values[i]),
             account: addresses[i],
             eventName: 'Transfer'
          });
@@ -98,8 +101,8 @@ module.exports = function(initialSupply) {
          hdmdEvents.create({
             txnHash: formatter.formatUuidv1(uuidv1()),
             blockNumber: blockNumber + 1,
-            amount: eventAmount,
-            netAmount: eventAmount * -1,
+            amount: typeConverter.numberDecimal(eventAmount),
+            netAmount: typeConverter.numberDecimal(eventAmount * -1),
             account: ownerAccount,
             eventName: 'Unmint'
          })
@@ -112,8 +115,8 @@ module.exports = function(initialSupply) {
          hdmdEvents.create({
             txnHash: formatter.formatUuidv1(uuidv1()),
             blockNumber: blockNumber + 1,
-            amount: eventAmount,
-            netAmount: eventAmount,
+            amount: typeConverter.numberDecimal(eventAmount),
+            netAmount: typeConverter.numberDecimal(eventAmount),
             account: ownerAccount,
             eventName: 'Mint'
          })

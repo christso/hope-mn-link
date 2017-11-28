@@ -284,10 +284,33 @@ var recon = (function() {
          });
    };
 
+   /**
+    * @returns {Promise.<number>} Resolves to an array of unreconciled DMD block numbers at the end of each interval
+    */
+   let getUnmatchedDmdBlockIntervals = () => {
+      return getFirstUnmatchedDmd()
+         .then(dmd => {
+            return dmdIntervals.aggregate([
+               {
+                  $match: {
+                     blockNumber: { $gt: dmd[0] ? dmd[0].blockNumber : -1 }
+                  }
+               },
+               { $sort: { blockNumber: 1 } }
+            ]);
+         })
+         .then(docs => {
+            return docs.map(doc => {
+               return doc.blockNumber;
+            });
+         });
+   };
+
    return {
       getDmdTotal: getDmdTotal,
       getHdmdTotal: getHdmdTotal,
       getNextUnmatchedDmdBlockInterval: getNextUnmatchedDmdBlockInterval,
+      getUnmatchedDmdBlockIntervals: getUnmatchedDmdBlockIntervals,
       getHdmdBalancesFromBlock: getHdmdBalancesFromBlock,
       getBeginHdmdBalancesFromBlock: getBeginHdmdBalancesFromBlock,
       getDmdIntersects: getDmdIntersects

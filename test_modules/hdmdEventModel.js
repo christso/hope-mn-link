@@ -5,8 +5,8 @@ mongoose.Promise = global.Promise;
 var hdmdEventSchema = new mongoose.Schema({
    txnHash: String,
    blockNumber: Number,
-   amount: Number,
-   netAmount: Number,
+   amount: mongoose.SchemaTypes.Decimal128,
+   netAmount: mongoose.SchemaTypes.Decimal128,
    account: String,
    eventName: String
 });

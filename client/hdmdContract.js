@@ -4,6 +4,7 @@ const abi = require('./hdmdABI')();
 const config = require('../config');
 var Logger = require('../lib/logger');
 var logger = new Logger('hdmdContract');
+var ContractError = require('../lib/contractError');
 
 const abiDecoder = require('abi-decoder');
 
@@ -205,9 +206,11 @@ function batchTransfer(addresses, values) {
 function reverseBatchTransfer(addresses, values) {
    return new Promise((resolve, reject) => {
       let rawValues = values.map(value => {
-         if (value.greaterThan(0)) {
-            throw new Error(
-               `reverseBatchTransfer value of ${value} must be less than zero`
+         if (value.lessThan(0)) {
+            reject(
+               new Error(
+                  `reverseBatchTransfer value of ${value} must be greater than zero`
+               )
             );
          }
          return getRawNumber(value).toNumber();
@@ -218,7 +221,12 @@ function reverseBatchTransfer(addresses, values) {
          { gas: gasLimit },
          (error, result) => {
             if (error) {
-               reject(error);
+               reject(
+                  new ContractError(error.message, 'reverseBatchTransfer', {
+                     addresses: addresses,
+                     values: rawValues
+                  })
+               );
             } else {
                resolve(result);
             }

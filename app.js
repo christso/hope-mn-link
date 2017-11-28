@@ -1,3 +1,6 @@
+var timers = require('timers');
+var setTimeout = timers.setTimeout;
+
 var config = require('./config');
 var port = config.port;
 var Logger = require('./lib/logger');
@@ -23,8 +26,19 @@ var allowThisMinter = hdmdClient.allowThisMinter;
 let watchInterval = config.dmdWatchInterval;
 
 function syncTask() {
-   logger.log('Starting Sync...');
-   return downloadTxns().then(() => synchronizeAll());
+   logger.log('Starting Download...');
+   return downloadTxns()
+      .then(() => {
+         logger.log('Starting Sync...');
+         return synchronizeAll();
+      })
+      .then(() => {
+         logger.log(`Starting Next Interval of ${watchInterval}...`);
+         return setTimeout(syncTask, watchInterval);
+      })
+      .catch(err => {
+         logger.error(err.stack);
+      });
 }
 
 contract
@@ -32,13 +46,11 @@ contract
    .then(() => allowThisMinter())
    .then(() => seedAll())
    .then(() => {
-      return Promise.resolve().then(() => {
-         logger.log(`Setting Interval of ${watchInterval}...`);
-         return setInterval(() => {
-            logger.log('Within Interval...');
-            return syncTask();
-         }, watchInterval);
-      });
+      logger.log(`Setting First Interval of ${watchInterval}...`);
+      setTimeout(() => {
+         logger.log('Starting First Interval...');
+         return syncTask();
+      }, watchInterval);
    })
    .catch(err => logger.error(err.stack));
 

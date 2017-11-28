@@ -176,8 +176,10 @@ function batchTransfer(addresses, values) {
    return new Promise((resolve, reject) => {
       let rawValues = values.map(value => {
          if (value.lessThan(0)) {
-            throw new Error(
-               `batchTransfer value of ${value} must be greater than zero`
+            reject(
+               new Error(
+                  `reverseBatchTransfer value of ${value} must be greater than zero`
+               )
             );
          }
          return getRawNumber(value).toNumber();
@@ -188,7 +190,12 @@ function batchTransfer(addresses, values) {
          { gas: gasLimit },
          (error, result) => {
             if (error) {
-               reject(error);
+               reject(
+                  new ContractError(error.message, 'batchTransfer', {
+                     addresses: addresses,
+                     values: rawValues
+                  })
+               );
             } else {
                resolve(result);
             }

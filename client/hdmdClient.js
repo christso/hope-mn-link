@@ -251,7 +251,7 @@ function getTotalSupplySaved() {
 * @return {Promise} return value of the smart contract function
 */
 function apportion(amount, recipients, weights) {
-   let newAmounts = contractMath.applyWeights(amount, weights);
+   let newAmounts = contractMath.applyWeights(amount.absoluteValue(), weights);
    if (amount.greaterThan(0)) {
       return batchTransfer(recipients, newAmounts);
    } else {

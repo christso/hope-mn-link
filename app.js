@@ -30,7 +30,7 @@ function syncTask() {
    return downloadTxns()
       .then(() => {
          logger.log('Starting Sync...');
-         return synchronizeAll();
+         return setTimeout(synchronizeAll, 0);
       })
       .then(() => {
          logger.log(`Starting Next Interval of ${watchInterval}...`);

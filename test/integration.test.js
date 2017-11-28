@@ -38,13 +38,13 @@ describe('HDMD Integration Tests', () => {
    const initialSupply = testData.initialSupply;
 
    // create mock clients
-   var hdmdContractMock = hdmdContractMocker(testData.initialSupply);
-   var hdmdClient = hdmdClientMocker(hdmdContractMock.mocked.object).mocked
-      .object;
-   var dmdClient = dmdClientMocker().mocked.object;
-
-   var downloadTxns = reconClient.downloadTxns;
-   var downloadHdmdTxns = hdmdClient.downloadTxns;
+   var hdmdContractMock;
+   var hdmdClientMock;
+   var hdmdClient;
+   var dmdClientMock;
+   var dmdClient;
+   var downloadTxns;
+   var downloadHdmdTxns;
 
    var connection;
 
@@ -72,6 +72,15 @@ describe('HDMD Integration Tests', () => {
    };
 
    before(() => {
+      hdmdContractMock = hdmdContractMocker(testData.initialSupply);
+      hdmdClientMock = hdmdClientMocker(hdmdContractMock.mocked.object);
+      hdmdClient = hdmdClientMock.mocked.object;
+      dmdClientMock = dmdClientMocker();
+      dmdClient = dmdClientMock.mocked.object;
+
+      downloadTxns = reconClient.downloadTxns;
+      downloadHdmdTxns = hdmdClient.downloadTxns;
+
       return initMocks().then(() => createDatabase());
    });
 
@@ -79,6 +88,9 @@ describe('HDMD Integration Tests', () => {
       if (cleanup) {
          database.dropDatabase();
       }
+      hdmdContractMock.sandbox.restore();
+      hdmdClientMock.sandbox.restore();
+      dmdClientMock.sandbox.restore();
       done();
    });
 

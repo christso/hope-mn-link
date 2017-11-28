@@ -12,11 +12,13 @@ const hdmdClient = require('../client/hdmdClient');
 const typeConverter = require('../lib/typeConverter');
 
 module.exports = function(newHdmdContract) {
-   let mocked = sinon.mock(hdmdClient);
+   let sandbox = sinon.createSandbox();
+   let mocked = sandbox.mock(hdmdClient);
+
    if (newHdmdContract) {
       hdmdClient.init(newHdmdContract);
    }
-   sinon.stub(mocked.object, 'downloadTxns').callsFake(() => {
+   sandbox.stub(mocked.object, 'downloadTxns').callsFake(() => {
       return new Promise((resolve, reject) => {
          let getLastHdmdBlockNumberSaved = () => {
             return hdmdTxns
@@ -57,5 +59,5 @@ module.exports = function(newHdmdContract) {
       });
    });
 
-   return { mocked: mocked };
+   return { mocked: mocked, sandbox: sandbox };
 };

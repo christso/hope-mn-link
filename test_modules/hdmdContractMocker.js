@@ -68,34 +68,38 @@ function batchTransferFaker(addresses, values) {
 }
 
 module.exports = function(initialSupply) {
-   let mocked = sinon.mock(hdmdContract);
+   let sandbox = sinon.createSandbox();
+   let mocked = sandbox.mock(hdmdContract);
+   let stubs = {};
 
-   sinon.stub(mocked.object, 'getTotalSupply').callsFake(() => {
-      return new Promise((resolve, reject) => {
-         let bnInitSupply = new BigNumber(initialSupply);
-         hdmdEvents
-            .find({})
-            .then(found => {
-               if (!found[0]) {
-                  return new BigNumber(0);
-               }
-               let total = new BigNumber(0);
-               found.forEach(obj => {
-                  total = total.plus(obj.netAmount);
+   stubs.getTotalSupply = sandbox
+      .stub(mocked.object, 'getTotalSupply')
+      .callsFake(() => {
+         return new Promise((resolve, reject) => {
+            let bnInitSupply = new BigNumber(initialSupply);
+            hdmdEvents
+               .find({})
+               .then(found => {
+                  if (!found[0]) {
+                     return new BigNumber(0);
+                  }
+                  let total = new BigNumber(0);
+                  found.forEach(obj => {
+                     total = total.plus(obj.netAmount);
+                  });
+                  return total;
+               })
+               .then(bnEventTotal => {
+                  resolve(bnEventTotal.plus(bnInitSupply));
+                  return;
+               })
+               .catch(err => {
+                  reject(err);
                });
-               return total;
-            })
-            .then(bnEventTotal => {
-               resolve(bnEventTotal.plus(bnInitSupply));
-               return;
-            })
-            .catch(err => {
-               reject(err);
-            });
+         });
       });
-   });
 
-   sinon.stub(mocked.object, 'unmint').callsFake(amount => {
+   stubs.unmint = sandbox.stub(mocked.object, 'unmint').callsFake(amount => {
       let eventAmount = amount ? amount.toNumber() : 0;
       return getLastHdmdBlockNumber().then(blockNumber =>
          hdmdEvents.create({
@@ -109,7 +113,7 @@ module.exports = function(initialSupply) {
       );
    });
 
-   sinon.stub(mocked.object, 'mint').callsFake(amount => {
+   stubs.mint = sandbox.stub(mocked.object, 'mint').callsFake(amount => {
       let eventAmount = amount ? amount.toNumber() : 0;
       return getLastHdmdBlockNumber().then(blockNumber =>
          hdmdEvents.create({
@@ -123,15 +127,17 @@ module.exports = function(initialSupply) {
       );
    });
 
-   sinon.stub(mocked.object, 'batchTransfer').callsFake((addresses, values) => {
-      return batchTransferFaker(addresses, values);
-   });
+   stubs.batchTransfer = sandbox
+      .stub(mocked.object, 'batchTransfer')
+      .callsFake((addresses, values) => {
+         return batchTransferFaker(addresses, values);
+      });
 
-   sinon
+   stubs.reverseBatchTransfer = sandbox
       .stub(mocked.object, 'reverseBatchTransfer')
       .callsFake((addresses, values) => {
          return batchTransferFaker(addresses, values);
       });
 
-   return { mocked: mocked };
+   return { mocked: mocked, stubs: stubs, sandbox: sandbox };
 };

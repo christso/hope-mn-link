@@ -9,7 +9,9 @@ var reconTxnSchema = new mongoose.Schema({
    amount: mongoose.SchemaTypes.Decimal128,
    account: String,
    blockNumber: Number,
-   eventName: String
+   eventName: String,
+   dmdFlag: mongoose.SchemaTypes.Boolean,
+   hdmdFlag: mongoose.SchemaTypes.Boolean
 });
 
 module.exports = mongoose.model('ReconTxn', reconTxnSchema);

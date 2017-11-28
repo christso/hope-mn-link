@@ -118,19 +118,25 @@ function reconcile(dmds, hdmds) {
       return {
          reconId: reconId,
          dmdTxnHash: txn.txnHash,
+         hdmdTxnHash: null,
          amount: txn.amount,
          account: txn.account,
-         blockNumber: txn.blockNumber
+         blockNumber: txn.blockNumber,
+         dmdFlag: true,
+         hdmdFlag: false
       };
    });
    let hdmdRecs = hdmds.map(txn => {
       return {
          reconId: reconId,
+         dmdTxnHash: null,
          hdmdTxnHash: txn.txnHash,
          amount: txn.amount,
          account: txn.account,
          blockNumber: txn.blockNumber,
-         eventName: txn.eventName
+         eventName: txn.eventName,
+         dmdFlag: false,
+         hdmdFlag: true
       };
    });
    let recs = dmdRecs;

@@ -93,22 +93,22 @@ module.exports = (function() {
       {
          account: '0x114bcdDaB25dE00884755cf8643ED1ceA4093Fd1',
          blockNumber: '4',
-         totalAmount: -102.629137
+         totalAmount: -84.4684255169136
       },
       {
          account: '0x1dd0ef06bAe0226C8165f3507F13c2ad8493e1e3',
          blockNumber: '4',
-         totalAmount: -277.09866991
+         totalAmount: -228.064748894074
       },
       {
          account: '0xA7Bb5D4d546067782Dd4B5356D9e9771deBB06a3',
          blockNumber: '4',
-         totalAmount: -574.19727396
+         totalAmount: -472.590348939547
       },
       {
          account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
          blockNumber: '4',
-         totalAmount: 953.92508087
+         totalAmount: 785.123523350535
       },
       {
          account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
@@ -118,22 +118,22 @@ module.exports = (function() {
       {
          account: '0x114bcdDaB25dE00884755cf8643ED1ceA4093Fd1',
          blockNumber: '6',
-         totalAmount: 14.41214178
+         totalAmount: 15.7150559101235
       },
       {
          account: '0x1dd0ef06bAe0226C8165f3507F13c2ad8493e1e3',
          blockNumber: '6',
-         totalAmount: 38.9127828
+         totalAmount: 42.430650957037
       },
       {
          account: '0xA7Bb5D4d546067782Dd4B5356D9e9771deBB06a3',
          blockNumber: '6',
-         totalAmount: 80.63414312
+         totalAmount: 87.9237858492181
       },
       {
          account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
          blockNumber: '6',
-         totalAmount: -133.95906771
+         totalAmount: -146.069492716379
       },
       {
          account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
@@ -143,22 +143,22 @@ module.exports = (function() {
       {
          account: '0x114bcdDaB25dE00884755cf8643ED1ceA4093Fd1',
          blockNumber: '8',
-         totalAmount: 7.34203449
+         totalAmount: 7.85752795506173
       },
       {
          account: '0x1dd0ef06bAe0226C8165f3507F13c2ad8493e1e3',
          blockNumber: '8',
-         totalAmount: 19.82349313
+         totalAmount: 21.2153254785185
       },
       {
          account: '0xA7Bb5D4d546067782Dd4B5356D9e9771deBB06a3',
          blockNumber: '8',
-         totalAmount: 41.07777103
+         totalAmount: 43.9618929246091
       },
       {
          account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
          blockNumber: '8',
-         totalAmount: -68.24329864
+         totalAmount: -73.0347463581893
       }
    ];
 

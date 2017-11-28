@@ -16,7 +16,7 @@ router.get('/hdmd/last', (req, res) => {
 
 router.get('/hdmd/balances', (req, res) => {
    reconClient
-      .getBalancesDmdToHdmd()
+      .getBeginHdmdBalancesFromDmd()
       .then(obj => {
          res.json(obj);
       })

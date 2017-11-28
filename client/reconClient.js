@@ -226,39 +226,6 @@ function getLastHdmdRecon(dmdBlockNumber) {
 }
 
 /**
-* Gets HDMD account balances at the specified DMD blockNumber
-* @param {number} blockNumber - DMD blockNumber to get the balance for
-* @return {{addresses: string[], balances: number[]}}  - { addresses[], balances[] }
-*/
-function getBeginHdmdBalancesFromDmd(blockNumber) {
-   let matchStage = {
-      $match: {
-         hdmdTxnHash: { $ne: null },
-         blockNumber: { $lte: blockNumber }
-      }
-   };
-
-   let groupStage = {
-      $group: {
-         _id: '$account',
-         totalAmount: { $sum: '$amount' }
-      }
-   };
-
-   if (blockNumber === undefined) {
-      delete matchStage.$match.blockNumber;
-   }
-
-   // get balances from hdmdtxns collection
-   return reconTxns.aggregate([matchStage, groupStage]).catch(err => {
-      let newErr = new Error(
-         `Error in getHdmdBalancesFromDmd(): ${err.message}`
-      );
-      Promise.reject(newErr);
-   });
-}
-
-/**
 * Download transactions to MongoDB
 * @return {Promise.<[DmdTxn[], HdmdTxn[]]>} - returns resolved promise for unmatched DMDs and HDMDs
 */
@@ -334,6 +301,11 @@ function getHdmdBlockNumFromDmd(dmdBlockNum, dmdBackSteps, HdmdBackSteps) {
    });
 }
 
+/**
+* Gets HDMD account balances at the specified DMD blockNumber
+* @param {number} blockNumber - DMD blockNumber to get the balance for
+* @return {{addresses: string[], balances: number[]}}  - { addresses[], balances[] }
+*/
 function getBeginHdmdBalancesFromDmd(dmdBlockNum, backsteps) {
    let getBeginHdmdBalancesFromBlock =
       queries.recon.getBeginHdmdBalancesFromBlock;
@@ -555,7 +527,6 @@ module.exports = {
    synchronizeNext: synchronizeNext,
    synchronizeAll: synchronizeAll,
    getLastHdmdRecon: getLastHdmdRecon,
-   getBalancesDmdToHdmd: getBeginHdmdBalancesFromDmd,
    downloadTxns: downloadTxns,
    getUnmatchedTxns: getUnmatchedTxns,
    reconcile: reconcile,

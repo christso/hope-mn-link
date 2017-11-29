@@ -146,7 +146,42 @@ function reconcile(dmds, hdmds) {
    });
    let recs = dmdRecs;
    recs.push(...hdmdRecs);
-   return reconTxns.create(recs);
+   return reconTxns.create(recs).then(docs => {
+      // DEBUG
+      if (docs) {
+         let dmdDocs = docs.filter(doc => {
+            return doc.dmdTxnHash != null;
+         });
+         let dmdSum = dmdDocs.map(doc => {
+            return typeConverter.toBigNumber(doc.amount);
+         });
+         if (dmdSum.length > 0) {
+            dmdSum = dmdSum.reduce((a, b) => {
+               return a.plus(b);
+            });
+         }
+
+         let hdmdDocs = docs.filter(doc => {
+            return doc.hdmdTxnHash != null;
+         });
+         let hdmdSum = hdmdDocs.map(doc => {
+            return typeConverter.toBigNumber(doc.amount);
+         });
+         if (hdmdSum.length > 0) {
+            hdmdSum = hdmdSum.reduce((a, b) => {
+               return a.plus(b);
+            });
+         }
+
+         logger.log(
+            `Reconciled ${docs.length} txns. Totals for DMD = ${
+               dmdSum
+            }, HDMD = ${hdmdSum}. Count for DMD = ${dmdDocs.length}, HDMD = ${
+               hdmdDocs.length
+            }`
+         );
+      }
+   });
 }
 
 /**
@@ -451,10 +486,7 @@ function synchronizeNext(dmdBlockNumber) {
    let mintUpToDmdBlockNumber = dmdBlockNumber
       ? dmdBlockNumber - prevOffset
       : undefined;
-   if (dmdBlockNumber === 28022) {
-      // TODO: DEBUG
-      console.log('REACHED DEBUG POINT');
-   }
+   logger.log(`Synchronizing up to DMD Block ${dmdBlockNumber}`);
    return (
       getUnmatchedTxns(mintUpToDmdBlockNumber)
          .then(values => {
@@ -464,6 +496,9 @@ function synchronizeNext(dmdBlockNumber) {
          })
          .then(value => {
             minted = value;
+            if (minted != nothingToMint) {
+               logger.log(`${minted.eventName} invoked for ${minted.amount}`);
+            }
             // download eth event log
             return downloadHdmdTxns();
          })
@@ -471,7 +506,6 @@ function synchronizeNext(dmdBlockNumber) {
          .then(saved => {
             // dmds.amount == hdmds.amount in all cases because mint is done before the reconcile
             if (minted === nothingToMint) {
-               // TODO: why does the test fail if I reconcile?
                return reconcile(dmds, hdmds);
             } else {
                // what we do if a mint has occured

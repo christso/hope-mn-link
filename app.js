@@ -36,7 +36,9 @@ function syncTask() {
          return setTimeout(synchronizeAll, 0);
       })
       .then(() => {
-         logger.log(`Starting Next Interval of ${watchInterval}...`);
+         logger.log(
+            `Starting Next Sync after ${watchInterval} milliseconds...`
+         );
          return setTimeout(syncTask, watchInterval);
       })
       .catch(err => {
@@ -48,13 +50,7 @@ contract
    .checkVersion()
    .then(() => allowThisMinter())
    .then(() => seedAll())
-   .then(() => {
-      logger.log(`Setting First Interval of ${watchInterval}...`);
-      setTimeout(() => {
-         logger.log('Starting First Interval...');
-         return syncTask();
-      }, watchInterval);
-   })
+   .then(() => syncTask())
    .catch(err => logger.error(err.stack));
 
 // allows you to parse JSON into req.body.field

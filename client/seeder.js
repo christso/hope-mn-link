@@ -1,7 +1,8 @@
 var typeConverter = require('../lib/typeConverter');
 var BigNumber = require('bignumber.js');
 var config = require('../config');
-var requireSeed = config.requireSeed;
+var requireContractSeed = config.requireContractSeed;
+var requireDbSeed = config.requireDbSeed;
 
 var mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
@@ -27,7 +28,7 @@ const logger = new Logger('Seed');
 const formatter = require('../lib/formatter');
 
 // Initial contributions
-function seedHdmd(contribData) {
+function seedContract(contribData) {
    if (contribData) {
       contribs = contribData;
    }
@@ -50,11 +51,18 @@ function seedDmdIntervals() {
 }
 
 function seedAll() {
-   let pSeed = () => {
+   let pDbSeed = () => {
       return seedDmdIntervals()
-         .then(() => seedHdmd())
-         .then(() => logger.log('Seeding successful'))
-         .catch(err => Promise.reject(new Error(`Error seeding: ${err}`)));
+         .then(() => logger.log('Seeded DB.'))
+         .catch(err => Promise.reject(new Error(`Error seeding DB: ${err}`)));
+   };
+
+   let pContractSeed = () => {
+      return seedContract()
+         .then(() => logger.log('Seeded contract.'))
+         .catch(err =>
+            Promise.reject(new Error(`Error seeding contract: ${err}`))
+         );
    };
 
    let pTotal = () => {
@@ -74,15 +82,21 @@ function seedAll() {
          );
    };
 
-   return pTotal().then(() => {
-      if (requireSeed) {
-         return pSeed();
-      }
-   });
+   return pTotal()
+      .then(() => {
+         if (requireDbSeed) {
+            return pDbSeed();
+         }
+      })
+      .then(() => {
+         if (requireContractSeed) {
+            return pContractSeed();
+         }
+      });
 }
 
 module.exports = {
    seedDmd: seedDmdIntervals,
-   seedHdmd: seedHdmd,
+   seedHdmd: seedContract,
    seedAll: seedAll
 };

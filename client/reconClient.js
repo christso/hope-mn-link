@@ -66,7 +66,9 @@ function downloadHdmdTxns() {
       .then(result => {
          if (result) {
             logger.log(
-               `Downloaded ${result.length} HDMD Transactions from Ethereum network`
+               `Downloaded ${
+                  result.length
+               } HDMD Transactions from Ethereum network`
             );
          } else {
             logger.log(
@@ -84,11 +86,11 @@ function downloadHdmdTxns() {
 }
 
 /**
-* Get amount that needs to be minted
-* @param {<DmdTxn>[]} dmds - DMD transactions that needs to be matched
-* @param {<HdmdTxn>[]} hdmds - HDMD transactions that needs to be matched
-* @return {<BigNumber>} amount that needs to be minted
-*/
+ * Get amount that needs to be minted
+ * @param {<DmdTxn>[]} dmds - DMD transactions that needs to be matched
+ * @param {<HdmdTxn>[]} hdmds - HDMD transactions that needs to be matched
+ * @return {<BigNumber>} amount that needs to be minted
+ */
 function getRequiredMintingAmount(dmds, hdmds) {
    dmdTotal = new BigNumber(0);
    dmds.forEach(txn => {
@@ -104,18 +106,20 @@ function getRequiredMintingAmount(dmds, hdmds) {
 }
 
 /**
-   * Reconcile HDMDs with DMDs in ReconTxns MongoDB collection
-   * @param {Object[]} dmds - DMD transactions to be reconciled
-   * @param {Object[]} hdmds - HDMD transactions to be reconciled
-   * @return {Promise.<ReconTxns[]>} result of the promise
-   */
+ * Reconcile HDMDs with DMDs in ReconTxns MongoDB collection
+ * @param {Object[]} dmds - DMD transactions to be reconciled
+ * @param {Object[]} hdmds - HDMD transactions to be reconciled
+ * @return {Promise.<ReconTxns[]>} result of the promise
+ */
 function reconcile(dmds, hdmds) {
    if (dmds === undefined || hdmds === undefined) {
       return Promise.reject(`parameters dmds and hdmds cannot be undefined`);
    }
    let reconId = formatter.formatUuidv1(uuidv4());
+   let newDate = new Date();
    let dmdRecs = dmds.map(txn => {
       return {
+         timestamp: newDate,
          reconId: reconId,
          dmdTxnHash: txn.txnHash,
          hdmdTxnHash: null,
@@ -128,6 +132,7 @@ function reconcile(dmds, hdmds) {
    });
    let hdmdRecs = hdmds.map(txn => {
       return {
+         timestamp: newDate,
          reconId: reconId,
          dmdTxnHash: null,
          hdmdTxnHash: txn.txnHash,
@@ -145,11 +150,11 @@ function reconcile(dmds, hdmds) {
 }
 
 /**
-   * Invoke mint on HDMD smart contract and reconcile with DMDs
-   * @param {<Dmd>[]} dmds - DMD transactions to be matched
-   * @param {<Hdmd>[]} hdmds - HDMD transactions to be matched
-   * @return {Promise.<{txnHash: string, amount: <BigNumber>}>} result of the promise
-   */
+ * Invoke mint on HDMD smart contract and reconcile with DMDs
+ * @param {<Dmd>[]} dmds - DMD transactions to be matched
+ * @param {<Hdmd>[]} hdmds - HDMD transactions to be matched
+ * @return {Promise.<{txnHash: string, amount: <BigNumber>}>} result of the promise
+ */
 function mintToDmd(dmds, hdmds) {
    return new Promise((resolve, reject) => {
       let amount = getRequiredMintingAmount(dmds, hdmds);
@@ -209,10 +214,10 @@ function getLastDmdRecon() {
 }
 
 /**
-   * Get the latest reconTxn for HDMD
-   * @param {Number} dmdBlockNumber - the DMD block number that has been reconciled. If this is undefined, then it will default to the latest block 
-   * @return {Promise} - the last reconTxn for HDMD for the reconId associated with the DMD block number
-   */
+ * Get the latest reconTxn for HDMD
+ * @param {Number} dmdBlockNumber - the DMD block number that has been reconciled. If this is undefined, then it will default to the latest block
+ * @return {Promise} - the last reconTxn for HDMD for the reconId associated with the DMD block number
+ */
 function getLastHdmdRecon(dmdBlockNumber) {
    return new Promise((resolve, reject) => {
       let p = getLastDmdRecon(dmdBlockNumber);
@@ -232,17 +237,22 @@ function getLastHdmdRecon(dmdBlockNumber) {
 }
 
 /**
-* Download transactions to MongoDB
-* @return {Promise.<[DmdTxn[], HdmdTxn[]]>} - returns resolved promise for unmatched DMDs and HDMDs
-*/
+ * Download transactions to MongoDB
+ * @return {Promise.<[DmdTxn[], HdmdTxn[]]>} - returns resolved promise for unmatched DMDs and HDMDs
+ */
 function downloadTxns() {
-   return Promise.all([downloadDmdTxns(), downloadHdmdTxns()]);
+   return Promise.all([
+      downloadDmdTxns().catch(err => {
+         return Promise.reject(new Error('Error downloading DMDs: ' + err));
+      }),
+      downloadHdmdTxns()
+   ]);
 }
 
 /**
-* Retrieve unmatched transactions from MongoDB
-* @return {Promise.<[DmdTxn[], HdmdTxn[]]>} - returns resolved promise for unmatched DMDs and HDMDs
-*/
+ * Retrieve unmatched transactions from MongoDB
+ * @return {Promise.<[DmdTxn[], HdmdTxn[]]>} - returns resolved promise for unmatched DMDs and HDMDs
+ */
 function getUnmatchedTxns(dmdBlockNumber) {
    let getUnmatchedDmds = dmdClient.getUnmatchedTxns;
    let getUnmatchedHdmds = hdmdClient.getUnmatchedTxns;
@@ -252,8 +262,8 @@ function getUnmatchedTxns(dmdBlockNumber) {
 
 /**
  * distribute the minted amount to entitled recipients
- * @param {<BigNumber>} amount 
- * @param {{_id: string, totalAmount: <BigNumber>}[]} balances 
+ * @param {<BigNumber>} amount
+ * @param {{_id: string, totalAmount: <BigNumber>}[]} balances
  * @returns {Promise}
  */
 function distributeMint(amount, balances) {
@@ -313,10 +323,10 @@ function getHdmdBlockNumFromDmd(dmdBlockNum, dmdBackSteps, HdmdBackSteps) {
 }
 
 /**
-* Gets HDMD account balances at the specified DMD blockNumber
-* @param {number} blockNumber - DMD blockNumber to get the balance for
-* @return {{addresses: string[], balances: number[]}}  - { addresses[], balances[] }
-*/
+ * Gets HDMD account balances at the specified DMD blockNumber
+ * @param {number} blockNumber - DMD blockNumber to get the balance for
+ * @return {{addresses: string[], balances: number[]}}  - { addresses[], balances[] }
+ */
 function getBeginHdmdBalancesFromDmd(dmdBlockNum, backsteps) {
    let getBeginHdmdBalancesFromBlock =
       queries.recon.getBeginHdmdBalancesFromBlock;
@@ -370,7 +380,7 @@ function didRelativeBalancesChange(dmdBlockNum, tolerance) {
 
 /**
  * @returns {({account: string, balance: <BigNumber>})}
- * @param {({account: string, balance: <BigNumber>})[]} balances 
+ * @param {({account: string, balance: <BigNumber>})[]} balances
  * @param {Number} decimals
  */
 function convertToRelativeBalances(balances) {
@@ -441,6 +451,10 @@ function synchronizeNext(dmdBlockNumber) {
    let mintUpToDmdBlockNumber = dmdBlockNumber
       ? dmdBlockNumber - prevOffset
       : undefined;
+   if (dmdBlockNumber === 28022) {
+      // TODO: DEBUG
+      console.log('REACHED DEBUG POINT');
+   }
    return (
       getUnmatchedTxns(mintUpToDmdBlockNumber)
          .then(values => {
@@ -479,7 +493,9 @@ function synchronizeNext(dmdBlockNumber) {
                            let acc = newBal.account;
                            let bal = newBal.balance;
                            throw new Error(
-                              `Balance of account '${acc}' is ${bal} which is negative and not allowed`
+                              `Balance of account '${acc}' is ${
+                                 bal
+                              } which is negative and not allowed`
                            );
                         }
                         return newBal;

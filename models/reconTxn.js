@@ -3,6 +3,7 @@ mongoose.Promise = global.Promise;
 
 // Schema setup
 var reconTxnSchema = new mongoose.Schema({
+   timestamp: mongoose.SchemaTypes.Date,
    reconId: String,
    dmdTxnHash: String,
    hdmdTxnHash: String,

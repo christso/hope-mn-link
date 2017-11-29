@@ -28,6 +28,9 @@ let watchInterval = config.dmdWatchInterval;
 function syncTask() {
    logger.log('Starting Download...');
    return downloadTxns()
+      .catch(err => {
+         logger.error(err);
+      })
       .then(() => {
          logger.log('Starting Sync...');
          return setTimeout(synchronizeAll, 0);

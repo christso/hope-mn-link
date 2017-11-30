@@ -42,6 +42,36 @@ router.get('/balances', function(req, res) {
 });
 
 // Get all account balances of HDMD token holders
+router.post('/balancesof', function(req, res) {
+   hdmdClient
+      .getBalancesOf(req.body)
+      .then(balances => res.json(balances))
+      .catch(err => {
+         console.log(err);
+         res.json({ error: err });
+      });
+});
+
+// Get all account balances of HDMD token holders
+router.get('/balances/all', function(req, res) {
+   hdmdClient
+      .getAllBalances()
+      .then(balances => res.json(balances))
+      .catch(err => {
+         console.log(err);
+         res.json({ error: err });
+      });
+});
+
+// Get all account balances of HDMD token holders
+router.get('/accounts', function(req, res) {
+   hdmdClient
+      .getBalancesSaved()
+      .then(balances => res.json(balances))
+      .catch(err => res.json({ error: err }));
+});
+
+// Get all account balances of HDMD token holders
 router.get('/balances/saved', function(req, res) {
    hdmdClient
       .getBalancesSaved()

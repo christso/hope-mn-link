@@ -17,7 +17,7 @@ var queries = require('../client/databaseQueries');
 const wallet = require('../client/dmdWallet');
 
 const contribs = require('../data/hdmdContributions');
-const accounts = contribs.accounts;
+const contribAccounts = contribs.accounts;
 
 var contractAddress = config.hdmdContractAddress;
 var gasLimit = config.ethGasLimit;
@@ -197,11 +197,11 @@ function saveTxns(newTxns) {
 function getBalances() {
    return new Promise((resolve, reject) => {
       let accounts_processed = 0;
-      let totalAccounts = accounts.length;
+      let totalAccounts = contribAccounts.length;
       let values = [];
 
-      let appendBalance = (err, value) => {
-         if (err || !value.c) {
+      let appendBalance = value => {
+         if (!value.c) {
             values.push(0);
          } else {
             values.push(value.c[0]);
@@ -218,16 +218,63 @@ function getBalances() {
          return;
       };
 
-      accounts.forEach(account => {
-         contractObj.balanceOf(account, (err, value) => {
-            let done = () => accounts_processed === totalAccounts;
-            appendBalance(err, value);
-            if (done()) {
-               createMapping(accounts);
+      contribAccounts.forEach(account => {
+         hdmdContract.balanceOf(account).then(value => {
+            appendBalance(value);
+            if (accounts_processed === totalAccounts) {
+               createMapping(contribAccounts);
             }
          });
       });
    });
+}
+
+function getBalancesOf(accounts) {
+   let promises = [];
+   accounts.forEach(account => {
+      let p = hdmdContract.balanceOf(account);
+      promises.push(p);
+   });
+   return Promise.all(promises).then(balances => {
+      let mapped = [];
+      for (let i = 0; i < accounts.length; i++) {
+         let bal = balances[i] ? balances[i] : 0;
+         mapped.push({
+            account: accounts[i],
+            balance: contractMath.getParsedNumber(new BigNumber(bal)).toNumber()
+         });
+      }
+      return mapped;
+   });
+}
+
+function getAllBalances() {
+   let savedBals = [];
+   let realBals = [];
+   let mappedBals = [];
+   return getBalancesSaved()
+      .then(bals => {
+         savedBals = bals;
+         let accounts = bals.map(bal => {
+            return bal.account;
+         });
+         return getBalancesOf(accounts);
+      })
+      .then(bals => {
+         realBals = bals;
+         for (let i = 0; i < realBals.length; i++) {
+            let realBal = realBals[i];
+            let savedBal = savedBals.filter(bal => {
+               return bal.account === realBal.account;
+            })[0];
+            mappedBals.push({
+               account: realBal.account,
+               balance: realBal.balance,
+               savedBalance: savedBal.balance
+            });
+         }
+         return mappedBals;
+      });
 }
 
 function getBalancesSaved() {
@@ -446,6 +493,7 @@ module.exports = {
    hdmdContract: hdmdContract,
    getBalances: getBalances,
    getBalancesSaved: getBalancesSaved,
+   getBalancesOf: getBalancesOf,
    batchTransfer: batchTransfer,
    reverseBatchTransfer: reverseBatchTransfer,
    mint: mint,
@@ -461,5 +509,6 @@ module.exports = {
    allowMinter: allowMinter,
    defaultAccount: defaultAccount,
    saveTotalSupplyDiff: saveTotalSupplyDiff,
-   allowThisMinter: allowThisMinter
+   allowThisMinter: allowThisMinter,
+   getAllBalances: getAllBalances
 };

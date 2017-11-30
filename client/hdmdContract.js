@@ -114,6 +114,18 @@ function canMint() {
    });
 }
 
+function balanceOf(address) {
+   return new Promise((resolve, reject) => {
+      contractObj.balanceOf(address, (err, balance) => {
+         if (err) {
+            reject(err);
+         } else {
+            resolve(balance);
+         }
+      });
+   });
+}
+
 function _mint(amount) {
    let rawAmount = getRawNumber(amount).toNumber();
 
@@ -286,5 +298,6 @@ module.exports = {
    mint: mint,
    unmint: unmint,
    batchTransfer: batchTransfer,
-   reverseBatchTransfer: reverseBatchTransfer
+   reverseBatchTransfer: reverseBatchTransfer,
+   balanceOf: balanceOf
 };

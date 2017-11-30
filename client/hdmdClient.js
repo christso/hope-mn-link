@@ -155,12 +155,14 @@ function parseEventLog(eventLog) {
          assignBaseTxn(txnFrom, event, decoded);
          txnFrom.account = fromAccount;
          txnFrom.amount = toDbNumberDecimal(amount * -1);
+         txnFrom.sender = null;
          newTxns.push(txnFrom);
 
          let txnTo = {};
          assignBaseTxn(txnTo, event, decoded);
          txnTo.account = toAccount;
          txnTo.amount = toDbNumberDecimal(amount);
+         txnTo.sender = null;
          newTxns.push(txnTo);
       };
 
@@ -311,11 +313,12 @@ function saveTotalSupplyDiff(account) {
       getTotalSupplyNotSaved().then(supply => {
          return hdmdTxns
             .create({
+               txnHash: contractAddress,
                blockNumber: -1,
                amount: typeConverter.numberDecimal(supply),
-               txnHash: contractAddress,
                account: account,
-               eventName: 'Adjustment'
+               eventName: 'Adjustment',
+               sender: null
             })
             .then(created => resolve(created))
             .catch(err => reject(err));

@@ -95,7 +95,7 @@ function seedAll() {
          })
          .catch(err => {
             return Promise.reject(
-               new Error('[Seed] Error Synchronizing all txns')
+               new Error(`[Seed] Error Synchronizing all txns: ${err}`)
             );
          });
    };

@@ -45,8 +45,7 @@ function downloadDmdTxns() {
       .then(result => {
          if (result) {
             logger.log(
-               'Downloaded DMD Transactions from CryptoID:\n' +
-                  JSON.stringify(result)
+               `Downloaded ${result.length} DMD Transactions from CryptoID:\n`
             );
          } else {
             logger.log(
@@ -108,16 +107,63 @@ function getRequiredMintingAmount(dmds, hdmds) {
    return dmdTotal.minus(hdmdTotal);
 }
 
-/**
- * Reconcile HDMDs with DMDs in ReconTxns MongoDB collection
- * @param {Object[]} dmds - DMD transactions to be reconciled
- * @param {Object[]} hdmds - HDMD transactions to be reconciled
- * @return {Promise.<ReconTxns[]>} result of the promise
- */
-function reconcile(dmds, hdmds) {
+function validateRecon(dmds, hdmds) {
    if (dmds === undefined || hdmds === undefined) {
       return Promise.reject(`parameters dmds and hdmds cannot be undefined`);
    }
+
+   // calculate values
+   let dmdSum = dmds.map(doc => {
+      return typeConverter.toBigNumber(doc.amount);
+   });
+   if (dmdSum.length > 0) {
+      dmdSum = dmdSum.reduce((a, b) => {
+         return a.plus(b);
+      });
+   }
+
+   let hdmdSum = hdmds.map(doc => {
+      return typeConverter.toBigNumber(doc.amount);
+   });
+   if (hdmdSum.length > 0) {
+      hdmdSum = hdmdSum.reduce((a, b) => {
+         return a.plus(b);
+      });
+   }
+
+   // log result
+   logger.log(
+      `
+      [RECON] Validating before reconciliation. Totals for DMD = ${
+         dmdSum
+      }, HDMD = ${hdmdSum}. Count for DMD = ${dmds.length}, HDMD = ${
+         hdmds.length
+      }.
+      `
+   );
+   logger.debug(`DMD Objects = ${JSON.stringify(dmds)}
+      HDMD Objects = ${JSON.stringify(hdmds)}
+      `);
+
+   // return
+   if (
+      (dmdSum.length === 0 && hdmdSum.length === 0) ||
+      (dmdSum.length === 0 && hdmdSum.equals(0)) ||
+      (hdmdSum.length === 0 && dmdSum.equals(0)) ||
+      dmdSum.equals(hdmdSum)
+   ) {
+      return Promise.resolve();
+   }
+   return Promise.reject(
+      new Error(
+         `[RECON] DMD Total was ${
+            dmdSum
+         }, but expected to equal HDMD Total of ${hdmdSum}`
+      )
+   );
+}
+
+function unsafeReconcile(dmds, hdmds) {
    let reconId = formatter.formatUuidv1(uuidv4());
    let newDate = new Date();
    let dmdRecs = dmds.map(txn => {
@@ -150,42 +196,23 @@ function reconcile(dmds, hdmds) {
    let recs = dmdRecs;
    recs.push(...hdmdRecs);
    return reconTxns.create(recs).then(docs => {
-      // DEBUG
       if (docs) {
-         let dmdDocs = docs.filter(doc => {
-            return doc.dmdTxnHash != null;
-         });
-         let dmdSum = dmdDocs.map(doc => {
-            return typeConverter.toBigNumber(doc.amount);
-         });
-         if (dmdSum.length > 0) {
-            dmdSum = dmdSum.reduce((a, b) => {
-               return a.plus(b);
-            });
-         }
-
-         let hdmdDocs = docs.filter(doc => {
-            return doc.hdmdTxnHash != null;
-         });
-         let hdmdSum = hdmdDocs.map(doc => {
-            return typeConverter.toBigNumber(doc.amount);
-         });
-         if (hdmdSum.length > 0) {
-            hdmdSum = hdmdSum.reduce((a, b) => {
-               return a.plus(b);
-            });
-         }
-
-         logger.log(
-            `
-Reconciled ${docs.length} txns. Totals for DMD = ${dmdSum}, HDMD = ${
-               hdmdSum
-            }. Count for DMD = ${dmdDocs.length}, HDMD = ${hdmdDocs.length}.`
-         );
-         logger.debug(`DMD Objects = ${JSON.stringify(dmdDocs)}
-HDMD Objects = ${JSON.stringify(hdmdDocs)}
-`);
+         logger.log(`[RECON] Reconciled ${docs.length} transactions`);
+      } else {
+         logger.log(`[RECON] No transactions needed to be reconciled`);
       }
+   });
+}
+
+/**
+ * Reconcile HDMDs with DMDs in ReconTxns MongoDB collection
+ * @param {Object[]} dmds - DMD transactions to be reconciled
+ * @param {Object[]} hdmds - HDMD transactions to be reconciled
+ * @return {Promise.<ReconTxns[]>} result of the promise
+ */
+function reconcile(dmds, hdmds) {
+   return validateRecon(dmds, hdmds).then(() => {
+      return unsafeReconcile(dmds, hdmds);
    });
 }
 
@@ -506,9 +533,6 @@ function synchronizeNext(dmdBlockNumber) {
          })
          .then(value => {
             minted = value;
-            if (minted != nothingToMint) {
-               logger.log(`${minted.eventName} invoked for ${minted.amount}`);
-            }
             // download eth event log
             return downloadHdmdTxns();
          })
@@ -566,7 +590,7 @@ function synchronizeAll() {
       dmdBlockNumbers.push(null); // push again so it gets the updated hdmd and dmds
       dmdBlockNumbers.push(null); // push again so it gets the updated hdmd and dmds
       dmdBlockNumbers.forEach(dmdBlockNumber => {
-         logger.log(`Set synchronization dmdBlockNumber = ${dmdBlockNumber}`);
+         //logger.log(`Set synchronization dmdBlockNumber = ${dmdBlockNumber}`);
          p = p.then(() => synchronizeNext(dmdBlockNumber));
       });
 

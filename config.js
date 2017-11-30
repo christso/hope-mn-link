@@ -9,7 +9,7 @@ config.mongodbUriTest = 'mongodb://localhost:27017/hdmdlinktest';
 
 config.ethNodeAddress = 'http://localhost:8545';
 
-config.hdmdContractAddress = '0xb13838f9ebfeb4315947911f8a5a36ce5bd9da9c'; // christso testRPC
+config.hdmdContractAddress = '0x2c4d720496b222b22c8d84da4e0bc90742814801'; // christso testRPC
 //config.hdmdContractAddress = '0x5b45cb92A968329A83Cd3f2FBFB1bF206043d70C'; // rinkeby
 
 config.hdmdDecimals = 8;
@@ -32,9 +32,9 @@ config.dmdWatchInterval = 3600000; // 1 hour
 //config.dmdWatchInterval = 15000; // 15 seconds
 //config.dmdWatchInterval = 5000; // 5 seconds
 
-config.requireDbSeed = false; // WARNING: Ensure this is false unless you're seeding the contract
-config.requireContractSeed = false; // WARNING: Ensure this is false unless you're seeding the contract
-config.syncAfterSeed = false;
+config.requireDbSeed = true; // WARNING: Ensure this is false unless you're seeding the contract
+config.requireContractSeed = true; // WARNING: Ensure this is false unless you're seeding the contract
+config.syncAfterSeed = true;
 
 config.allowThisMinter = true; // force allow this node to mint
 config.saveInitialSupply = true; // save the difference in total supply to agree MongoDB to HDMD blockchain

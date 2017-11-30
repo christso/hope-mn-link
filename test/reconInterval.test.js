@@ -70,31 +70,8 @@ describe('Recon Interval Tests', () => {
       return seeder.seedHdmd(contribs);
    };
 
-   before(() => {
-      hdmdContractMock = hdmdContractMocker(testData.initialSupply);
-      hdmdClientMock = hdmdClientMocker(hdmdContractMock.mocked.object);
-      hdmdClient = hdmdClientMock.mocked.object;
-      dmdClientMock = dmdClientMocker(dmdTxnsData);
-      dmdClient = dmdClientMock.mocked.object;
-
-      downloadTxns = reconClient.downloadTxns;
-      downloadHdmdTxns = hdmdClient.downloadTxns;
-
-      return initMocks().then(() => createDatabase());
-   });
-
-   after(done => {
-      if (cleanup) {
-         database.dropDatabase();
-      }
-      hdmdContractMock.sandbox.restore();
-      hdmdClientMock.sandbox.restore();
-      dmdClientMock.sandbox.restore();
-      done();
-   });
-
-   function createDmdIntervals() {
-      return dmdIntervals.create(dmdBlockIntervals);
+   function createDmdIntervals(data) {
+      return dmdIntervals.create(data);
    }
 
    function getDmdReconTotal(reconId) {
@@ -163,12 +140,58 @@ describe('Recon Interval Tests', () => {
          });
    }
 
-   it('Reconciles up to the previous DMD block number', () => {
+   // Assert
+   function assertTotals(dmdBlockNumber, expectedDmdTotal, expectedHdmdTotal) {
+      return getReconIdFromDmd(dmdBlockNumber)
+         .then(reconId => {
+            return Promise.all([
+               getDmdReconTotal(reconId),
+               getHdmdReconTotal(reconId)
+            ]);
+         })
+         .then(([dmdTotal, hdmdTotal]) => {
+            assert.equal(
+               (a = typeConverter.toBigNumber(dmdTotal).toNumber()),
+               (e = expectedDmdTotal),
+               `dmdTotal`
+            );
+            assert.equal(
+               (a = typeConverter.toBigNumber(hdmdTotal).toNumber()),
+               (e = expectedHdmdTotal),
+               `hdmdTotal`
+            );
+         });
+   }
+
+   beforeEach(() => {
+      hdmdContractMock = hdmdContractMocker(testData.initialSupply);
+      hdmdClientMock = hdmdClientMocker(hdmdContractMock.mocked.object);
+      hdmdClient = hdmdClientMock.mocked.object;
+      dmdClientMock = dmdClientMocker(dmdTxnsData);
+      dmdClient = dmdClientMock.mocked.object;
+
+      downloadTxns = reconClient.downloadTxns;
+      downloadHdmdTxns = hdmdClient.downloadTxns;
+
+      return initMocks().then(() => createDatabase());
+   });
+
+   afterEach(done => {
+      if (cleanup) {
+         database.dropDatabase();
+      }
+      hdmdContractMock.sandbox.restore();
+      hdmdClientMock.sandbox.restore();
+      dmdClientMock.sandbox.restore();
+      done();
+   });
+
+   it('Reconciles up to the previous DMD block number - Case 1', () => {
       var dmdIntervals = testData.dmdBlockIntervals;
       let synchronizeAll = reconClient.synchronizeAll;
 
       // Actions
-      let p = createDmdIntervals()
+      let p = createDmdIntervals(dmdIntervals)
          .then(() => downloadTxns())
          .then(() => {
             return synchronizeAll();
@@ -176,33 +199,6 @@ describe('Recon Interval Tests', () => {
          .then(() => {
             return synchronizeAll(); // 2nd iteration will download from hdmdEvents to do the reconciliation
          });
-
-      // Assert
-      function assertTotals(
-         dmdBlockNumber,
-         expectedDmdTotal,
-         expectedHdmdTotal
-      ) {
-         return getReconIdFromDmd(dmdBlockNumber)
-            .then(reconId => {
-               return Promise.all([
-                  getDmdReconTotal(reconId),
-                  getHdmdReconTotal(reconId)
-               ]);
-            })
-            .then(([dmdTotal, hdmdTotal]) => {
-               assert.equal(
-                  (a = typeConverter.toBigNumber(dmdTotal).toNumber()),
-                  (e = expectedDmdTotal),
-                  `dmdTotal`
-               );
-               assert.equal(
-                  (a = typeConverter.toBigNumber(hdmdTotal).toNumber()),
-                  (e = expectedHdmdTotal),
-                  `hdmdTotal`
-               );
-            });
-      }
 
       return p
          .then(() => {

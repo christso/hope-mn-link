@@ -134,11 +134,9 @@ function validateRecon(dmds, hdmds) {
    // log result
    logger.log(
       `
-      [RECON] Validating before reconciliation. Totals for DMD = ${
-         dmdSum
-      }, HDMD = ${hdmdSum}. Count for DMD = ${dmds.length}, HDMD = ${
-         hdmds.length
-      }.
+[RECON] Validating before reconciliation. Totals for DMD = ${dmdSum}, HDMD = ${
+         hdmdSum
+      }. Count for DMD = ${dmds.length}, HDMD = ${hdmds.length}.
       `
    );
    logger.debug(`DMD Objects = ${JSON.stringify(dmds)}

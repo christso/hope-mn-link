@@ -152,7 +152,7 @@ function validateRecon(dmds, hdmds) {
       (hdmdSum.length === 0 && dmdSum.equals(0)) ||
       dmdSum.equals(hdmdSum)
    ) {
-      return Promise.resolve();
+      return Promise.resolve(true);
    }
    return Promise.reject(
       new Error(
@@ -211,9 +211,13 @@ function unsafeReconcile(dmds, hdmds) {
  * @return {Promise.<ReconTxns[]>} result of the promise
  */
 function reconcile(dmds, hdmds) {
-   return validateRecon(dmds, hdmds).then(() => {
-      return unsafeReconcile(dmds, hdmds);
-   });
+   return validateRecon(dmds, hdmds)
+      .then(() => {
+         return unsafeReconcile(dmds, hdmds);
+      })
+      .catch(err => {
+         return Promise.reject(err);
+      });
 }
 
 /**
@@ -319,6 +323,25 @@ function downloadTxns() {
       }),
       downloadHdmdTxns()
    ]).then(() => logger.log('Download of DMD and HDMD txns completed.'));
+}
+
+/**
+ * Retrieve unmatched transactions from MongoDB up to the previous block
+ * @return {Promise.<[DmdTxn[], HdmdTxn[]]>} - returns resolved promise for unmatched DMDs and HDMDs
+ */
+function getBeginUnmatchedTxns(dmdBlockNumber) {
+   let prevOffset = 1;
+   let prevDmdBlockNumber = dmdBlockNumber
+      ? dmdBlockNumber - prevOffset
+      : undefined;
+
+   let getUnmatchedDmds = dmdClient.getUnmatchedTxns;
+   let getUnmatchedHdmds = hdmdClient.getUnmatchedTxns;
+
+   return Promise.all([
+      getUnmatchedDmds(prevDmdBlockNumber),
+      getUnmatchedHdmds()
+   ]);
 }
 
 /**
@@ -519,13 +542,10 @@ function synchronizeNext(dmdBlockNumber) {
    let dmds;
    let hdmds;
    let balancesResult;
-   let prevOffset = 1;
-   let mintUpToDmdBlockNumber = dmdBlockNumber
-      ? dmdBlockNumber - prevOffset
-      : undefined;
+
    logger.log(`Synchronizing up to DMD Block ${dmdBlockNumber}`);
    return (
-      getUnmatchedTxns(mintUpToDmdBlockNumber)
+      getBeginUnmatchedTxns(dmdBlockNumber)
          .then(values => {
             dmds = values[0];
             hdmds = values[1];
@@ -543,7 +563,7 @@ function synchronizeNext(dmdBlockNumber) {
                return reconcile(dmds, hdmds);
             } else {
                // what we do if a mint has occured
-               return getUnmatchedTxns(dmdBlockNumber)
+               return getBeginUnmatchedTxns(dmdBlockNumber)
                   .then(values => {
                      dmds = values[0];
                      hdmds = values[1];
@@ -603,6 +623,7 @@ module.exports = {
    synchronizeAll: synchronizeAll,
    getLastHdmdRecon: getLastHdmdRecon,
    downloadTxns: downloadTxns,
+   getBeginUnmatchedTxns: getBeginUnmatchedTxns,
    getUnmatchedTxns: getUnmatchedTxns,
    reconcile: reconcile,
    downloadDmdTxns: downloadDmdTxns,

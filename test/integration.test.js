@@ -75,7 +75,7 @@ describe('HDMD Integration Tests', () => {
       hdmdContractMock = hdmdContractMocker(testData.initialSupply);
       hdmdClientMock = hdmdClientMocker(hdmdContractMock.mocked.object);
       hdmdClient = hdmdClientMock.mocked.object;
-      dmdClientMock = dmdClientMocker();
+      dmdClientMock = dmdClientMocker(dmdTxnsData);
       dmdClient = dmdClientMock.mocked.object;
 
       downloadTxns = reconClient.downloadTxns;
@@ -92,21 +92,6 @@ describe('HDMD Integration Tests', () => {
       hdmdClientMock.sandbox.restore();
       dmdClientMock.sandbox.restore();
       done();
-   });
-
-   it('Seed DMDs to database', () => {
-      let data = dmdTxnsData.map(txn => {
-         let newTxn = {};
-         Object.assign(newTxn, txn);
-         newTxn.amount = typeConverter.numberDecimal(txn.amount);
-         return newTxn;
-      });
-      return dmdTxns
-         .create(data)
-         .then(created => {
-            assert.notEqual(created, undefined);
-         })
-         .catch(err => assert.fail(err));
    });
 
    it('Seed HDMD events to database', () => {
@@ -271,12 +256,16 @@ describe('HDMD Integration Tests', () => {
                assert.equal(
                   (a = formatter.round(actual.account, config.hdmdDecimals)),
                   (e = formatter.round(expected.account, config.hdmdDecimals)),
-                  `Assertion error -> expected recontxn.account ${a} to equal ${e} at iteration ${i}`
+                  `Assertion error -> expected recontxn.account ${a} to equal ${
+                     e
+                  } at iteration ${i}`
                );
                assert.equal(
                   (a = actual.blockNumber),
                   (e = expected.blockNumber),
-                  `Assertion error -> expected recontxn.blockNumber ${a} to equal ${e} at iteration ${i}`
+                  `Assertion error -> expected recontxn.blockNumber ${
+                     a
+                  } to equal ${e} at iteration ${i}`
                );
                assert.equal(
                   (a = formatter.round(
@@ -287,7 +276,9 @@ describe('HDMD Integration Tests', () => {
                      expected.totalAmount,
                      config.hdmdDecimals
                   )),
-                  `Assertion error -> expected recontxn.totalAmount ${a} to equal ${e} at iteration ${i}`
+                  `Assertion error -> expected recontxn.totalAmount ${
+                     a
+                  } to equal ${e} at iteration ${i}`
                );
             }
          });

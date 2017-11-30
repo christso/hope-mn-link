@@ -335,13 +335,7 @@ function getBeginUnmatchedTxns(dmdBlockNumber) {
       ? dmdBlockNumber - prevOffset
       : undefined;
 
-   let getUnmatchedDmds = dmdClient.getUnmatchedTxns;
-   let getUnmatchedHdmds = hdmdClient.getUnmatchedTxns;
-
-   return Promise.all([
-      getUnmatchedDmds(prevDmdBlockNumber),
-      getUnmatchedHdmds()
-   ]);
+   return getUnmatchedTxns(prevDmdBlockNumber);
 }
 
 /**
@@ -588,7 +582,9 @@ function synchronizeNext(dmdBlockNumber) {
                         }
                         return newBal;
                      });
-                     return distributeMint(minted.netAmount, balancesResult);
+                     if (balancesResult.length != 0) {
+                        return distributeMint(minted.netAmount, balancesResult);
+                     }
                   });
             }
          })

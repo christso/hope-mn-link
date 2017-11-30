@@ -74,7 +74,7 @@ describe('Recon Interval Tests', () => {
       hdmdContractMock = hdmdContractMocker(testData.initialSupply);
       hdmdClientMock = hdmdClientMocker(hdmdContractMock.mocked.object);
       hdmdClient = hdmdClientMock.mocked.object;
-      dmdClientMock = dmdClientMocker();
+      dmdClientMock = dmdClientMocker(dmdTxnsData);
       dmdClient = dmdClientMock.mocked.object;
 
       downloadTxns = reconClient.downloadTxns;
@@ -91,5 +91,125 @@ describe('Recon Interval Tests', () => {
       hdmdClientMock.sandbox.restore();
       dmdClientMock.sandbox.restore();
       done();
+   });
+
+   function createDmdIntervals() {
+      return dmdIntervals.create(dmdBlockIntervals);
+   }
+
+   function getDmdReconTotal(reconId) {
+      return reconTxns
+         .aggregate([
+            {
+               $match: {
+                  $and: [
+                     { dmdTxnHash: { $ne: null } },
+                     { dmdTxnHash: { $ne: '' } },
+                     { reconId: { $eq: reconId } }
+                  ]
+               }
+            },
+            {
+               $group: {
+                  _id: null,
+                  totalAmount: { $sum: '$amount' }
+               }
+            }
+         ])
+         .then(grouped => {
+            return grouped[0].totalAmount;
+         });
+   }
+
+   function getHdmdReconTotal(reconId) {
+      return reconTxns
+         .aggregate([
+            {
+               $match: {
+                  $and: [
+                     { hdmdTxnHash: { $ne: null } },
+                     { hdmdTxnHash: { $ne: '' } },
+                     { reconId: { $eq: reconId } }
+                  ]
+               }
+            },
+            {
+               $group: {
+                  _id: null,
+                  totalAmount: { $sum: '$amount' }
+               }
+            }
+         ])
+         .then(grouped => {
+            return grouped[0].totalAmount;
+         });
+   }
+
+   function getReconIdFromDmd(dmdBlockNumber) {
+      return reconTxns
+         .aggregate([
+            {
+               $match: {
+                  $and: [
+                     { dmdTxnHash: { $ne: null } },
+                     { dmdTxnHash: { $ne: '' } },
+                     { blockNumber: { $eq: dmdBlockNumber } }
+                  ]
+               }
+            }
+         ])
+         .then(recon => {
+            return recon[0].reconId;
+         });
+   }
+
+   it('Reconciles up to the previous DMD block number', () => {
+      var dmdIntervals = testData.dmdBlockIntervals;
+      let synchronizeAll = reconClient.synchronizeAll;
+
+      // Actions
+      let p = createDmdIntervals()
+         .then(() => downloadTxns())
+         .then(() => {
+            return synchronizeAll();
+         })
+         .then(() => {
+            return synchronizeAll(); // 2nd iteration will download from hdmdEvents to do the reconciliation
+         });
+
+      // Assert
+      function assertTotals(
+         dmdBlockNumber,
+         expectedDmdTotal,
+         expectedHdmdTotal
+      ) {
+         return getReconIdFromDmd(dmdBlockNumber)
+            .then(reconId => {
+               return Promise.all([
+                  getDmdReconTotal(reconId),
+                  getHdmdReconTotal(reconId)
+               ]);
+            })
+            .then(([dmdTotal, hdmdTotal]) => {
+               assert.equal(
+                  (a = typeConverter.toBigNumber(dmdTotal).toNumber()),
+                  (e = expectedDmdTotal),
+                  `dmdTotal`
+               );
+               assert.equal(
+                  (a = typeConverter.toBigNumber(hdmdTotal).toNumber()),
+                  (e = expectedHdmdTotal),
+                  `hdmdTotal`
+               );
+            });
+      }
+
+      return p
+         .then(() => {
+            return assertTotals(18386, 10000, 10000);
+         })
+         .catch(err => {
+            return Promise.reject(err);
+         });
    });
 });

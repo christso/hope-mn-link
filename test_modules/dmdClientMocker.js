@@ -1,13 +1,30 @@
 var dmdClient = require('../client/dmdClient');
 var sinon = require('sinon');
+var dmdTxns = require('../models/dmdTxn');
+var typeConverter = require('../lib/typeConverter');
 
-module.exports = function() {
+var getLastSavedBlockNumber = dmdClient.getLastSavedBlockNumber;
+
+module.exports = function(dmdTxnsData) {
    let sandbox = sinon.createSandbox();
    let mocked = sandbox.mock(dmdClient);
 
    sandbox.stub(mocked.object, 'downloadTxns').callsFake(() => {
-      return new Promise((resolve, reject) => {
-         resolve();
+      if (!dmdTxnsData) {
+         return [];
+      }
+      return getLastSavedBlockNumber().then(lastBlockNumber => {
+         let data = dmdTxnsData
+            .map(txn => {
+               let newTxn = {};
+               Object.assign(newTxn, txn);
+               newTxn.amount = typeConverter.numberDecimal(txn.amount);
+               return newTxn;
+            })
+            .filter(txn => {
+               return txn.blockNumber > lastBlockNumber;
+            });
+         return dmdTxns.create(data);
       });
    });
 

@@ -147,5 +147,8 @@ module.exports = {
    downloadTxns: downloadTxns,
    getUnmatchedTxns: getUnmatchedTxns,
    getLastSavedBlockNumber: getLastSavedBlockNumber,
-   getLastSavedBlockInterval: getLastSavedBlockInterval
+   getLastSavedBlockInterval: getLastSavedBlockInterval,
+   formatSavedBlockNumber: formatSavedBlockNumber,
+   getLastSavedTxn: getLastSavedTxn,
+   getLastSavedBlockNumber: getLastSavedBlockNumber
 };

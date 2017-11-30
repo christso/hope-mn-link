@@ -28,7 +28,7 @@ function getLastHdmdBlockNumber() {
 
 function batchTransferFaker(addresses, values) {
    if (addresses.length != values.length) {
-      throw new Error('addresses must have the seame length as values');
+      throw new Error('addresses must have the same length as values');
    }
 
    let events = [];

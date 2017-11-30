@@ -493,6 +493,7 @@ module.exports = (function() {
    ];
 
    return {
+      dmdTxnsData: dmdTxnsData,
       dmdBlockIntervals: dmdBlockIntervals
    };
 })();

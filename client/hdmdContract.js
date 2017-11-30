@@ -167,19 +167,23 @@ function mint(amount) {
  * @return {Promise} return value of the smart contract function
  */
 function unmint(amount) {
-   return _unmint(amount).catch(err => {
-      canMint().then(allowed => {
-         if (!allowed) {
-            let newErr = new Error(
-               `Error unminting: address ${
-                  defaultAccount
-               } is not allowed to mint`
-            );
-            return Promise.reject(newErr);
-         }
-         return Promise.reject(`Error unminting: ${err}`);
+   return _unmint(amount)
+      .catch(err => {
+         return canMint().then(allowed => {
+            if (!allowed) {
+               let newErr = new Error(
+                  `Error unminting: address ${
+                     defaultAccount
+                  } is not allowed to mint`
+               );
+               return Promise.reject(newErr);
+            }
+            return Promise.reject(`Error unminting: ${err}`); // TODO: fix unhandled promise rejection
+         });
+      })
+      .catch(err => {
+         return Promise.reject(err);
       });
-   });
 }
 
 /**

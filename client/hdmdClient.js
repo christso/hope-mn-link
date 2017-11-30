@@ -12,6 +12,7 @@ const hdmdTxns = require('../models/hdmdTxn');
 var hdmdContract = require('./hdmdContract');
 var Logger = require('../lib/logger');
 var logger = new Logger('hdmdClient');
+var queries = require('../client/databaseQueries');
 
 const wallet = require('../client/dmdWallet');
 
@@ -229,6 +230,17 @@ function getBalances() {
    });
 }
 
+function getBalancesSaved() {
+   return queries.hdmd.getBalances().then(bals => {
+      return bals.map(bal => {
+         return {
+            account: bal.account,
+            balance: typeConverter.toBigNumber(bal.balance).toNumber()
+         };
+      });
+   });
+}
+
 function getTotalSupplySaved() {
    return new Promise((resolve, reject) => {
       hdmdTxns
@@ -433,6 +445,7 @@ module.exports = {
    web3: web3,
    hdmdContract: hdmdContract,
    getBalances: getBalances,
+   getBalancesSaved: getBalancesSaved,
    batchTransfer: batchTransfer,
    reverseBatchTransfer: reverseBatchTransfer,
    mint: mint,

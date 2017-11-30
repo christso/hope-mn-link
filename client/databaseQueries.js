@@ -1,6 +1,7 @@
 var reconTxns = require('../models/reconTxn');
 var dmdTxns = require('../models/dmdTxn');
 var dmdIntervals = require('../models/dmdInterval');
+var hdmdTxns = require('../models/hdmdTxn');
 
 var recon = (function() {
    let getHdmdReconMatchDef = reconId => {
@@ -131,7 +132,7 @@ var recon = (function() {
 
    /**
     * Gets the balance up to and excluding the specified block
-    * @param {Number} blockNumber 
+    * @param {Number} blockNumber
     */
    let getBeginHdmdBalancesFromBlock = blockNumber => {
       let cmd = [
@@ -170,7 +171,7 @@ var recon = (function() {
 
    /**
     * Gets the balance up to and including the specified block
-    * @param {Number} blockNumber 
+    * @param {Number} blockNumber
     */
    let getHdmdBalancesFromBlock = blockNumber => {
       return reconTxns.aggregate([
@@ -264,7 +265,7 @@ var recon = (function() {
    };
 
    /**
-    * @returns {Promise.<number>} Resolves to the next unreconciled DMD block number 
+    * @returns {Promise.<number>} Resolves to the next unreconciled DMD block number
     */
    let getNextUnmatchedDmdBlockInterval = () => {
       return getFirstUnmatchedDmd()
@@ -333,7 +334,34 @@ var dmd = (function() {
    return { getNextBlockNumber: getNextBlockNumber };
 })();
 
+var hdmd = (function() {
+   let getBalances = () => {
+      return hdmdTxns
+         .aggregate([
+            {
+               $group: {
+                  _id: '$account',
+                  balance: { $sum: '$amount' }
+               }
+            }
+         ])
+         .then(docs => {
+            return docs.map(doc => {
+               return {
+                  account: doc._id,
+                  balance: doc.balance
+               };
+            });
+         });
+   };
+
+   return {
+      getBalances: getBalances
+   };
+})();
+
 module.exports = {
    recon: recon,
-   dmd: dmd
+   dmd: dmd,
+   hdmd: hdmd
 };

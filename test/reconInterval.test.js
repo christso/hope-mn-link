@@ -20,14 +20,13 @@ var mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 var database = require('../client/database');
 var queries = require('../client/databaseQueries');
-var testData = require('../test_data/integrationData');
+var testData = require('../test_data/reconIntervalData');
 const hdmdEvents = require('../test_modules/hdmdEventModel');
 
 const hdmdContractMocker = require('../test_modules/hdmdContractMocker');
 const hdmdClientMocker = require('../test_modules/hdmdClientMocker');
 const dmdClientMocker = require('../test_modules/dmdClientMocker');
 
-const contribs = require('../test_data/hdmdContributions');
 const config = require('../config');
 
 const decimals = config.hdmdDecimals;

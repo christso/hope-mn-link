@@ -44,10 +44,13 @@ function downloadDmdTxns() {
       .downloadTxns()
       .then(result => {
          if (result) {
-            logger.log('Downloaded DMD Transactions from CryptoID', result);
+            logger.log(
+               'Downloaded DMD Transactions from CryptoID:\n' +
+                  JSON.stringify(result)
+            );
          } else {
             logger.log(
-               'Downloaded DMD Transactions from CryptoID - no changes found'
+               'Downloaded DMD Transactions from CryptoID: No changes found'
             );
          }
       })
@@ -174,12 +177,14 @@ function reconcile(dmds, hdmds) {
          }
 
          logger.log(
-            `Reconciled ${docs.length} txns. Totals for DMD = ${
-               dmdSum
-            }, HDMD = ${hdmdSum}. Count for DMD = ${dmdDocs.length}, HDMD = ${
-               hdmdDocs.length
-            }`
+            `
+Reconciled ${docs.length} txns. Totals for DMD = ${dmdSum}, HDMD = ${
+               hdmdSum
+            }. Count for DMD = ${dmdDocs.length}, HDMD = ${hdmdDocs.length}.`
          );
+         logger.debug(`DMD Objects = ${JSON.stringify(dmdDocs)}
+HDMD Objects = ${JSON.stringify(hdmdDocs)}
+`);
       }
    });
 }
@@ -193,10 +198,10 @@ function reconcile(dmds, hdmds) {
 function mintToDmd(dmds, hdmds) {
    return new Promise((resolve, reject) => {
       let amount = getRequiredMintingAmount(dmds, hdmds);
-      let txnHashResolved;
+      let txnHashResolved = Promise.resolve();
       if (amount.gt(0)) {
-         txnHashResolved = hdmdClient.mint(amount);
-         txnHashResolved
+         txnHashResolved = hdmdClient
+            .mint(amount)
             .then(txnHash => {
                let mintTxn = {
                   txnHash: txnHash,
@@ -204,13 +209,15 @@ function mintToDmd(dmds, hdmds) {
                   netAmount: amount,
                   eventName: 'Mint'
                };
-               logger.log(`Mint invoked = ${JSON.stringify(mintTxn)}`);
-               resolve(mintTxn);
+               logger.log(`Mint invoked: ${JSON.stringify(mintTxn)}`);
+               return mintTxn;
             })
-            .catch(err => reject(err));
+            .catch(err => {
+               return Promise.reject(`Error invoking mint: ${err}`);
+            });
       } else if (amount.lt(0)) {
-         txnHashResolved = hdmdClient.unmint(amount.times(-1));
-         txnHashResolved
+         txnHashResolved = hdmdClient
+            .unmint(amount.times(-1))
             .then(txnHash => {
                let mintTxn = {
                   txnHash: txnHash,
@@ -218,13 +225,16 @@ function mintToDmd(dmds, hdmds) {
                   netAmount: amount,
                   eventName: 'Unmint'
                };
-               logger.log(`Unmint invoked = ${JSON.stringify(mintTxn)}`);
-               resolve(mintTxn);
+               logger.log(`Unmint invoked: ${JSON.stringify(mintTxn)}`);
+               return mintTxn;
             })
-            .catch(err => reject(err));
+            .catch(err => {
+               return Promise.reject(`Error invoking unmint: ${err}`);
+            });
       } else {
-         resolve(nothingToMint);
+         txnHashResolved = Promise.resolve(nothingToMint);
       }
+      resolve(txnHashResolved);
    });
 }
 
@@ -281,7 +291,7 @@ function downloadTxns() {
          return Promise.reject(new Error('Error downloading DMDs: ' + err));
       }),
       downloadHdmdTxns()
-   ]);
+   ]).then(() => logger.log('Download of DMD and HDMD txns completed.'));
 }
 
 /**
@@ -554,7 +564,9 @@ function synchronizeAll() {
       let p = Promise.resolve();
       dmdBlockNumbers.push(null); // null or undefined means there's no next blocknumber to be used in the filter
       dmdBlockNumbers.push(null); // push again so it gets the updated hdmd and dmds
+      dmdBlockNumbers.push(null); // push again so it gets the updated hdmd and dmds
       dmdBlockNumbers.forEach(dmdBlockNumber => {
+         logger.log(`Set synchronization dmdBlockNumber = ${dmdBlockNumber}`);
          p = p.then(() => synchronizeNext(dmdBlockNumber));
       });
 

@@ -3,6 +3,7 @@ var BigNumber = require('bignumber.js');
 var config = require('../config');
 var requireContractSeed = config.requireContractSeed;
 var requireDbSeed = config.requireDbSeed;
+var syncAfterSeed = config.syncAfterSeed;
 
 var mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
@@ -39,7 +40,7 @@ function seedContract(contribData) {
 
    // Initial contributions
    return batchTransfer(accounts, balances).catch(err => {
-      throw new Error(`Error in batch transfer: ${err.stack}`);
+      throw new Error(`[Seed] Error in batch transfer: ${err.stack}`);
    });
 }
 
@@ -53,22 +54,24 @@ function seedDmdIntervals() {
 function seedAll() {
    let pDbSeed = () => {
       return seedDmdIntervals()
-         .then(() => logger.log('Seeded DB.'))
-         .catch(err => Promise.reject(new Error(`Error seeding DB: ${err}`)));
+         .then(() => logger.log('[Seed] Seeded DB.'))
+         .catch(err =>
+            Promise.reject(new Error(`[Seed] Error seeding DB: ${err}`))
+         );
    };
 
    let pContractSeed = () => {
       return seedContract()
-         .then(() => logger.log('Seeded contract.'))
+         .then(() => logger.log('[Seed] Seeded contract.'))
          .catch(err =>
-            Promise.reject(new Error(`Error seeding contract: ${err}`))
+            Promise.reject(new Error(`[Seed] Error seeding contract: ${err}`))
          );
    };
 
    let pTotal = () => {
       return downloadTxns()
          .catch(err =>
-            Promise.reject(new Error(`Error downloading transactions`))
+            Promise.reject(new Error(`[Seed] Error downloading transactions`))
          )
          .then(() => {
             return saveTotalSupplyDiff();
@@ -76,10 +79,25 @@ function seedAll() {
          .catch(err =>
             Promise.reject(
                new Error(
-                  `Error retrieving unmatched transactions from MongoDB: ${err}`
+                  `[Seed] Error retrieving unmatched transactions from MongoDB: ${
+                     err
+                  }`
                )
             )
          );
+   };
+
+   let pSync = () => {
+      return reconClient
+         .synchronizeAll()
+         .then(() => {
+            logger.log(`[Seed] Synchronized all txns`);
+         })
+         .catch(err => {
+            return Promise.reject(
+               new Error('[Seed] Error Synchronizing all txns')
+            );
+         });
    };
 
    return pTotal()
@@ -91,6 +109,11 @@ function seedAll() {
       .then(() => {
          if (requireContractSeed) {
             return pContractSeed();
+         }
+      })
+      .then(() => {
+         if (syncAfterSeed) {
+            return pSync();
          }
       });
 }

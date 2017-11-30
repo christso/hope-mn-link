@@ -188,9 +188,9 @@ function saveTxns(newTxns) {
 }
 
 /**
-* Get mapping of accounts and their current balances from the HDMD blockchain
-* @return {Promise} - promise returning mapping of accounts and balances
-*/
+ * Get mapping of accounts and their current balances from the HDMD blockchain
+ * @return {Promise} - promise returning mapping of accounts and balances
+ */
 function getBalances() {
    return new Promise((resolve, reject) => {
       let accounts_processed = 0;
@@ -244,12 +244,12 @@ function getTotalSupplySaved() {
 }
 
 /**
-* Distributes the minted amount to addresses in proportion to their balances
-* @param {<BigNumber>} amount - BigNumber amount to distribute
-* @param {String[]} recipients - array of addresses that will receive the amount
-* @param {<BigNumber[]>} weights - array of BigNumber weighting values to determine how much each recipient will receive
-* @return {Promise} return value of the smart contract function
-*/
+ * Distributes the minted amount to addresses in proportion to their balances
+ * @param {<BigNumber>} amount - BigNumber amount to distribute
+ * @param {String[]} recipients - array of addresses that will receive the amount
+ * @param {<BigNumber[]>} weights - array of BigNumber weighting values to determine how much each recipient will receive
+ * @return {Promise} return value of the smart contract function
+ */
 function apportion(amount, recipients, weights) {
    let newAmounts = contractMath.applyWeights(amount.absoluteValue(), weights);
    if (amount.greaterThan(0)) {
@@ -373,16 +373,22 @@ function allowThisMinter() {
    if (!config.allowThisMinter) {
       return Promise.resolve();
    }
-   // Allow this node to mint
-   return allowMinter(defaultAccount)
-      .then(txnHash => {
-         logger.log(`Allowed account ${defaultAccount} to mint`);
-         return txnHash;
-      })
-      .catch(err => {
-         logger.log(`Error allowing minter ${defaultAccount}`);
-         return err;
-      });
+
+   return hdmdContract.canMint(defaultAccount).then(canMint => {
+      if (canMint) {
+         logger.log(`Account ${defaultAccount} is already allowed to mint`);
+         return true;
+      }
+      return allowMinter(defaultAccount)
+         .then(txnHash => {
+            logger.log(`Allowed account ${defaultAccount} to mint`);
+            return txnHash;
+         })
+         .catch(err => {
+            logger.log(`Error allowing minter ${defaultAccount}`);
+            return Promise.reject(err);
+         });
+   });
 }
 
 function downloadTxns() {

@@ -17,20 +17,23 @@
             "--colors",
             "${workspaceFolder}/test"
          ],
-         "internalConsoleOptions": "openOnSessionStart"
+         "internalConsoleOptions": "openOnSessionStart",
+         "console": "integratedTerminal"
       },
       {
          "type": "node",
          "request": "launch",
          "name": "Launch Selected",
          "restart": true,
-         "program": "${file}"
+         "program": "${file}",
+         "console": "integratedTerminal"
       },
       {
          "type": "node",
          "request": "launch",
          "name": "Launch Server",
-         "program": "${workspaceFolder}//app"
+         "program": "${workspaceFolder}//app",
+         "console": "integratedTerminal"
       }
    ]
 }

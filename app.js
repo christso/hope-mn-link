@@ -25,32 +25,14 @@ var allowThisMinter = hdmdClient.allowThisMinter;
 // reconcile transactions at each interval
 let watchInterval = config.dmdWatchInterval;
 
-function syncTask() {
-   logger.log('Starting Download...');
-   return downloadTxns()
-      .catch(err => {
-         logger.error(err);
-      })
-      .then(() => {
-         logger.log('Starting Sync...');
-         return setTimeout(synchronizeAll, 0);
-      })
-      .then(() => {
-         logger.log(
-            `Starting Next Sync after ${watchInterval} milliseconds...`
-         );
-         return setTimeout(syncTask, watchInterval);
-      })
-      .catch(err => {
-         logger.error(err.stack);
-      });
-}
-
 contract
    .checkVersion()
    .then(() => allowThisMinter())
    .then(() => seedAll())
-   .then(() => syncTask())
+   .then(() => {
+      logger.log(`Starting Next Sync after ${watchInterval} milliseconds...`);
+      setInterval(synchronizeAll, watchInterval);
+   })
    .catch(err => logger.error(err.stack));
 
 // allows you to parse JSON into req.body.field

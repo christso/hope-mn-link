@@ -45,7 +45,9 @@ function checkVersion() {
          logger.log('HDMD contract matched.');
       } else {
          logger.log(
-            `WARNING: HDMD contract version deployed is ${hdmdVersionDeployed} but app version is ${hdmdVersion}`
+            `WARNING: HDMD contract version deployed is ${
+               hdmdVersionDeployed
+            } but app version is ${hdmdVersion}`
          );
       }
       resolve();
@@ -126,35 +128,9 @@ function _mint(amount) {
    });
 }
 
-/**
-* Mint amounts on HDMD smart contract
-* @param {<BigNumber>} amount - amount in BigNumber
-* @return {Promise} return value of the smart contract function
-*/
-function mint(amount) {
-   return new Promise((resolve, reject) => {
-      return _mint(amount).catch(err => {
-         canMint().then(allowed => {
-            if (!allowed) {
-               let newErr = new Error(
-                  `Address ${defaultAccount} is not allowed to mint`
-               );
-               reject(newErr);
-               return;
-            }
-            reject(err);
-         });
-      });
-   });
-}
-
-/**
-* Unmints amounts on HDMD smart contract
-* @param {<BigNumber>} amount - amount in BigNumber
-* @return {Promise} return value of the smart contract function
-*/
-function unmint(amount) {
+function _unmint(amount) {
    let rawAmount = getRawNumber(amount).toNumber();
+
    return new Promise((resolve, reject) => {
       contractObj.unmint(rawAmount, (err, res) => {
          if (err) {
@@ -167,18 +143,60 @@ function unmint(amount) {
 }
 
 /**
-* Transfer tokens from sender's address to a list of addresses
-* @param {String[]} addresses - array of addresses to receive the tokens
-* @param {<BigNumber>[]} values - amounts to transfer
-* @return {Promise} return value of the smart contract function
-*/
+ * Mint amounts on HDMD smart contract
+ * @param {<BigNumber>} amount - amount in BigNumber
+ * @return {Promise} return value of the smart contract function
+ */
+function mint(amount) {
+   return _mint(amount).catch(err => {
+      canMint().then(allowed => {
+         if (!allowed) {
+            let newErr = new Error(
+               `Error minting: address ${defaultAccount} is not allowed to mint`
+            );
+            return Promise.reject(newErr);
+         }
+         return Promise.reject(`Error minting: ${err}`);
+      });
+   });
+}
+
+/**
+ * Unmints amounts on HDMD smart contract
+ * @param {<BigNumber>} amount - amount in BigNumber
+ * @return {Promise} return value of the smart contract function
+ */
+function unmint(amount) {
+   return _unmint(amount).catch(err => {
+      canMint().then(allowed => {
+         if (!allowed) {
+            let newErr = new Error(
+               `Error unminting: address ${
+                  defaultAccount
+               } is not allowed to mint`
+            );
+            return Promise.reject(newErr);
+         }
+         return Promise.reject(`Error unminting: ${err}`);
+      });
+   });
+}
+
+/**
+ * Transfer tokens from sender's address to a list of addresses
+ * @param {String[]} addresses - array of addresses to receive the tokens
+ * @param {<BigNumber>[]} values - amounts to transfer
+ * @return {Promise} return value of the smart contract function
+ */
 function batchTransfer(addresses, values) {
    return new Promise((resolve, reject) => {
       let rawValues = values.map(value => {
          if (value.lessThan(0)) {
             reject(
                new Error(
-                  `reverseBatchTransfer value of ${value} must be greater than zero`
+                  `reverseBatchTransfer value of ${
+                     value
+                  } must be greater than zero`
                )
             );
          }
@@ -205,18 +223,20 @@ function batchTransfer(addresses, values) {
 }
 
 /**
-* Transfer tokens from a list of addresses to the owner's address
-* @param {String[]} addresses - array of addresses to receive the tokens
-* @param {<BigNumber>[]} values - amounts to transfer
-* @return {Promise} return value of the smart contract function
-*/
+ * Transfer tokens from a list of addresses to the owner's address
+ * @param {String[]} addresses - array of addresses to receive the tokens
+ * @param {<BigNumber>[]} values - amounts to transfer
+ * @return {Promise} return value of the smart contract function
+ */
 function reverseBatchTransfer(addresses, values) {
    return new Promise((resolve, reject) => {
       let rawValues = values.map(value => {
          if (value.lessThan(0)) {
             reject(
                new Error(
-                  `reverseBatchTransfer value of ${value} must be greater than zero`
+                  `reverseBatchTransfer value of ${
+                     value
+                  } must be greater than zero`
                )
             );
          }

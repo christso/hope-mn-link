@@ -253,7 +253,14 @@ function getTotalSupplySaved() {
  * @return {Promise} return value of the smart contract function
  */
 function apportion(amount, recipients, weights) {
-   let newAmounts = contractMath.applyWeights(amount.absoluteValue(), weights);
+   logger.debug(`[HDMD] Apportioning ${amount.toNumber()} HDMDs`);
+   let newAmounts = contractMath.applyWeights(
+      amount.absoluteValue(),
+      weights,
+      decimals
+   );
+
+   logger.debug(``);
    if (amount.greaterThan(0)) {
       return batchTransfer(recipients, newAmounts);
    } else {

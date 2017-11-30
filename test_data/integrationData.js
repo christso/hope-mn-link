@@ -143,7 +143,7 @@ module.exports = (function() {
       {
          account: '0x114bcdDaB25dE00884755cf8643ED1ceA4093Fd1',
          blockNumber: '8',
-         totalAmount: 7.85752795
+         totalAmount: 7.85752796
       },
       {
          account: '0x1dd0ef06bAe0226C8165f3507F13c2ad8493e1e3',
@@ -153,7 +153,7 @@ module.exports = (function() {
       {
          account: '0xA7Bb5D4d546067782Dd4B5356D9e9771deBB06a3',
          blockNumber: '8',
-         totalAmount: 43.9618929246091
+         totalAmount: 43.96189292
       },
       {
          account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',

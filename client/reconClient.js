@@ -9,6 +9,7 @@ var logger = new Logger('RECON');
 var mongodb = require('mongodb');
 var typeConverter = require('../lib/typeConverter');
 var toBigNumber = typeConverter.toBigNumber;
+const decimals = config.hdmdDecimals;
 
 var port = config.port;
 

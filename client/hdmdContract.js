@@ -202,6 +202,10 @@ function batchTransfer(addresses, values) {
          }
          return getRawNumber(value).toNumber();
       });
+      logger.log(`[Contract] Invoking 'Batch Transfer'...`);
+      logger.debug(`
+batchTransfer(${JSON.stringify(addresses)}, ${JSON.stringify(rawValues)})
+`);
       contractObj.batchTransfer(
          addresses,
          rawValues,
@@ -242,6 +246,10 @@ function reverseBatchTransfer(addresses, values) {
          }
          return getRawNumber(value).toNumber();
       });
+      logger.log(`[Contract] Invoking 'Reverse Batch Transfer'...`);
+      logger.debug(`
+batchTransfer(${JSON.stringify(addresses)}, ${JSON.stringify(rawValues)})
+`);
       contractObj.reverseBatchTransfer(
          addresses,
          rawValues,

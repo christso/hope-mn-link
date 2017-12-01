@@ -191,14 +191,11 @@ describe('Recon Interval Tests', () => {
       let synchronizeAll = reconClient.synchronizeAll;
 
       // Actions
-      let p = createDmdIntervals(dmdIntervals)
-         .then(() => downloadTxns())
-         .then(() => {
-            return synchronizeAll();
-         })
-         .then(() => {
-            return synchronizeAll(); // 2nd iteration will download from hdmdEvents to do the reconciliation
-         });
+      let p = createDmdIntervals(dmdIntervals).then(() => downloadTxns());
+
+      p = p.then(() => {
+         return synchronizeAll();
+      });
 
       return p
          .then(() => {
@@ -209,5 +206,5 @@ describe('Recon Interval Tests', () => {
          });
    });
 
-   it('Reverse batch transfers before unminting', () => {});
+   //    it('Reverse batch transfers before unminting', () => {});
 });

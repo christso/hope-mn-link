@@ -56,109 +56,20 @@ module.exports = (function() {
 
    var expectedReconAmounts = [
       {
-         account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
-         blockNumber: '-1',
-         totalAmount: 12000
-      },
-      {
-         account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
-         blockNumber: '1',
-         totalAmount: 150
-      },
-      {
          account: '0x114bcdDaB25dE00884755cf8643ED1ceA4093Fd1',
-         blockNumber: '2',
-         totalAmount: 477.34482327
+         totalAmount: 416.448981605084
       },
       {
          account: '0x1dd0ef06bAe0226C8165f3507F13c2ad8493e1e3',
-         blockNumber: '2',
-         totalAmount: 1288.83102282
+         totalAmount: 1124.41225037573
       },
       {
          account: '0xA7Bb5D4d546067782Dd4B5356D9e9771deBB06a3',
-         blockNumber: '2',
-         totalAmount: 2670.68499517
+         totalAmount: 2329.98032499765
       },
       {
          account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
-         blockNumber: '2',
-         totalAmount: -4436.86084125
-      },
-      {
-         account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
-         blockNumber: '3',
-         totalAmount: -2150
-      },
-      {
-         account: '0x114bcdDaB25dE00884755cf8643ED1ceA4093Fd1',
-         blockNumber: '4',
-         totalAmount: -84.4684255169136
-      },
-      {
-         account: '0x1dd0ef06bAe0226C8165f3507F13c2ad8493e1e3',
-         blockNumber: '4',
-         totalAmount: -228.064748894074
-      },
-      {
-         account: '0xA7Bb5D4d546067782Dd4B5356D9e9771deBB06a3',
-         blockNumber: '4',
-         totalAmount: -472.590348939547
-      },
-      {
-         account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
-         blockNumber: '4',
-         totalAmount: 785.123523350535
-      },
-      {
-         account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
-         blockNumber: '5',
-         totalAmount: 400
-      },
-      {
-         account: '0x114bcdDaB25dE00884755cf8643ED1ceA4093Fd1',
-         blockNumber: '6',
-         totalAmount: 15.7150559101235
-      },
-      {
-         account: '0x1dd0ef06bAe0226C8165f3507F13c2ad8493e1e3',
-         blockNumber: '6',
-         totalAmount: 42.430650957037
-      },
-      {
-         account: '0xA7Bb5D4d546067782Dd4B5356D9e9771deBB06a3',
-         blockNumber: '6',
-         totalAmount: 87.9237858492181
-      },
-      {
-         account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
-         blockNumber: '6',
-         totalAmount: -146.069492716379
-      },
-      {
-         account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
-         blockNumber: '7',
-         totalAmount: 200
-      },
-      {
-         account: '0x114bcdDaB25dE00884755cf8643ED1ceA4093Fd1',
-         blockNumber: '8',
-         totalAmount: 7.85752796
-      },
-      {
-         account: '0x1dd0ef06bAe0226C8165f3507F13c2ad8493e1e3',
-         blockNumber: '8',
-         totalAmount: 21.2153254785185
-      },
-      {
-         account: '0xA7Bb5D4d546067782Dd4B5356D9e9771deBB06a3',
-         blockNumber: '8',
-         totalAmount: 43.96189293
-      },
-      {
-         account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
-         blockNumber: '8',
-         totalAmount: -73.0347463581893
+         totalAmount: 6729.158443021536
       }
    ];
 

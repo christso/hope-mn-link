@@ -264,7 +264,7 @@ function reverseBatchTransfer(addresses, values) {
       });
       logger.log(`[Contract] Invoking 'Reverse Batch Transfer'...`);
       logger.debug(`
-batchTransfer(${JSON.stringify(addresses)}, ${JSON.stringify(rawValues)})
+reverseBatchTransfer(${JSON.stringify(addresses)}, ${JSON.stringify(rawValues)})
 `);
       contractObj.reverseBatchTransfer(
          addresses,

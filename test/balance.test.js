@@ -75,9 +75,10 @@ describe('HDMD Recon Balance Tests', () => {
    });
 
    it('Gets beginning balance of last reconciled mint', () => {
-      let getBeginHdmdBalancesFromDmd = reconClient.getBeginHdmdBalancesFromDmd;
+      let getHdmdBalancesFromDmdBefore =
+         reconClient.getHdmdBalancesFromDmdBefore;
       let dmdBlockNumber = null;
-      return getBeginHdmdBalancesFromDmd(dmdBlockNumber, 0).then(bals => {
+      return getHdmdBalancesFromDmdBefore(dmdBlockNumber, 0).then(bals => {
          let bal = formatter.round(
             typeConverter
                .toBigNumber(
@@ -96,9 +97,8 @@ describe('HDMD Recon Balance Tests', () => {
    });
 
    it('Gets beginning balance from HDMD block number', () => {
-      let getBeginHdmdBalancesFromBlock =
-         queries.recon.getBeginHdmdBalancesFromBlock;
-      return getBeginHdmdBalancesFromBlock(7).then(bals => {
+      let getHdmdBalancesBefore = queries.recon.getHdmdBalancesBefore;
+      return getHdmdBalancesBefore(7).then(bals => {
          let bal = formatter.round(
             typeConverter
                .toBigNumber(

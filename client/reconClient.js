@@ -94,7 +94,9 @@ function downloadHdmdTxns() {
  * @param {<HdmdTxn>[]} hdmds - HDMD transactions that needs to be matched
  * @return {<BigNumber>} amount that needs to be minted
  */
-function getRequiredMintingAmount(dmds, hdmds) {
+function getMintingRequired(dmds, hdmds) {
+   let required = false;
+
    dmdTotal = new BigNumber(0);
    dmds.forEach(txn => {
       dmdTotal = dmdTotal.plus(toBigNumber(txn.amount));
@@ -105,32 +107,38 @@ function getRequiredMintingAmount(dmds, hdmds) {
       hdmdTotal = hdmdTotal.plus(toBigNumber(txn.amount));
    });
 
-   return dmdTotal.minus(hdmdTotal);
+   let amount = dmdTotal.minus(hdmdTotal);
+
+   return {
+      required: !amount.equals(0),
+      amount: amount
+   };
 }
 
 function validateRecon(dmds, hdmds) {
    if (dmds === undefined || hdmds === undefined) {
-      return Promise.reject(`parameters dmds and hdmds cannot be undefined`);
+      return Promise.reject(
+         new Error(`parameters dmds and hdmds cannot be undefined`)
+      );
    }
 
    // calculate values
+
    let dmdSum = dmds.map(doc => {
       return typeConverter.toBigNumber(doc.amount);
    });
-   if (dmdSum.length > 0) {
-      dmdSum = dmdSum.reduce((a, b) => {
-         return a.plus(b);
-      });
-   }
+   dmdSum.push(new BigNumber(0));
+   dmdSum = dmdSum.reduce((a, b) => {
+      return a.plus(b);
+   });
 
    let hdmdSum = hdmds.map(doc => {
       return typeConverter.toBigNumber(doc.amount);
    });
-   if (hdmdSum.length > 0) {
-      hdmdSum = hdmdSum.reduce((a, b) => {
-         return a.plus(b);
-      });
-   }
+   hdmdSum.push(new BigNumber(0));
+   hdmdSum = hdmdSum.reduce((a, b) => {
+      return a.plus(b);
+   });
 
    // log result
    logger.log(
@@ -210,13 +218,9 @@ function unsafeReconcile(dmds, hdmds) {
  * @return {Promise.<ReconTxns[]>} result of the promise
  */
 function reconcile(dmds, hdmds) {
-   return validateRecon(dmds, hdmds)
-      .then(() => {
-         return unsafeReconcile(dmds, hdmds);
-      })
-      .catch(err => {
-         return Promise.reject(err);
-      });
+   return validateRecon(dmds, hdmds).then(() => {
+      return unsafeReconcile(dmds, hdmds);
+   });
 }
 
 /**
@@ -225,10 +229,9 @@ function reconcile(dmds, hdmds) {
  * @param {<Hdmd>[]} hdmds - HDMD transactions to be matched
  * @return {Promise.<{txnHash: string, amount: <BigNumber>}>} result of the promise
  */
-function mintToDmd(dmds, hdmds) {
+function netMint(amount) {
    return new Promise((resolve, reject) => {
-      let amount = getRequiredMintingAmount(dmds, hdmds);
-      let txnHashResolved = Promise.resolve();
+      let txnHashResolved;
       if (amount.gt(0)) {
          txnHashResolved = hdmdClient
             .mint(amount)
@@ -261,8 +264,6 @@ function mintToDmd(dmds, hdmds) {
             .catch(err => {
                return Promise.reject(`Error invoking unmint: ${err}`);
             });
-      } else {
-         txnHashResolved = Promise.resolve(nothingToMint);
       }
       resolve(txnHashResolved);
    });
@@ -328,7 +329,7 @@ function downloadTxns() {
  * Retrieve unmatched transactions from MongoDB up to the previous block
  * @return {Promise.<[DmdTxn[], HdmdTxn[]]>} - returns resolved promise for unmatched DMDs and HDMDs
  */
-function getBeginUnmatchedTxns(dmdBlockNumber) {
+function getUnmatchedTxnsBefore(dmdBlockNumber) {
    let prevOffset = 1;
    let prevDmdBlockNumber = dmdBlockNumber
       ? dmdBlockNumber - prevOffset
@@ -354,9 +355,9 @@ function getUnmatchedTxns(dmdBlockNumber) {
  * @param {{_id: string, totalAmount: <BigNumber>}[]} balances
  * @returns {Promise}
  */
-function distributeMint(amount, balances) {
-   if (!balances) {
-      return Promise.reject(new Error(`Balances cannot be undefined`));
+function distributeMintToBalances(amount, balances) {
+   if (!balances || balances.length === 0) {
+      return;
    }
    let recipients = balances.map(b => b._id);
    let weights = balances.map(b => {
@@ -400,7 +401,7 @@ function getHdmdBlockNumFromDmd(dmdBlockNum, dmdBackSteps, HdmdBackSteps) {
             ? recons.filter(r => {
                  return r.dmdBlockNumber <= dmdBlockNum;
               })
-            : null;
+            : [];
       }
 
       let hdmdBlockNum = filtered[dmdBackSteps]
@@ -415,13 +416,12 @@ function getHdmdBlockNumFromDmd(dmdBlockNum, dmdBackSteps, HdmdBackSteps) {
  * @param {number} blockNumber - DMD blockNumber to get the balance for
  * @return {{addresses: string[], balances: number[]}}  - { addresses[], balances[] }
  */
-function getBeginHdmdBalancesFromDmd(dmdBlockNum, backsteps) {
-   let getBeginHdmdBalancesFromBlock =
-      queries.recon.getBeginHdmdBalancesFromBlock;
+function getHdmdBalancesFromDmdBefore(dmdBlockNum, backsteps) {
+   let getHdmdBalancesBefore = queries.recon.getHdmdBalancesBefore;
 
    return getHdmdBlockNumFromDmd(dmdBlockNum, backsteps)
       .then(hdmdBlockNum => {
-         return getBeginHdmdBalancesFromBlock(hdmdBlockNum);
+         return getHdmdBalancesBefore(hdmdBlockNum);
       })
       .then(hdmdBals => {
          return hdmdBals;
@@ -434,7 +434,7 @@ function didRelativeBalancesChange(dmdBlockNum, tolerance) {
    }
 
    let getRelativeBalances = (dmdBlockNum, backsteps) => {
-      return getBeginHdmdBalancesFromDmd(dmdBlockNum, backsteps).then(bals => {
+      return getHdmdBalancesFromDmdBefore(dmdBlockNum, backsteps).then(bals => {
          if (bals.length === 0) {
             return [];
          }
@@ -531,68 +531,81 @@ Mint HDMDs up to dmdBlockNumber to make HDMD balance equal to DMD balance
 * @return {Promise} - returns an empty promise if resolved
 */
 function synchronizeNext(dmdBlockNumber) {
-   let minted;
-   let dmds;
-   let hdmds;
-   let balancesResult;
-
    logger.log(`Synchronizing up to DMD Block ${dmdBlockNumber}`);
-   return (
-      getBeginUnmatchedTxns(dmdBlockNumber)
-         .then(values => {
-            dmds = values[0];
-            hdmds = values[1];
-            return mintToDmd(dmds, hdmds); // mint the amount that DMD is higher than HDMD
-         })
-         .then(value => {
-            minted = value;
-            // download eth event log
-            return downloadHdmdTxns();
-         })
-         // reconcile hdmdTxns MongoDB to dmdTxns MongoDB
-         .then(saved => {
-            // dmds.amount == hdmds.amount in all cases because mint is done before the reconcile
-            if (minted === nothingToMint) {
-               return reconcile(dmds, hdmds);
-            } else {
-               // what we do if a mint has occured
-               return getBeginUnmatchedTxns(dmdBlockNumber)
-                  .then(values => {
-                     dmds = values[0];
-                     hdmds = values[1];
-                     return reconcile(dmds, hdmds);
-                  }) // get balance that was reconciled
-                  .then(() => {
-                     return getBeginHdmdBalancesFromDmd(dmdBlockNumber, 0);
-                  })
-                  .then(balances => {
-                     balancesResult = balances.map(bal => {
-                        var newBal = {};
-                        Object.assign(newBal, bal);
-                        newBal.balance = typeConverter.toBigNumber(bal.balance);
-                        if (newBal.balance.lessThan(0)) {
-                           let acc = newBal.account;
-                           let bal = newBal.balance;
-                           throw new Error(
-                              `Balance of account '${acc}' is ${
-                                 bal
-                              } which is negative and not allowed`
-                           );
-                        }
-                        return newBal;
-                     });
-                     if (balancesResult.length != 0) {
-                        return distributeMint(minted.netAmount, balancesResult);
-                     }
-                  });
-            }
-         })
+
+   /**
+    * Format balances for distributeMint()
+    * @param {*} balances
+    */
+   function formatBalances(balances) {
+      return balances.map(bal => {
+         var newBal = {};
+         Object.assign(newBal, bal);
+         newBal.balance = new BigNumber(bal.balance);
+         if (newBal.balance.lessThan(0)) {
+            let acc = newBal.account;
+            let bal = newBal.balance;
+            throw new Error(
+               `Balance of account '${acc}' is ${
+                  bal
+               } which is negative and not allowed`
+            );
+         }
+         return newBal;
+      });
+   }
+
+   /**
+    * Distribute amount to latest HDMD balances
+    * @param {<BigNumber>} mintAmount
+    */
+   function distributeMint(mintAmount) {
+      let getHdmdBalances = queries.hdmd.getHdmdBalances;
+      return getHdmdBalances().then(bals => {
+         return distributeMintToBalances(mintAmount, formatBalances(bals));
+      });
+   }
+
+   function reconcileNewHdmds(dmds) {
+      let getUnmatchedHdmds = hdmdClient.getUnmatchedTxns;
+      return downloadHdmdTxns()
          .then(() => {
-            return {
-               balances: balancesResult
-            };
+            return getUnmatchedHdmds();
          })
-   );
+         .then(hdmds => {
+            // Reconcile
+            let hasUnmatched = dmds.length > 0 || hdmds.length > 0;
+            let mintStatus = getMintingRequired(dmds, hdmds);
+            if (hasUnmatched && !mintStatus.required) {
+               return reconcile(dmds, hdmds);
+            }
+         });
+   }
+
+   return getUnmatchedTxnsBefore(dmdBlockNumber)
+      .then(([dmds, hdmds]) => {
+         let p = Promise.resolve();
+         let mintStatus = getMintingRequired(dmds, hdmds);
+         let mintAmount = mintStatus.amount;
+         let mintRequired = mintStatus.required;
+
+         if (mintRequired && mintAmount.greaterThan(0)) {
+            p = p
+               .then(() => netMint(mintAmount))
+               .then(() => distributeMint(mintAmount));
+         } else if (mintRequired && mintAmount.lessThan(0)) {
+            p = p
+               .then(() => distributeMint(mintAmount))
+               .then(() => netMint(mintAmount));
+         }
+         return p.then(() => dmds);
+      })
+      .then(dmds => {
+         return reconcileNewHdmds(dmds);
+      })
+      .catch(err => {
+         return Promise.reject(err);
+      });
 }
 
 function synchronizeAll() {
@@ -602,7 +615,6 @@ function synchronizeAll() {
    return getUnmatchedDmdBlockIntervals().then(dmdBlockNumbers => {
       let p = Promise.resolve();
       dmdBlockNumbers.push(null); // null or undefined means there's no next blocknumber to be used in the filter
-      dmdBlockNumbers.push(null); // push again so it gets the updated hdmd and dmds
       dmdBlockNumbers.push(null); // push again so it gets the updated hdmd and dmds
       dmdBlockNumbers.forEach(dmdBlockNumber => {
          //logger.log(`Set synchronization dmdBlockNumber = ${dmdBlockNumber}`);
@@ -618,15 +630,15 @@ module.exports = {
    synchronizeAll: synchronizeAll,
    getLastHdmdRecon: getLastHdmdRecon,
    downloadTxns: downloadTxns,
-   getBeginUnmatchedTxns: getBeginUnmatchedTxns,
+   getUnmatchedTxnsBefore: getUnmatchedTxnsBefore,
    getUnmatchedTxns: getUnmatchedTxns,
    reconcile: reconcile,
    downloadDmdTxns: downloadDmdTxns,
-   mintToDmd: mintToDmd,
+   mintToDmd: netMint,
    nothingToMint: nothingToMint,
    getHdmdBlockNumFromDmd: getHdmdBlockNumFromDmd,
-   getBeginHdmdBalancesFromDmd: getBeginHdmdBalancesFromDmd,
+   getHdmdBalancesFromDmdBefore: getHdmdBalancesFromDmdBefore,
    didRelativeBalancesChange: didRelativeBalancesChange,
-   distributeMint: distributeMint,
+   distributeMint: distributeMintToBalances,
    init: init
 };

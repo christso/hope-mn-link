@@ -226,20 +226,18 @@ describe('HDMD Integration Tests', () => {
                },
                {
                   $group: {
-                     _id: { account: '$account', blockNumber: '$blockNumber' },
+                     _id: { account: '$account' },
                      totalAmount: { $sum: '$amount' }
                   }
                },
                {
                   $project: {
                      account: '$_id.account',
-                     blockNumber: '$_id.blockNumber',
                      totalAmount: '$totalAmount'
                   }
                },
                {
                   $sort: {
-                     blockNumber: 1,
                      account: 1
                   }
                }
@@ -269,10 +267,10 @@ describe('HDMD Integration Tests', () => {
                   } to equal ${e} at iteration ${i}`
                );
                assert.equal(
-                  (a = new BigNumber(actual.totalAmount).toFixed(
+                  (a = new BigNumber(actual.totalAmount.toString()).toFixed(
                      config.hdmdDecimals - tolerance
                   )),
-                  (e = new BigNumber(expected.totalAmount).toFixed(
+                  (e = new BigNumber(expected.totalAmount.toString()).toFixed(
                      config.hdmdDecimals - tolerance
                   )),
                   `Assertion error -> expected recontxn.totalAmount ${

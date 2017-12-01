@@ -134,7 +134,7 @@ var recon = (function() {
     * Gets the balance up to and excluding the specified block
     * @param {Number} blockNumber
     */
-   let getBeginHdmdBalancesFromBlock = blockNumber => {
+   let getHdmdBalancesBefore = blockNumber => {
       let cmd = [
          {
             $match: {
@@ -161,7 +161,6 @@ var recon = (function() {
          }
       ];
 
-      // TODO: the below results in failed DMD Interval Test
       if (blockNumber === undefined || blockNumber === null) {
          cmd[0].$match.$and.splice(0, 1); // delete blockNumber
       }
@@ -173,8 +172,8 @@ var recon = (function() {
     * Gets the balance up to and including the specified block
     * @param {Number} blockNumber
     */
-   let getHdmdBalancesFromBlock = blockNumber => {
-      return reconTxns.aggregate([
+   let getHdmdBalances = blockNumber => {
+      let cmd = [
          {
             $match: {
                $and: [
@@ -198,7 +197,11 @@ var recon = (function() {
                balance: '$balance'
             }
          }
-      ]);
+      ];
+      if (blockNumber === undefined || blockNumber === null) {
+         cmd[0].$match.$and.splice(0, 1); // delete blockNumber
+      }
+      return reconTxns.aggregate(cmd);
    };
 
    let hdmdFindByRecon = reconId => {
@@ -315,8 +318,8 @@ var recon = (function() {
       getHdmdTotal: getHdmdTotal,
       getNextUnmatchedDmdBlockInterval: getNextUnmatchedDmdBlockInterval,
       getUnmatchedDmdBlockIntervals: getUnmatchedDmdBlockIntervals,
-      getHdmdBalancesFromBlock: getHdmdBalancesFromBlock,
-      getBeginHdmdBalancesFromBlock: getBeginHdmdBalancesFromBlock,
+      getHdmdBalances: getHdmdBalances,
+      getHdmdBalancesBefore: getHdmdBalancesBefore,
       getDmdIntersects: getDmdIntersects
    };
 })();
@@ -355,8 +358,51 @@ var hdmd = (function() {
          });
    };
 
+   /**
+    * Gets the balance up to and including the specified block
+    * @param {Number} blockNumber
+    */
+   let getHdmdBalances = blockNumber => {
+      let cmd = [
+         {
+            $match: {
+               $and: [
+                  {
+                     blockNumber: { $lte: blockNumber }
+                  },
+                  {}
+               ]
+            }
+         },
+         {
+            $group: {
+               _id: '$account',
+               balance: { $sum: '$amount' }
+            }
+         },
+         {
+            $project: {
+               account: '$_id',
+               balance: '$balance'
+            }
+         }
+      ];
+      if (blockNumber === undefined || blockNumber === null) {
+         cmd[0].$match.$and.splice(0, 1); // delete blockNumber
+      }
+      return hdmdTxns
+         .aggregate(cmd)
+         .then(result => {
+            return result;
+         })
+         .catch(err => {
+            return Promise.reject('getHdmdBalances Error: ' + err.message);
+         });
+   };
+
    return {
-      getBalances: getBalances
+      getBalances: getBalances,
+      getHdmdBalances: getHdmdBalances
    };
 })();
 

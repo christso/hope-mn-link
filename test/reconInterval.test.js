@@ -208,4 +208,6 @@ describe('Recon Interval Tests', () => {
             return Promise.reject(err);
          });
    });
+
+   it('Reverse batch transfers before unminting', () => {});
 });

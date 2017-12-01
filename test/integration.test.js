@@ -27,7 +27,7 @@ const hdmdContractMocker = require('../test_modules/hdmdContractMocker');
 const hdmdClientMocker = require('../test_modules/hdmdClientMocker');
 const dmdClientMocker = require('../test_modules/dmdClientMocker');
 
-const contribs = require('../test_data/hdmdContributions');
+const contribs = testData.contributions;
 const config = require('../config');
 
 const decimals = config.hdmdDecimals;
@@ -209,6 +209,7 @@ describe('HDMD Integration Tests', () => {
       // Assertions
 
       let assertReconAmounts = () => {
+         const tolerance = 2;
          var expectedReconAmounts = testData.expectedReconAmounts;
          /**
           * Get reconciled HDMD account movements by block number and account
@@ -254,8 +255,8 @@ describe('HDMD Integration Tests', () => {
                let expected = expectedReconAmounts[i];
                let actual = actuals[i];
                assert.equal(
-                  (a = formatter.round(actual.account, config.hdmdDecimals)),
-                  (e = formatter.round(expected.account, config.hdmdDecimals)),
+                  (a = actual.account),
+                  (e = expected.account),
                   `Assertion error -> expected recontxn.account ${a} to equal ${
                      e
                   } at iteration ${i}`
@@ -268,13 +269,11 @@ describe('HDMD Integration Tests', () => {
                   } to equal ${e} at iteration ${i}`
                );
                assert.equal(
-                  (a = formatter.round(
-                     actual.totalAmount,
-                     config.hdmdDecimals
+                  (a = new BigNumber(actual.totalAmount).toFixed(
+                     config.hdmdDecimals - tolerance
                   )),
-                  (e = formatter.round(
-                     expected.totalAmount,
-                     config.hdmdDecimals
+                  (e = new BigNumber(expected.totalAmount).toFixed(
+                     config.hdmdDecimals - tolerance
                   )),
                   `Assertion error -> expected recontxn.totalAmount ${
                      a

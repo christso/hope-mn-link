@@ -22,7 +22,7 @@ var queries = require('../client/databaseQueries');
 var testData = require('../test_data/dmdIntervalData');
 const hdmdEvents = require('../test_modules/hdmdEventModel');
 const hdmdContractMocker = require('../test_modules/hdmdContractMocker');
-const contribs = require('../test_data/hdmdContributions');
+const contribs = testData.contributions;
 const noBlockNumber = -1;
 
 const cleanup = false;
@@ -60,10 +60,10 @@ describe('DMD Interval Tests', () => {
    };
 
    /**
-      * test individual balances (much better than JSON.stringify)
-      * @param {<HdmdBalances>} actualHdmdBalances 
-      * @param {<HdmdBalances>} expectedHdmdBalances 
-      */
+    * test individual balances (much better than JSON.stringify)
+    * @param {<HdmdBalances>} actualHdmdBalances
+    * @param {<HdmdBalances>} expectedHdmdBalances
+    */
    function assertBalances(actualHdmdBalances, expectedHdmdBalances, decimals) {
       if (decimals === undefined) {
          decimals = 8;
@@ -72,7 +72,9 @@ describe('DMD Interval Tests', () => {
       assert.equal(
          actualHdmdBalances.length,
          expectedHdmdBalances.length,
-         `actualHdmdBalances.length -> expected ${actualHdmdBalances.length} to equal ${expectedHdmdBalances.length}`
+         `actualHdmdBalances.length -> expected ${
+            actualHdmdBalances.length
+         } to equal ${expectedHdmdBalances.length}`
       );
 
       for (var i = 0; i < expectedHdmdBalances.length; i++) {
@@ -100,7 +102,9 @@ describe('DMD Interval Tests', () => {
       assert.equal(
          actualHdmdBlocks.length,
          expectedHdmdBlocks.length,
-         `actualHdmdBlocks.length -> expected ${actualHdmdBlocks.length} to equal ${expectedHdmdBlocks.length}`
+         `actualHdmdBlocks.length -> expected ${
+            actualHdmdBlocks.length
+         } to equal ${expectedHdmdBlocks.length}`
       );
 
       // test individual blocks

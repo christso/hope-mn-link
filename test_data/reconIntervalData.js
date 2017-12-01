@@ -492,8 +492,18 @@ module.exports = (function() {
       }
    ];
 
+   var contributions = {
+      accounts: [
+         '0xA7Bb5D4d546067782Dd4B5356D9e9771deBB06a3',
+         '0x114bcdDaB25dE00884755cf8643ED1ceA4093Fd1',
+         '0x1dd0ef06bAe0226C8165f3507F13c2ad8493e1e3'
+      ],
+      amounts: [2670.68499516765, 477.344823265084, 1288.83102281573]
+   };
+
    return {
       dmdTxnsData: dmdTxnsData,
-      dmdBlockIntervals: dmdBlockIntervals
+      dmdBlockIntervals: dmdBlockIntervals,
+      contributions: contributions
    };
 })();

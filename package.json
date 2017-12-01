@@ -5,7 +5,7 @@
    "main": "app.js",
    "scripts": {
       "start": "set PORT=8080 && node ./app.js",
-      "test": "jest"
+      "test": "mocha"
    },
    "author": "",
    "license": "ISC",
@@ -17,6 +17,7 @@
       "bitcoin": "^3.0.1",
       "body-parser": "^1.18.2",
       "express": "^4.16.2",
+      "mongodb": "^2.2.33",
       "mongoose": "^4.13.0",
       "uuid": "^3.1.0",
       "web3": "^0.20.0"

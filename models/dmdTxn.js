@@ -5,8 +5,8 @@ mongoose.Promise = global.Promise;
 var dmdTxnSchema = new mongoose.Schema({
    txnHash: String,
    blockNumber: Number,
-   amount: Number,
-   balance: Number
+   amount: mongoose.SchemaTypes.Decimal128,
+   balance: mongoose.SchemaTypes.Decimal128
 });
 
 module.exports = mongoose.model('DmdTxn', dmdTxnSchema);

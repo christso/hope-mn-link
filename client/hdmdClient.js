@@ -3,16 +3,21 @@
  */
 
 const BigNumber = require('bignumber.js');
+const typeConverter = require('../lib/typeConverter');
+var numberDecimal = typeConverter.numberDecimal;
+var toBigNumber = typeConverter.toBigNumber;
+
 const config = require('../config');
 const hdmdTxns = require('../models/hdmdTxn');
-const burnTxns = require('../models/burn');
-const mintTxns = require('../models/mint');
 var hdmdContract = require('./hdmdContract');
+var Logger = require('../lib/logger');
+var logger = new Logger('hdmdClient');
+var queries = require('../client/databaseQueries');
 
 const wallet = require('../client/dmdWallet');
 
 const contribs = require('../data/hdmdContributions');
-const accounts = contribs.accounts;
+const contribAccounts = contribs.accounts;
 
 var contractAddress = config.hdmdContractAddress;
 var gasLimit = config.ethGasLimit;
@@ -26,127 +31,59 @@ var abiDecoder = hdmdContract.abiDecoder;
 web3.eth.defaultAccount = web3.eth.coinbase;
 var defaultAccount = web3.eth.defaultAccount;
 
-var init = newHdmdContract => {
-   hdmdContract = newHdmdContract;
-};
-
+// contractObj
 var contractObj = hdmdContract.contractObj;
-
-const util = {
-   /**
-      * Distributes the minted amount to addresses in proportion to their balances
-      * @param {<BigNumber>} amount - amount to distribute
-      * @param {<BigNumber>[]} weights - array of weighting values to determine how much each recipient will receive
-      * @return {<BigNumber>[]} return value of the smart contract function
-      * */
-   applyWeights: function(amount, weights) {
-      let totalWeight = new BigNumber(0);
-      weights.forEach(w => (totalWeight = totalWeight.add(w)));
-
-      let newAmounts = [];
-      weights.forEach(w => {
-         newAmounts.push(w.mul(amount).div(totalWeight));
-      });
-
-      if (newAmounts.length === 0) return;
-
-      let totalNewAmount = newAmounts.reduce((a, b) => a.add(b));
-      let rounding = amount.sub(totalNewAmount);
-      newAmounts[0] = newAmounts[0].add(rounding);
-
-      return newAmounts;
-   },
-
-   /**
-      * Converts the parsed value to the underlying uint value used by smart contract
-      * @param {<BigNumber>} value - parsed value
-      * @return {<BigNumber>} - original units
-      * */
-   getParsedNumber: function(value) {
-      let divider = new BigNumber(10);
-      divider = divider.pow(decimals);
-      return value.div(divider);
-   },
-
-   /**
-      * Converts to underlying uint value used by smart contract
-      * @param {<BigNumber>} value - parsed value
-      * @return {<BigNumber>} - original units
-      */
-   getRawNumber: function(value) {
-      let multiplier = new BigNumber(10);
-      multiplier = multiplier.pow(decimals);
-      return value.mul(multiplier).round(0);
-   }
+var getContractOwner = () => {
+   return hdmdContract.getContractOwner();
+};
+var ownerAddress;
+var allowMinter = account => {
+   return hdmdContract.allowMinter(account);
+};
+var getTotalSupply = () => {
+   return hdmdContract.getTotalSupply();
+};
+var mint = amount => {
+   return hdmdContract.mint(amount);
+};
+var unmint = amount => {
+   return hdmdContract.unmint(amount);
 };
 
-const getParsedNumber = util.getParsedNumber;
-const getRawNumber = util.getRawNumber;
+let batchTransfer = (addresses, values) => {
+   return hdmdContract.batchTransfer(addresses, values);
+};
 
-var ownerAddress;
-getContractOwner()
-   .then(address => (ownerAddress = address))
-   .catch(err => console.log(`Error getting owner address: ${err}`));
+let reverseBatchTransfer = (addresses, values) => {
+   return hdmdContract.reverseBatchTransfer(addresses, values);
+};
 
-function getContractOwner(callback) {
-   if (callback) {
-      contractObj.owner.call(callback);
-      return;
-   }
-   return new Promise((resolve, reject) => {
-      contractObj.owner.call((err, res) => {
-         if (err) {
-            reject(err);
-         } else {
-            resolve(res);
+// contract math
+const contractMath = require('../lib/contractMath');
+contractMath.decimals = decimals;
+let getParsedNumber = contractMath.getParsedNumber;
+let getRawNumber = contractMath.getRawNumber;
+
+function init(newHdmdContract) {
+   let assign = () => {
+      return new Promise(resolve => {
+         if (newHdmdContract) {
+            hdmdContract = newHdmdContract;
          }
+         resolve();
       });
+   };
+
+   return assign().then(() => {
+      getContractOwner()
+         .then(address => (ownerAddress = address))
+         .catch(err => {
+            throw new Error(`Error getting owner address: ${err.stack}`);
+         });
    });
 }
 
-function allowMinter(account, callback) {
-   if (callback) {
-      contractObj.allowMinter(account, callback);
-      return;
-   }
-   return new Promise((resolve, reject) => {
-      contractObj.allowMinter(account, (err, res) => {
-         if (err) {
-            reject(err);
-         } else {
-            resolve(res);
-         }
-      });
-   });
-}
-
-function downloadTxns() {
-   return getLastSavedTxn()
-      .then(docs => {
-         // get last block number that was saved in MongoDB
-         let lastSavedBlockNumber = 0;
-         if (docs.length > 0) {
-            lastSavedBlockNumber = docs[0].blockNumber;
-         }
-         return lastSavedBlockNumber;
-      })
-      .then(lastSavedBlockNumber =>
-         // get event logs after the last block number that we saved
-         filterEventsGet(lastSavedBlockNumber)
-            .then(eventLog =>
-               // parse the event log
-               parseEventLog(eventLog)
-            )
-            .then(newTxns =>
-               // save the newTxns into MongoDB
-               saveTxns(newTxns)
-            )
-            .catch(error => {
-               console.log('--- Error downloading DMD Txn Log ---', error);
-               return Promise.reject(new Error(err));
-            })
-      );
-}
+init();
 
 var filter;
 function filterEventsGet(fromBlock) {
@@ -172,6 +109,12 @@ function parseEventLog(eventLog) {
       let decodedLog = abiDecoder.decodeLogs(eventLog);
       let newTxns = [];
 
+      let toDbNumberDecimal = amount => {
+         return numberDecimal(
+            getParsedNumber(new BigNumber(amount ? amount : 0))
+         );
+      };
+
       const assignBaseTxn = (target, event, decoded) => {
          target.txnHash = event.transactionHash;
          target.blockNumber = event.blockNumber;
@@ -184,8 +127,7 @@ function parseEventLog(eventLog) {
          assignBaseTxn(newTxn, event, decoded);
          newTxn.sender = decoded.events[0].value;
          newTxn.account = ownerAddress;
-         let amount = decoded.events[1].value;
-         newTxn.amount = getParsedNumber(new BigNumber(amount ? amount : 0));
+         newTxn.amount = toDbNumberDecimal(decoded.events[1].value);
          newTxns.push(newTxn);
       };
       parsers['Unmint'] = (event, decoded) => {
@@ -193,8 +135,7 @@ function parseEventLog(eventLog) {
          assignBaseTxn(newTxn, event, decoded);
          newTxn.sender = decoded.events[0].value;
          newTxn.account = ownerAddress;
-         let amount = decoded.events[1].value * -1;
-         newTxn.amount = getParsedNumber(new BigNumber(amount ? amount : 0));
+         newTxn.amount = toDbNumberDecimal(decoded.events[1].value * -1);
          newTxns.push(newTxn);
       };
       parsers['Burn'] = (event, decoded) => {
@@ -203,8 +144,7 @@ function parseEventLog(eventLog) {
          newTxn.sender = decoded.events[0].value;
          newTxn.account = decoded.events[0].value;
          newTxn.dmdAddress = decoded.events[1].value;
-         amount = decoded.events[2].value * -1;
-         newTxn.amount = getParsedNumber(new BigNumber(amount ? amount : 0));
+         newTxn.amount = toDbNumberDecimal(decoded.events[2].value * -1);
          newTxns.push(newTxn);
       };
       parsers['Transfer'] = (event, decoded) => {
@@ -215,15 +155,15 @@ function parseEventLog(eventLog) {
          let txnFrom = {};
          assignBaseTxn(txnFrom, event, decoded);
          txnFrom.account = fromAccount;
-         txnFrom.amount = getParsedNumber(
-            new BigNumber(amount ? amount : 0).mul(-1)
-         );
+         txnFrom.amount = toDbNumberDecimal(amount * -1);
+         txnFrom.sender = null;
          newTxns.push(txnFrom);
 
          let txnTo = {};
          assignBaseTxn(txnTo, event, decoded);
          txnTo.account = toAccount;
-         txnTo.amount = getParsedNumber(new BigNumber(amount ? amount : 0));
+         txnTo.amount = toDbNumberDecimal(amount);
+         txnTo.sender = null;
          newTxns.push(txnTo);
       };
 
@@ -251,17 +191,17 @@ function saveTxns(newTxns) {
 }
 
 /**
-* Get mapping of accounts and their current balances from the HDMD blockchain
-* @return {Promise} - promise returning mapping of accounts and balances
-*/
+ * Get mapping of accounts and their current balances from the HDMD blockchain
+ * @return {Promise} - promise returning mapping of accounts and balances
+ */
 function getBalances() {
    return new Promise((resolve, reject) => {
       let accounts_processed = 0;
-      let totalAccounts = accounts.length;
+      let totalAccounts = contribAccounts.length;
       let values = [];
 
-      let appendBalance = (err, value) => {
-         if (err || !value.c) {
+      let appendBalance = value => {
+         if (!value.c) {
             values.push(0);
          } else {
             values.push(value.c[0]);
@@ -278,14 +218,72 @@ function getBalances() {
          return;
       };
 
-      accounts.forEach(account => {
-         contractObj.balanceOf(account, (err, value) => {
-            let done = () => accounts_processed === totalAccounts;
-            appendBalance(err, value);
-            if (done()) {
-               createMapping(accounts);
+      contribAccounts.forEach(account => {
+         hdmdContract.balanceOf(account).then(value => {
+            appendBalance(value);
+            if (accounts_processed === totalAccounts) {
+               createMapping(contribAccounts);
             }
          });
+      });
+   });
+}
+
+function getBalancesOf(accounts) {
+   let promises = [];
+   accounts.forEach(account => {
+      let p = hdmdContract.balanceOf(account);
+      promises.push(p);
+   });
+   return Promise.all(promises).then(balances => {
+      let mapped = [];
+      for (let i = 0; i < accounts.length; i++) {
+         let bal = balances[i] ? balances[i] : 0;
+         mapped.push({
+            account: accounts[i],
+            balance: contractMath.getParsedNumber(new BigNumber(bal)).toNumber()
+         });
+      }
+      return mapped;
+   });
+}
+
+function getAllBalances() {
+   let savedBals = [];
+   let realBals = [];
+   let mappedBals = [];
+   return getBalancesSaved()
+      .then(bals => {
+         savedBals = bals;
+         let accounts = bals.map(bal => {
+            return bal.account;
+         });
+         return getBalancesOf(accounts);
+      })
+      .then(bals => {
+         realBals = bals;
+         for (let i = 0; i < realBals.length; i++) {
+            let realBal = realBals[i];
+            let savedBal = savedBals.filter(bal => {
+               return bal.account === realBal.account;
+            })[0];
+            mappedBals.push({
+               account: realBal.account,
+               balance: realBal.balance,
+               savedBalance: savedBal.balance
+            });
+         }
+         return mappedBals;
+      });
+}
+
+function getBalancesSaved() {
+   return queries.hdmd.getBalances().then(bals => {
+      return bals.map(bal => {
+         return {
+            account: bal.account,
+            balance: typeConverter.toBigNumber(bal.balance).toNumber()
+         };
       });
    });
 }
@@ -307,106 +305,26 @@ function getTotalSupplySaved() {
 }
 
 /**
-* Distributes the minted amount to addresses in proportion to their balances
-* @param {<BigNumber>} amount - BigNumber amount to distribute
-* @param {String[]} recipients - array of addresses that will receive the amount
-* @param {<BigNumber[]>} weights - array of BigNumber weighting values to determine how much each recipient will receive
-* @return {Promise} return value of the smart contract function
-*/
+ * Distributes the minted amount to addresses in proportion to their balances
+ * @param {<BigNumber>} amount - BigNumber amount to distribute
+ * @param {String[]} recipients - array of addresses that will receive the amount
+ * @param {<BigNumber[]>} weights - array of BigNumber weighting values to determine how much each recipient will receive
+ * @return {Promise} return value of the smart contract function
+ */
 function apportion(amount, recipients, weights) {
-   let applyWeights = util.applyWeights;
-   let newAmounts = applyWeights(amount, weights);
-   return batchTransfer(recipients, newAmounts);
-}
+   logger.debug(`[HDMD] Apportioning ${amount.toNumber()} HDMDs`);
+   let newAmounts = contractMath.applyWeights(
+      amount.absoluteValue(),
+      weights,
+      decimals
+   );
 
-/**
-* Transfer tokens from sender's address to a list of addresses
-* @param {String[]} addresses - array of addresses to receive the tokens
-* @param {Number[]} values - amounts to transfer
-* @return {Promise} return value of the smart contract function
-*/
-function batchTransfer(addresses, values) {
-   return new Promise((resolve, reject) => {
-      let rawValues = values.map(value => getRawNumber(value).toNumber());
-      hdmdContract.batchTransfer(
-         addresses,
-         rawValues,
-         { gas: gasLimit },
-         (error, result) => {
-            if (error) {
-               reject(error);
-            } else {
-               resolve(result);
-            }
-         }
-      );
-   });
-}
-
-function canMint() {
-   return new Promise((resolve, reject) => {
-      contractObj.canMint(defaultAccount, (err, canMint) => {
-         if (err) {
-            reject(err);
-         } else {
-            resolve(canMint);
-         }
-      });
-   });
-}
-
-function _mint(amount) {
-   let rawAmount = getRawNumber(amount).toNumber();
-
-   return new Promise((resolve, reject) => {
-      contractObj.mint(rawAmount, (err, res) => {
-         if (err) {
-            reject(err);
-         } else {
-            resolve(res);
-         }
-      });
-   });
-}
-
-/**
-* Mint amounts on HDMD smart contract
-* @param {<BigNumber>} amount - amount in BigNumber
-* @return {Promise} return value of the smart contract function
-*/
-function mint(amount) {
-   return new Promise((resolve, reject) => {
-      return _mint(amount).catch(err => {
-         canMint().then(allowed => {
-            if (!allowed) {
-               let newErr = new Error(
-                  `Address ${defaultAccount} is not allowed to mint`
-               );
-               reject(newErr);
-               return;
-            }
-            reject(err);
-         });
-      });
-   });
-}
-
-/**
-* Unmints amounts on HDMD smart contract
-* @param {<BigNumber>} amount - amount in BigNumber
-* @return {Promise} return value of the smart contract function
-*/
-function unmint(amount) {
-   let rawAmount = getRawNumber(amount).toNumber();
-   return new Promise((resolve, reject) => {
-      hdmdContract.unmint(rawAmount, (err, res) => {
-         if (err) {
-            reject(err);
-         } else {
-            resolve(res);
-         }
-      });
-   });
+   logger.debug(``);
+   if (amount.greaterThan(0)) {
+      return batchTransfer(recipients, newAmounts);
+   } else {
+      return reverseBatchTransfer(recipients, newAmounts);
+   }
 }
 
 /**
@@ -414,18 +332,35 @@ function unmint(amount) {
  */
 function getTotalSupplyNotSaved() {
    // return hdmdClient.totalSupply - hdmdTxns.aggregate({group: { $sum: 'amount'}})
+   let pSavedTotal = hdmdTxns.aggregate([
+      {
+         $group: {
+            _id: null,
+            totalAmount: { $sum: '$amount' }
+         }
+      }
+   ]);
+
+   let actualTotal = 0;
+   let savedTotal = 0;
+
    return hdmdContract
       .getTotalSupply()
       .then(total => {
-         let actualTotal = total;
+         actualTotal = total;
          return actualTotal;
       })
-      .then(actualTotal => {
-         let savedTotal = 0; // TODO: replace magic number
-         return [actualTotal, savedTotal];
+      .then(() => {
+         return pSavedTotal.then(doc => {
+            savedTotal = doc[0]
+               ? toBigNumber(doc[0].totalAmount)
+               : toBigNumber(0);
+            // logger.log(toBigNumber(savedTotal).toNumber());
+            return savedTotal;
+         });
       })
-      .then(([actualTotal, savedTotal]) => {
-         let diff = actualTotal.sub(savedTotal);
+      .then(() => {
+         let diff = actualTotal.minus(savedTotal);
          return diff;
       });
 }
@@ -433,22 +368,27 @@ function getTotalSupplyNotSaved() {
 /**
  * @returns {Promise.<HdmdTxn>}
  */
-function saveTotalSupplyDiff() {
+function saveTotalSupplyDiff(account) {
    return new Promise((resolve, reject) => {
       if (!config.saveInitialSupply) {
          return;
       }
-      getTotalSupplyNotSaved().then(supply =>
-         hdmdTxns
+      if (account === undefined) {
+         account = ownerAddress;
+      }
+      getTotalSupplyNotSaved().then(supply => {
+         return hdmdTxns
             .create({
-               blockNumber: -1,
-               amount: supply.toNumber(),
                txnHash: contractAddress,
-               eventName: 'Adjustment'
+               blockNumber: -1,
+               amount: typeConverter.numberDecimal(supply),
+               account: account,
+               eventName: 'Adjustment',
+               sender: null
             })
             .then(created => resolve(created))
-            .catch(err => reject(err))
-      );
+            .catch(err => reject(err));
+      });
    });
 }
 
@@ -502,16 +442,49 @@ function allowThisMinter() {
    if (!config.allowThisMinter) {
       return Promise.resolve();
    }
-   // Allow this node to mint
-   return allowMinter(defaultAccount)
-      .then(txnHash => {
-         console.log(`Allowed account ${defaultAccount} to mint`);
-         return txnHash;
+
+   return hdmdContract.canMint(defaultAccount).then(canMint => {
+      if (canMint) {
+         logger.log(`Account ${defaultAccount} is already allowed to mint`);
+         return true;
+      }
+      return allowMinter(defaultAccount)
+         .then(txnHash => {
+            logger.log(`Allowed account ${defaultAccount} to mint`);
+            return txnHash;
+         })
+         .catch(err => {
+            logger.log(`Error allowing minter ${defaultAccount}`);
+            return Promise.reject(err);
+         });
+   });
+}
+
+function downloadTxns() {
+   return getLastSavedTxn()
+      .then(docs => {
+         // get last block number that was saved in MongoDB
+         let lastSavedBlockNumber = 0;
+         if (docs.length > 0) {
+            lastSavedBlockNumber = docs[0].blockNumber;
+         }
+         return lastSavedBlockNumber;
       })
-      .catch(err => {
-         console.log(`Error allowing minter ${defaultAccount}`);
-         return err;
-      });
+      .then(lastSavedBlockNumber =>
+         // get event logs after the last block number that we saved
+         filterEventsGet(lastSavedBlockNumber)
+            .then(eventLog =>
+               // parse the event log
+               parseEventLog(eventLog)
+            )
+            .then(newTxns =>
+               // save the newTxns into MongoDB
+               saveTxns(newTxns)
+            )
+            .catch(error =>
+               logger.log('--- Error downloading HDMD Txn Log ---', error)
+            )
+      );
 }
 
 module.exports = {
@@ -519,18 +492,23 @@ module.exports = {
    web3: web3,
    hdmdContract: hdmdContract,
    getBalances: getBalances,
+   getBalancesSaved: getBalancesSaved,
+   getBalancesOf: getBalancesOf,
    batchTransfer: batchTransfer,
+   reverseBatchTransfer: reverseBatchTransfer,
    mint: mint,
    unmint: unmint,
    downloadTxns: downloadTxns,
+   getTotalSupply: getTotalSupply,
    getTotalSupplySaved: getTotalSupplySaved,
    getTotalSupplyNotSaved: getTotalSupplyNotSaved,
    getUnmatchedTxns: getUnmatchedTxns,
    getContractOwner: getContractOwner,
    apportion: apportion,
-   applyWeights: util.applyWeights,
+   applyWeights: contractMath.applyWeights,
    allowMinter: allowMinter,
    defaultAccount: defaultAccount,
    saveTotalSupplyDiff: saveTotalSupplyDiff,
-   allowThisMinter: allowThisMinter
+   allowThisMinter: allowThisMinter,
+   getAllBalances: getAllBalances
 };

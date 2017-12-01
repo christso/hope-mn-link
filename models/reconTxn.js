@@ -3,13 +3,16 @@ mongoose.Promise = global.Promise;
 
 // Schema setup
 var reconTxnSchema = new mongoose.Schema({
+   timestamp: mongoose.SchemaTypes.Date,
    reconId: String,
    dmdTxnHash: String,
    hdmdTxnHash: String,
-   amount: Number,
+   amount: mongoose.SchemaTypes.Decimal128,
    account: String,
    blockNumber: Number,
-   eventName: String
+   eventName: String,
+   dmdFlag: mongoose.SchemaTypes.Boolean,
+   hdmdFlag: mongoose.SchemaTypes.Boolean
 });
 
 module.exports = mongoose.model('ReconTxn', reconTxnSchema);

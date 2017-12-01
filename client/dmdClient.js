@@ -6,6 +6,8 @@ var mongoose = require('mongoose');
 const dmdUrl = config.cryptoidDmdUri;
 var hdmdClient = require('../client/hdmdClient');
 var dmdInterval = require('../models/dmdInterval');
+var typeConverter = require('../lib/typeConverter');
+var numberDecimal = typeConverter.numberDecimal;
 
 /*----- Create DMD listener -----*/
 
@@ -21,8 +23,8 @@ function parseRawTxns(rawTxns) {
       return {
          txnHash: rawTxn[1],
          blockNumber: rawTxn[2],
-         amount: rawTxn[4],
-         balance: rawTxn[5]
+         amount: numberDecimal(rawTxn[4]),
+         balance: numberDecimal(rawTxn[5])
       };
    });
    return newTxns;
@@ -107,7 +109,10 @@ const unmatchedQueryDefs = {
    }
 };
 
-// get DMD Txns that don't exist in HDMD Txns MongoDB
+/**
+ * get DMD Txns that don't exist in HDMD Txns MongoDB up to and including blockNumber
+ * @param {Number} blockNumber
+ */
 function getUnmatchedTxns(blockNumber) {
    let matchQueryDef = unmatchedQueryDefs.match();
 
@@ -142,5 +147,8 @@ module.exports = {
    downloadTxns: downloadTxns,
    getUnmatchedTxns: getUnmatchedTxns,
    getLastSavedBlockNumber: getLastSavedBlockNumber,
-   getLastSavedBlockInterval: getLastSavedBlockInterval
+   getLastSavedBlockInterval: getLastSavedBlockInterval,
+   formatSavedBlockNumber: formatSavedBlockNumber,
+   getLastSavedTxn: getLastSavedTxn,
+   getLastSavedBlockNumber: getLastSavedBlockNumber
 };

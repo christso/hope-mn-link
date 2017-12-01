@@ -1,6 +1,9 @@
+var typeConverter = require('../lib/typeConverter');
 var BigNumber = require('bignumber.js');
 var config = require('../config');
-var requireSeed = config.requireSeed;
+var requireContractSeed = config.requireContractSeed;
+var requireDbSeed = config.requireDbSeed;
+var syncAfterSeed = config.syncAfterSeed;
 
 var mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
@@ -18,64 +21,105 @@ var reconcile = reconClient.reconcile;
 
 var dmdInterval = require('../models/dmdInterval');
 const getLastSavedDmdBlockInterval = dmdClient.getLastSavedBlockInterval;
-const contribs = require('../data/hdmdContributions');
+var contribs = require('../data/hdmdContributions');
 const accounts = contribs.accounts;
 const decimals = config.hdmdDecimals;
+const Logger = require('../lib/logger');
+const logger = new Logger('Seed');
+const formatter = require('../lib/formatter');
 
 // Initial contributions
-function seedHdmd() {
+function seedContract(contribData) {
+   if (contribData) {
+      contribs = contribData;
+   }
    let accounts = contribs.accounts;
-   let balances = contribs.balances.map(
-      value => new BigNumber(Math.round(value, decimals))
+   let balances = contribs.amounts.map(
+      value => new typeConverter.toBigNumber(value)
    );
 
    // Initial contributions
    return batchTransfer(accounts, balances).catch(err => {
-      console.log(`Error seeding the smart contract: ${err.message}`);
+      throw new Error(`[Seed] Error in batch transfer: ${err.stack}`);
    });
-   return p;
 }
 
 // Seed DB for DMD Block Intervals
 const dmdBlockIntervals = require('../data/dbSeeds').dmdBlockIntervals;
 
-function seedDmd() {
+function seedDmdIntervals() {
    return dmdInterval.create(dmdBlockIntervals);
 }
 
 function seedAll() {
-   let p = Promise.resolve();
-   if (requireSeed) {
-      p = seedDmd()
-         .then(() => seedHdmd())
-         .then(() => console.log('Seeding successful'))
-         .catch(err => Promise.reject(new Error(`Error seeding: ${err}`)));
-   }
-   return p
-      .then(() => downloadTxns())
-      .catch(err => Promise.reject(new Error(`Error downloading transactions`)))
-      .then(() => saveTotalSupplyDiff()) // TODO: implement (currently 10000 is hard coded)
-      .then(() => reconcileTotalSupply())
-      .catch(err =>
-         Promise.reject(
-            new Error(
-               `Error retrieving unmatched transactions from MongoDB: ${err}`
-            )
-         )
-      );
-}
+   let pDbSeed = () => {
+      return seedDmdIntervals()
+         .then(() => logger.log('[Seed] Seeded DB.'))
+         .catch(err =>
+            Promise.reject(new Error(`[Seed] Error seeding DB: ${err}`))
+         );
+   };
 
-function reconcileTotalSupply() {
-   return getLastSavedDmdBlockInterval()
-      .then(dmdBlockNumber => {
-         return getUnmatchedTxns(dmdBlockNumber);
+   let pContractSeed = () => {
+      return seedContract()
+         .then(() => logger.log('[Seed] Seeded contract.'))
+         .catch(err =>
+            Promise.reject(new Error(`[Seed] Error seeding contract: ${err}`))
+         );
+   };
+
+   let pTotal = () => {
+      return downloadTxns()
+         .catch(err =>
+            Promise.reject(new Error(`[Seed] Error downloading transactions`))
+         )
+         .then(() => {
+            return saveTotalSupplyDiff();
+         })
+         .catch(err =>
+            Promise.reject(
+               new Error(
+                  `[Seed] Error retrieving unmatched transactions from MongoDB: ${
+                     err
+                  }`
+               )
+            )
+         );
+   };
+
+   let pSync = () => {
+      return reconClient
+         .synchronizeAll()
+         .then(() => {
+            logger.log(`[Seed] Synchronized all txns`);
+         })
+         .catch(err => {
+            return Promise.reject(
+               new Error(`[Seed] Error Synchronizing all txns: ${err}`)
+            );
+         });
+   };
+
+   return pTotal()
+      .then(() => {
+         if (requireDbSeed) {
+            return pDbSeed();
+         }
       })
-      .then(([dmds, hdmds]) => reconcile(dmds, hdmds));
+      .then(() => {
+         if (requireContractSeed) {
+            return pContractSeed();
+         }
+      })
+      .then(() => {
+         if (syncAfterSeed) {
+            return pSync();
+         }
+      });
 }
 
 module.exports = {
-   seedDmd: seedDmd,
-   seedHdmd: seedHdmd,
-   seedAll: seedAll,
-   reconcileTotalSupply: reconcileTotalSupply
+   seedDmd: seedDmdIntervals,
+   seedHdmd: seedContract,
+   seedAll: seedAll
 };

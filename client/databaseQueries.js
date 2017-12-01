@@ -16,7 +16,7 @@ var recon = (function() {
       };
    };
 
-   const getHdmdReconGroupDef = () => {
+   let getHdmdReconGroupDef = () => {
       return {
          $group: {
             _id: null,
@@ -334,7 +334,57 @@ var dmd = (function() {
             return found[0] ? found[0].blockNumber : undefined;
          });
    };
-   return { getNextBlockNumber: getNextBlockNumber };
+
+   let getMaxIntervalBlockNumber = () => {
+      return dmdIntervals.aggregate([
+         {
+            $group: {
+               _id: null,
+               maxBlockNumber: { $max: '$blockNumber' }
+            }
+         }
+      ]);
+   };
+
+   let getBlockNumbersForIntervals = () => {
+      return getMaxIntervalBlockNumber().then(blockNumber => {
+         return dmdTxns
+            .aggregate([
+               {
+                  $match: {
+                     $and: [{ blockNumber: { $gt: blockNumber } }]
+                  }
+               },
+               {
+                  $group: {
+                     _id: '$blockNumber'
+                  }
+               },
+               {
+                  $project: {
+                     blockNumber: '$_id'
+                  }
+               }
+            ])
+            .then(docs => {
+               return docs.map(doc => {
+                  return doc.blockNumber;
+               });
+            });
+      });
+   };
+
+   let createBlockIntervals = blockNumbers => {
+      var formatted = blockNumbers.map(blockNum => {
+         return { blockNumber: blockNum };
+      });
+   };
+
+   return {
+      getNextBlockNumber: getNextBlockNumber,
+      getBlockNumbersForIntervals: getBlockNumbersForIntervals,
+      createBlockIntervals: createBlockIntervals
+   };
 })();
 
 var hdmd = (function() {

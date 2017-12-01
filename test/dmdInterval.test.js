@@ -14,6 +14,7 @@ const dmdIntervals = require('../models/dmdInterval');
 const seeder = require('../client/seeder');
 const formatter = require('../lib/formatter');
 const typeConverter = require('../lib/typeConverter');
+const dmdIntervalClient = require('../client/dmdIntervalClient');
 
 var mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
@@ -29,8 +30,6 @@ const cleanup = false;
 
 describe('DMD Interval Tests', () => {
    var connection;
-
-   var dmdBlockIntervals = testData.dmdBlockIntervals;
 
    var createMocks = () => {
       return Promise.resolve();
@@ -134,9 +133,7 @@ describe('DMD Interval Tests', () => {
          return newTxn;
       });
 
-      return dmdIntervals.create(dmdBlockIntervals).then(intervals => {
-         return reconTxns.create(newReconTxns);
-      });
+      return reconTxns.create(newReconTxns);
    });
 
    it('Gets reconciled HDMD block from DMD block number - 1 DMD steps back', () => {
@@ -262,8 +259,9 @@ describe('DMD Interval Tests', () => {
       });
    });
 
-   it('Creates dmdInterval if balances have changed', () => {
-      var didRelativeBalancesChange = reconClient.didRelativeBalancesChange;
+   it('Identifies dmdIntervals where balances have changed', () => {
+      var didRelativeBalancesChange =
+         dmdIntervalClient.didRelativeBalancesChange;
       const tolerance = 0.005;
       var inputDmdBlocks = [1800, 1810, 1811, 1820, 1829, 1830];
       var expectedChangeFlags = [false, true, true, true, false, false];
@@ -297,5 +295,22 @@ describe('DMD Interval Tests', () => {
                reject(err);
             });
       });
+   });
+
+   it('Saves DMD intervals on changed relative balances', () => {
+      // Prepare data
+      let dmdIntervalData = [1800, 1810, 1811, 1820, 1829, 1830].map(b => {
+         return { blockNumber: typeConverter.numberDecimal(b) };
+      });
+
+      function createDmdIntervals(data) {
+         return dmdIntervals.create(data);
+      }
+
+      // Actions
+      let p = dmdIntervalClient.updateBlockIntervals();
+
+      // Assert
+      return p;
    });
 });

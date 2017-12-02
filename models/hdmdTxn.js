@@ -8,6 +8,7 @@ var hdmdTxnSchema = new mongoose.Schema({
    amount: mongoose.SchemaTypes.Decimal128,
    account: String,
    sender: String,
+   sendToAddress: String, // used by Burn() and Transfer()
    eventName: String
 });
 

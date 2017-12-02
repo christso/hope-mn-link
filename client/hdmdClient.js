@@ -19,6 +19,13 @@ const wallet = require('../client/dmdWallet');
 const contribs = require('../data/hdmdContributions');
 const contribAccounts = contribs.accounts;
 
+var eventNames = {
+   burn: 'Burn',
+   mint: 'Mint',
+   unmint: 'Unmint',
+   transfer: 'Transfer'
+};
+
 var contractAddress = config.hdmdContractAddress;
 var gasLimit = config.ethGasLimit;
 var decimals = config.hdmdDecimals;
@@ -125,7 +132,7 @@ function parseEventLog(eventLog) {
       };
 
       let parsers = [];
-      parsers['Mint'] = (event, decoded) => {
+      parsers[eventNames.mint] = (event, decoded) => {
          let newTxn = {};
          assignBaseTxn(newTxn, event, decoded);
          newTxn.sender = decoded.events[0].value;
@@ -133,7 +140,7 @@ function parseEventLog(eventLog) {
          newTxn.amount = toDbNumberDecimal(decoded.events[1].value);
          newTxns.push(newTxn);
       };
-      parsers['Unmint'] = (event, decoded) => {
+      parsers[eventNames.unmint] = (event, decoded) => {
          let newTxn = {};
          assignBaseTxn(newTxn, event, decoded);
          newTxn.sender = decoded.events[0].value;
@@ -141,7 +148,7 @@ function parseEventLog(eventLog) {
          newTxn.amount = toDbNumberDecimal(decoded.events[1].value * -1);
          newTxns.push(newTxn);
       };
-      parsers['Burn'] = (event, decoded) => {
+      parsers[eventNames.burn] = (event, decoded) => {
          let newTxn = {};
          assignBaseTxn(newTxn, event, decoded);
          newTxn.sender = decoded.events[0].value;
@@ -150,7 +157,7 @@ function parseEventLog(eventLog) {
          newTxn.amount = toDbNumberDecimal(decoded.events[2].value * -1);
          newTxns.push(newTxn);
       };
-      parsers['Transfer'] = (event, decoded) => {
+      parsers[eventNames.transfer] = (event, decoded) => {
          let amount = decoded.events[2].value;
          let fromAccount = decoded.events[0].value;
          let toAccount = decoded.events[1].value;
@@ -514,5 +521,6 @@ module.exports = {
    defaultAccount: defaultAccount,
    saveTotalSupplyDiff: saveTotalSupplyDiff,
    allowThisMinter: allowThisMinter,
-   getAllBalances: getAllBalances
+   getAllBalances: getAllBalances,
+   eventNames: eventNames
 };

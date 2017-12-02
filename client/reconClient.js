@@ -9,12 +9,14 @@ var logger = new Logger('RECON');
 var mongodb = require('mongodb');
 var typeConverter = require('../lib/typeConverter');
 var toBigNumber = typeConverter.toBigNumber;
+var dmdWallet = require('../client/dmdWallet');
 const decimals = config.hdmdDecimals;
 
 let dmdClient = require('../client/dmdClient');
 let hdmdClient = require('../client/hdmdClient');
 
 var reconTxns = require('../models/reconTxn');
+var burns = require('../models/burn');
 
 const nothingToMint = 'nothing-to-mint';
 const formatter = require('../lib/formatter');
@@ -36,7 +38,6 @@ function init(newDmdClient, newHdmdClient) {
 
    return assign();
 }
-init();
 
 function downloadDmdTxns() {
    return dmdClient
@@ -455,6 +456,10 @@ function synchronizeNext(dmdBlockNumber) {
       });
    }
 
+   /**
+    * Download and reconcile new HDMDs with DMDs if the total amounts are equal between both.
+    * @param {dmds} dmds - dmds to reconcile with hdmds
+    */
    function reconcileNewHdmds(dmds) {
       let getUnmatchedHdmds = hdmdClient.getUnmatchedTxns;
       return downloadHdmdTxns()
@@ -471,7 +476,53 @@ function synchronizeNext(dmdBlockNumber) {
          });
    }
 
+   function filterHdmdBurns(hdmds) {
+      return hdmds.filter(hdmd => {
+         return hdmd.eventName === hdmdClient.eventNames.burn;
+      });
+   }
+
+   /**
+    * Fulfil the burn event by invoking dmdWallet.sendTransaction and saving the txn status
+    * @param {<HdmdTxns>[]} hdmds - hdmdTxn documents with the 'Burn' eventName
+    */
+   function fulfilBurns(hdmds) {
+      let p = Promise.resolve();
+      let stashedBurns = [];
+      hdmds.forEach(hdmd => {
+         let dmdAddress = hdmd.burnAddress;
+         p = p.then(() =>
+            dmdWallet.sendToAddress(dmdAddress).then(txnHash => {
+               stashedBurns.push({
+                  txnHash: txnHash,
+                  amount: hdmd.amount,
+                  sendToAddress: dmdAddress,
+                  status: 'pending'
+               });
+            })
+         );
+      });
+      p = p.then(() => {
+         return burns
+            .create(stashedBurns)
+            .then(created => created)
+            .catch(err =>
+               Promise.reject('Error saving burns to DB: ' + err.message)
+            );
+      });
+      return p;
+   }
+
    return getUnmatchedTxnsBefore(dmdBlockNumber)
+      .then(([dmds, hdmds]) => {
+         let hdmdBurns = filterHdmdBurns(hdmds);
+         if (hdmdBurns.length > 0) {
+            return fulfilBurns(hdmdBurns).then(() => {
+               return getUnmatchedTxnsBefore(dmdBlockNumber);
+            });
+         }
+         return [dmds, hdmds];
+      })
       .then(([dmds, hdmds]) => {
          let p = Promise.resolve();
          let mintStatus = getMintingRequired(dmds, hdmds);

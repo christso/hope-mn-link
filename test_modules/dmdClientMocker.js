@@ -5,9 +5,13 @@ var typeConverter = require('../lib/typeConverter');
 
 var getLastSavedBlockNumber = dmdClient.getLastSavedBlockNumber;
 
-module.exports = function(dmdTxnsData) {
+module.exports = function(dmdTxnsData, dmdWallet) {
    let sandbox = sinon.createSandbox();
    let mocked = sandbox.mock(dmdClient);
+
+   if (dmdWallet != undefined) {
+      dmdClient.init(dmdWallet);
+   }
 
    sandbox.stub(mocked.object, 'downloadTxns').callsFake(() => {
       if (!dmdTxnsData) {

@@ -26,6 +26,7 @@ const hdmdEvents = require('../test_modules/hdmdEventModel');
 const hdmdContractMocker = require('../test_modules/hdmdContractMocker');
 const hdmdClientMocker = require('../test_modules/hdmdClientMocker');
 const dmdClientMocker = require('../test_modules/dmdClientMocker');
+const dmdWalletMocker = require('../test_modules/dmdWalletMocker');
 
 const contribs = testData.contributions;
 const config = require('../config');
@@ -43,6 +44,8 @@ describe('HDMD Integration Tests', () => {
    var hdmdClient;
    var dmdClientMock;
    var dmdClient;
+   var dmdWalletMock;
+   var dmdWallet;
    var downloadTxns;
    var downloadHdmdTxns;
 
@@ -75,7 +78,9 @@ describe('HDMD Integration Tests', () => {
       hdmdContractMock = hdmdContractMocker(testData.initialSupply);
       hdmdClientMock = hdmdClientMocker(hdmdContractMock.mocked.object);
       hdmdClient = hdmdClientMock.mocked.object;
-      dmdClientMock = dmdClientMocker(dmdTxnsData);
+      dmdWalletMock = dmdWalletMocker();
+      dmdWallet = dmdWalletMock.mocked.object;
+      dmdClientMock = dmdClientMocker(dmdTxnsData, dmdWallet);
       dmdClient = dmdClientMock.mocked.object;
 
       downloadTxns = reconClient.downloadTxns;

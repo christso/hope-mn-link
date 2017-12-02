@@ -8,8 +8,21 @@ var hdmdClient = require('../client/hdmdClient');
 var dmdInterval = require('../models/dmdInterval');
 var typeConverter = require('../lib/typeConverter');
 var numberDecimal = typeConverter.numberDecimal;
+var dmdWallet = require('../client/dmdWallet');
 
-/*----- Create DMD listener -----*/
+// Constructor
+function init(newDmdWallet) {
+   let assign = () => {
+      return new Promise(resolve => {
+         if (newDmdWallet) {
+            dmdWallet = newDmdWallet;
+         }
+         resolve();
+      });
+   };
+   return assign();
+}
+init();
 
 // Call the API every hour.
 // Create MongoDB document for each new DMD transaction, which stores the txn hash.
@@ -150,5 +163,6 @@ module.exports = {
    getLastSavedBlockInterval: getLastSavedBlockInterval,
    formatSavedBlockNumber: formatSavedBlockNumber,
    getLastSavedTxn: getLastSavedTxn,
-   getLastSavedBlockNumber: getLastSavedBlockNumber
+   getLastSavedBlockNumber: getLastSavedBlockNumber,
+   init: init
 };

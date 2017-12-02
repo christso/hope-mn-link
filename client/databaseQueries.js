@@ -54,6 +54,10 @@ var recon = (function() {
       ]);
    };
 
+   let getTransactions = () => {
+      return reconTxns.find({});
+   };
+
    /**
     * Get DMD recons where HDMD recons exist, and outputs both block numbers
     */
@@ -320,7 +324,8 @@ var recon = (function() {
       getUnmatchedDmdBlockIntervals: getUnmatchedDmdBlockIntervals,
       getHdmdBalances: getHdmdBalances,
       getHdmdBalancesBefore: getHdmdBalancesBefore,
-      getDmdIntersects: getDmdIntersects
+      getDmdIntersects: getDmdIntersects,
+      getTransactions: getTransactions
    };
 })();
 
@@ -389,14 +394,23 @@ var dmd = (function() {
       return dmdIntervals.create(formatted);
    };
 
+   let getTransactions = () => {
+      return dmdTxns.find({});
+   };
+
    return {
       getNextBlockNumber: getNextBlockNumber,
       getBlockNumbersForIntervals: getBlockNumbersForIntervals,
-      createBlockIntervals: createBlockIntervals
+      createBlockIntervals: createBlockIntervals,
+      getTransactions: getTransactions
    };
 })();
 
 var hdmd = (function() {
+   let getTransactions = () => {
+      return hdmdTxns.find({});
+   };
+
    let getBalances = () => {
       return hdmdTxns
          .aggregate([
@@ -411,7 +425,8 @@ var hdmd = (function() {
             return docs.map(doc => {
                return {
                   account: doc._id,
-                  balance: doc.balance
+                  balance: doc.balance,
+                  getTransactions: getTransactions
                };
             });
          });
@@ -461,7 +476,8 @@ var hdmd = (function() {
 
    return {
       getBalances: getBalances,
-      getHdmdBalances: getHdmdBalances
+      getHdmdBalances: getHdmdBalances,
+      getTransactions: getTransactions
    };
 })();
 

@@ -9,6 +9,17 @@ var synchronizeAll = reconClient.synchronizeAll;
 var Logger = require('../lib/logger');
 var logger = new Logger();
 
+router.get('/txns', function(req, res) {
+   queries.recon
+      .getTransactions()
+      .then(docs => {
+         return res.json(docs);
+      })
+      .catch(err => {
+         return res.json(err);
+      });
+});
+
 router.post('/syncnext', function(req, res) {
    reconClient
       .synchronizeNext(req.body.dmdBlockNumber)
@@ -37,22 +48,6 @@ router.post('/updatedmdintervals', function(req, res) {
       .catch(err => {
          return res.json(err);
       });
-});
-
-router.get('/hdmd/last', (req, res) => {
-   reconClient
-      .getLastHdmdRecon()
-      .then(obj => res.json(obj))
-      .catch(err => res.json(err));
-});
-
-router.get('/hdmd/balances', (req, res) => {
-   reconClient
-      .getBeginHdmdBalancesFromDmd()
-      .then(obj => {
-         res.json(obj);
-      })
-      .catch(err => res.json(err));
 });
 
 module.exports = router;

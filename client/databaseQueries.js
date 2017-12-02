@@ -16,7 +16,7 @@ var recon = (function() {
       };
    };
 
-   const getHdmdReconGroupDef = () => {
+   let getHdmdReconGroupDef = () => {
       return {
          $group: {
             _id: null,
@@ -52,6 +52,10 @@ var recon = (function() {
             $limit: 1
          }
       ]);
+   };
+
+   let getTransactions = () => {
+      return reconTxns.find({});
    };
 
    /**
@@ -320,7 +324,8 @@ var recon = (function() {
       getUnmatchedDmdBlockIntervals: getUnmatchedDmdBlockIntervals,
       getHdmdBalances: getHdmdBalances,
       getHdmdBalancesBefore: getHdmdBalancesBefore,
-      getDmdIntersects: getDmdIntersects
+      getDmdIntersects: getDmdIntersects,
+      getTransactions: getTransactions
    };
 })();
 
@@ -334,10 +339,90 @@ var dmd = (function() {
             return found[0] ? found[0].blockNumber : undefined;
          });
    };
-   return { getNextBlockNumber: getNextBlockNumber };
+
+   let getMaxIntervalBlockNumber = () => {
+      return dmdIntervals
+         .aggregate([
+            {
+               $group: {
+                  _id: null,
+                  maxBlockNumber: { $max: '$blockNumber' }
+               }
+            }
+         ])
+         .then(docs => {
+            return docs[0] ? docs[0].maxBlockNumber : null;
+         });
+   };
+
+   let getBlockNumbersForIntervals = () => {
+      return getMaxIntervalBlockNumber().then(blockNumber => {
+         let cmd = [
+            {
+               $match: {
+                  $and: [{ blockNumber: { $gt: blockNumber } }, {}]
+               }
+            },
+            {
+               $group: {
+                  _id: '$blockNumber'
+               }
+            },
+            {
+               $project: {
+                  blockNumber: '$_id'
+               }
+            }
+         ];
+
+         if (blockNumber === undefined || blockNumber === null) {
+            cmd[0].$match.$and.splice(0, 1); // delete blockNumber
+         }
+
+         return dmdTxns.aggregate(cmd).then(docs => {
+            return docs.map(doc => {
+               return doc.blockNumber;
+            });
+         });
+      });
+   };
+
+   let createBlockIntervalsFromArray = blockNumbers => {
+      var formatted = blockNumbers.map(blockNum => {
+         return { blockNumber: blockNum };
+      });
+      return dmdIntervals.create(formatted);
+   };
+
+   let createBlockIntervals = docs => {
+      return dmdIntervals.create(docs);
+   };
+
+   let getTransactions = () => {
+      return dmdTxns.find({});
+   };
+
+   let getBlockIntervals = () => {
+      return dmdIntervals.find({}).sort({
+         blockNumber: 1
+      });
+   };
+
+   return {
+      getNextBlockNumber: getNextBlockNumber,
+      getBlockNumbersForIntervals: getBlockNumbersForIntervals,
+      createBlockIntervalsFromArray: createBlockIntervalsFromArray,
+      createBlockIntervals: createBlockIntervals,
+      getTransactions: getTransactions,
+      getBlockIntervals: getBlockIntervals
+   };
 })();
 
 var hdmd = (function() {
+   let getTransactions = () => {
+      return hdmdTxns.find({});
+   };
+
    let getBalances = () => {
       return hdmdTxns
          .aggregate([
@@ -352,7 +437,8 @@ var hdmd = (function() {
             return docs.map(doc => {
                return {
                   account: doc._id,
-                  balance: doc.balance
+                  balance: doc.balance,
+                  getTransactions: getTransactions
                };
             });
          });
@@ -402,7 +488,8 @@ var hdmd = (function() {
 
    return {
       getBalances: getBalances,
-      getHdmdBalances: getHdmdBalances
+      getHdmdBalances: getHdmdBalances,
+      getTransactions: getTransactions
    };
 })();
 

@@ -23,6 +23,29 @@ module.exports = (function() {
       '0x5620040ed2e9B41cC90428d0B8bF4feDf8391beD'
    ];
 
+   var dmdTxns = [
+      {
+         txnHash: 'AECB37D2DDDB4E89A4F0817EF815CD1B',
+         amount: 10000,
+         blockNumber: 1800
+      },
+      {
+         txnHash: '0C62D3A9AB25483EB5FC2954DE996FE3',
+         amount: 100,
+         blockNumber: 1810
+      },
+      {
+         txnHash: '0C62D3A9AB25483EB5FC2954DE996FE3',
+         amount: 110,
+         blockNumber: 1820
+      },
+      {
+         txnHash: '7704413B5FA649388FFFA150FF0E1715',
+         amount: 200,
+         blockNumber: 1829
+      }
+   ];
+
    var reconTxns = [
       {
          reconId: '241E28BB4D694B638092C75560CBC50C',
@@ -132,15 +155,6 @@ module.exports = (function() {
          account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
          eventName: 'Mint'
       },
-      // {
-      //    reconId: '8829ED9077E64A069774B40AE2D28A3D',
-      //    dmdTxnHash: '421C080AE7C94ADEA58651BFB5F5645A',
-      //    hdmdTxnHash: null,
-      //    amount: 0,
-      //    blockNumber: 1825,
-      //    account: null,
-      //    eventName: 'Adjustment'
-      // },
       {
          reconId: '8829ED9077E64A069774B40AE2D28A3D',
          dmdTxnHash: null,
@@ -365,6 +379,7 @@ module.exports = (function() {
       reconTxns: reconTxns,
       expectedHdmdBalances_b0: expectedHdmdBalances_b0,
       expectedHdmdBalances_b1: expectedHdmdBalances_b1,
-      contributions: contributions
+      contributions: contributions,
+      dmdTxns: dmdTxns
    };
 })();

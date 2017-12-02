@@ -48,7 +48,23 @@ function seedContract(contribData) {
 const dmdBlockIntervals = require('../data/dbSeeds').dmdBlockIntervals;
 
 function seedDmdIntervals() {
-   return dmdInterval.create(dmdBlockIntervals);
+   return dmdInterval
+      .aggregate([
+         {
+            $group: {
+               _id: null,
+               count: { $sum: 1 }
+            }
+         }
+      ])
+      .then(docs => {
+         if (docs[0] === undefined || docs[0].count === 0) {
+            return dmdInterval.create(dmdBlockIntervals);
+         }
+         return Promise.reject(
+            '[Seed] Cannot seed dmdIntervals because it is not empty'
+         );
+      });
 }
 
 function seedAll() {

@@ -4,6 +4,7 @@ var typeConverter = require('../lib/typeConverter');
 var formatter = require('../lib/formatter');
 
 const reconClient = require('../client/reconClient');
+const dmdIntervalClient = require('../client/dmdIntervalClient');
 const BigNumber = require('bignumber.js');
 const reconTxns = require('../models/reconTxn');
 
@@ -76,7 +77,7 @@ describe('HDMD Recon Balance Tests', () => {
 
    it('Gets beginning balance of last reconciled mint', () => {
       let getHdmdBalancesFromDmdBefore =
-         reconClient.getHdmdBalancesFromDmdBefore;
+         dmdIntervalClient.getHdmdBalancesFromDmdBefore;
       let dmdBlockNumber = null;
       return getHdmdBalancesFromDmdBefore(dmdBlockNumber, 0).then(bals => {
          let bal = formatter.round(

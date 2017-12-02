@@ -155,6 +155,26 @@ function _unmint(amount) {
 }
 
 /**
+ * Burn amounts on HDMD smart contract
+ * @param {<BigNumber>} amount - amount in BigNumber
+ * @param {string} dmdAddress - address of DMD wallet to receive the real DMDs
+ * @return {Promise} return value of the smart contract function
+ */
+function burn(amount, dmdAddress) {
+   let rawAmount = getRawNumber(amount).toNumber();
+
+   return new Promise((resolve, reject) => {
+      contractObj.burn(rawAmount, dmdAddress, (err, res) => {
+         if (err) {
+            reject(err);
+         } else {
+            resolve(res);
+         }
+      });
+   });
+}
+
+/**
  * Mint amounts on HDMD smart contract
  * @param {<BigNumber>} amount - amount in BigNumber
  * @return {Promise} return value of the smart contract function
@@ -297,6 +317,7 @@ module.exports = {
    canMint: canMint,
    mint: mint,
    unmint: unmint,
+   burn: burn,
    batchTransfer: batchTransfer,
    reverseBatchTransfer: reverseBatchTransfer,
    balanceOf: balanceOf

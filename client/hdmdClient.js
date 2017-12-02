@@ -49,12 +49,15 @@ var mint = amount => {
 var unmint = amount => {
    return hdmdContract.unmint(amount);
 };
+var burn = (amount, dmdAddress) => {
+   return hdmdContract.burn(amount, dmdAddress);
+};
 
-let batchTransfer = (addresses, values) => {
+var batchTransfer = (addresses, values) => {
    return hdmdContract.batchTransfer(addresses, values);
 };
 
-let reverseBatchTransfer = (addresses, values) => {
+var reverseBatchTransfer = (addresses, values) => {
    return hdmdContract.reverseBatchTransfer(addresses, values);
 };
 
@@ -498,6 +501,7 @@ module.exports = {
    reverseBatchTransfer: reverseBatchTransfer,
    mint: mint,
    unmint: unmint,
+   burn: burn,
    downloadTxns: downloadTxns,
    getTotalSupply: getTotalSupply,
    getTotalSupplySaved: getTotalSupplySaved,

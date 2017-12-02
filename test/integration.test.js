@@ -203,13 +203,19 @@ describe('HDMD Integration Tests', () => {
             return synchronizeAll();
          })
          .then(() => {
-            return synchronizeAll(); // 2nd iteration will download from hdmdEvents to do the reconciliation
+            return hdmdClient.burn(
+               new BigNumber('50'),
+               'dQmpKBcneq1ZF27iuJsUm8dQ2QkUriKWy3'
+            );
+         })
+         .then(() => {
+            return synchronizeAll();
          });
 
       // Assertions
 
       let assertReconAmounts = () => {
-         const tolerance = 2;
+         const decimalTolerance = 2;
          var expectedReconAmounts = testData.expectedReconAmounts;
          /**
           * Get reconciled HDMD account movements by block number and account
@@ -268,10 +274,10 @@ describe('HDMD Integration Tests', () => {
                );
                assert.equal(
                   (a = new BigNumber(actual.totalAmount.toString()).toFixed(
-                     config.hdmdDecimals - tolerance
+                     config.hdmdDecimals - decimalTolerance
                   )),
                   (e = new BigNumber(expected.totalAmount.toString()).toFixed(
-                     config.hdmdDecimals - tolerance
+                     config.hdmdDecimals - decimalTolerance
                   )),
                   `Assertion error -> expected recontxn.totalAmount ${
                      a

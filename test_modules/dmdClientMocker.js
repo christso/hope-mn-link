@@ -6,7 +6,8 @@ var typeConverter = require('../lib/typeConverter');
 var getLastSavedBlockNumber = dmdClient.getLastSavedBlockNumber;
 
 /**
- * @param {<DmdTxnDataService>} dataService
+ * @typedef {({find: () => any, create: ([]) => any})}  DmdTxnDataService
+ * @param {DmdTxnDataService} dataService
  * @param {<DmdWallet>} dmdWallet
  */
 module.exports = function(dataService, dmdWallet) {

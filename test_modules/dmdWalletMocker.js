@@ -2,8 +2,13 @@ var sinon = require('sinon');
 var dmdWallet = require('../client/dmdWallet');
 var Logger = require('../lib/logger');
 var logger = new Logger();
+var DmdDataService = require('../test_modules/dmdDataService');
 
-module.exports = function(txnService) {
+/**
+ * @typedef {<DmdDataService>} DmdDataService
+ * @param {DmdDataService} dataService
+ */
+module.exports = function(dataService) {
    let sandbox = sinon.createSandbox();
    let mocked = sandbox.mock(dmdWallet);
 
@@ -13,6 +18,7 @@ module.exports = function(txnService) {
          logger.log(
             `DMD wallet sendToAddress(${dmdAddress}, ${value}) invoked`
          );
+
          return Promise.resolve();
       });
 

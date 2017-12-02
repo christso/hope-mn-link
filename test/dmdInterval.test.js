@@ -45,18 +45,26 @@ describe('DMD Interval Tests', () => {
          .then(done, done);
    };
 
-   // Initial contributions
-   var seedHdmds = () => {
-      let accounts = contribs.accounts;
-      let balances = contribs.amounts.map(value =>
-         typeConverter.numberDecimal(value)
-      );
-
-      // Initial contributions
-      return hdmdClient.batchTransfer(accounts, balances).catch(err => {
-         logger.log(`Error in batch transfer: ${err.stack}`);
+   var seedDmds = () => {
+      let data = testData.dmdTxns.map(txn => {
+         let newTxn = {};
+         Object.assign(newTxn, txn);
+         newTxn.amount = typeConverter.numberDecimal(newTxn.amount);
+         return newTxn;
       });
+      return dmdTxns.create(data);
    };
+
+   function seedRecons() {
+      var newReconTxns = testData.reconTxns.map(txn => {
+         let newTxn = {};
+         Object.assign(newTxn, txn);
+         newTxn.amount = typeConverter.numberDecimal(txn.amount);
+         return newTxn;
+      });
+
+      return reconTxns.create(newReconTxns);
+   }
 
    /**
     * test individual balances (much better than JSON.stringify)
@@ -113,6 +121,30 @@ describe('DMD Interval Tests', () => {
          `actualHdmdBlocks -> expected ${a} to equal ${e}`
       );
    }
+   function dropCollections() {
+      let p = Promise.resolve();
+      for (let model of [dmdTxns, reconTxns, dmdIntervals]) {
+         p = p.then(() =>
+            model.db.db
+               .listCollections({
+                  name: model.collection.name
+               })
+               .toArray()
+         );
+
+         p = p.then(list => {
+            if (list.length != 0) {
+               return model.collection.drop();
+            } else {
+               //    console.log(
+               //       'collection %s does not exist',
+               //       model.collection.name
+               //    );
+            }
+         });
+      }
+      return p;
+   }
 
    before(() => {
       return createMocks().then(() => createDatabase());
@@ -125,15 +157,8 @@ describe('DMD Interval Tests', () => {
       done();
    });
 
-   it('Seeds databases', () => {
-      var newReconTxns = testData.reconTxns.map(txn => {
-         let newTxn = {};
-         Object.assign(newTxn, txn);
-         newTxn.amount = typeConverter.numberDecimal(txn.amount);
-         return newTxn;
-      });
-
-      return reconTxns.create(newReconTxns);
+   beforeEach(() => {
+      return dropCollections();
    });
 
    it('Gets reconciled HDMD block from DMD block number - 1 DMD steps back', () => {
@@ -147,28 +172,27 @@ describe('DMD Interval Tests', () => {
 
       var actualHdmdBlocks = [];
 
-      var p = Promise.resolve();
-      return new Promise((resolve, reject) => {
-         inputDmdBlocks.forEach(inputDmdBlock => {
-            p = p
-               .then(() => {
-                  return getHdmdBlockNumFromDmd(inputDmdBlock, backsteps);
-               })
-               .then(hdmdBlockNum => {
-                  actualHdmdBlocks.push(hdmdBlockNum);
-               });
-         });
+      var p = seedDmds().then(() => seedRecons());
 
-         // Assertions
-         p
+      inputDmdBlocks.forEach(inputDmdBlock => {
+         p = p
             .then(() => {
-               assertBlocks(actualHdmdBlocks, expectedHdmdBlocks); // TODO: why [3,5] ??
-               resolve();
+               return getHdmdBlockNumFromDmd(inputDmdBlock, backsteps);
             })
-            .catch(err => {
-               reject(err);
+            .then(hdmdBlockNum => {
+               actualHdmdBlocks.push(hdmdBlockNum);
             });
       });
+
+      // Assertions
+      p = p
+         .then(() => {
+            assertBlocks(actualHdmdBlocks, expectedHdmdBlocks); // TODO: why [3,5] ??
+         })
+         .catch(err => {
+            return Promise.reject(err);
+         });
+      return p;
    });
 
    it('Gets reconciled HDMD block from DMD block number - 0 DMD step back', () => {
@@ -181,30 +205,27 @@ describe('DMD Interval Tests', () => {
 
       var actualHdmdBlocks = [];
 
-      var p = Promise.resolve();
+      var p = seedDmds().then(() => seedRecons());
 
-      return new Promise((resolve, reject) => {
-         // Compute Balances
-         inputDmdBlocks.forEach(dmdBlockNum => {
-            p = p
-               .then(() => {
-                  return getHdmdBlockNumFromDmd(dmdBlockNum, backsteps);
-               })
-               .then(hdmdBlockNum => {
-                  actualHdmdBlocks.push(hdmdBlockNum);
-               });
-         });
-
-         // Assertions
-         p
+      inputDmdBlocks.forEach(inputDmdBlock => {
+         p = p
             .then(() => {
-               assertBlocks(actualHdmdBlocks, expectedHdmdBlocks);
-               resolve();
+               return getHdmdBlockNumFromDmd(inputDmdBlock, backsteps);
             })
-            .catch(err => {
-               reject(err);
+            .then(hdmdBlockNum => {
+               actualHdmdBlocks.push(hdmdBlockNum);
             });
       });
+
+      // Assertions
+      p = p
+         .then(() => {
+            assertBlocks(actualHdmdBlocks, expectedHdmdBlocks); // TODO: why [3,5] ??
+         })
+         .catch(err => {
+            return Promise.reject(err);
+         });
+      return p;
    });
 
    it('Gets HDMD balances from DMD block number - 1 DMD step back', () => {
@@ -220,43 +241,41 @@ describe('DMD Interval Tests', () => {
       var actualHdmdBlocks = [];
       var actualHdmdBalances = [];
 
-      var p = Promise.resolve();
+      var p = seedDmds().then(() => seedRecons());
 
-      return new Promise((resolve, reject) => {
-         // Compute Balances
-         inputDmdBlocks.forEach(dmdBlockNum => {
-            p = p
-               .then(() => {
-                  return getHdmdBlockNumFromDmd(dmdBlockNum, backsteps);
-               })
-               .then(hdmdBlockNum => {
-                  actualHdmdBlocks.push(hdmdBlockNum);
-                  return getHdmdBalancesBefore(hdmdBlockNum);
-               })
-               .then(hdmdBals => {
-                  let newHdmdBals = hdmdBals.map(bal => {
-                     let newBal = {};
-                     Object.assign(newBal, bal);
-                     newBal.balance = typeConverter
-                        .toBigNumber(bal.balance)
-                        .toNumber();
-                     return newBal;
-                  });
-                  return actualHdmdBalances.push(newHdmdBals);
-               });
-         });
-
-         // Assertions
-         p
+      // Compute Balances
+      inputDmdBlocks.forEach(dmdBlockNum => {
+         p = p
             .then(() => {
-               assertBlocks(actualHdmdBlocks, expectedHdmdBlocks);
-               assertBalances(actualHdmdBalances, expectedHdmdBalances);
-               resolve();
+               return getHdmdBlockNumFromDmd(dmdBlockNum, backsteps);
             })
-            .catch(err => {
-               reject(err);
+            .then(hdmdBlockNum => {
+               actualHdmdBlocks.push(hdmdBlockNum);
+               return getHdmdBalancesBefore(hdmdBlockNum);
+            })
+            .then(hdmdBals => {
+               let newHdmdBals = hdmdBals.map(bal => {
+                  let newBal = {};
+                  Object.assign(newBal, bal);
+                  newBal.balance = typeConverter
+                     .toBigNumber(bal.balance)
+                     .toNumber();
+                  return newBal;
+               });
+               return actualHdmdBalances.push(newHdmdBals);
             });
       });
+
+      // Assertions
+      p = p
+         .then(() => {
+            assertBlocks(actualHdmdBlocks, expectedHdmdBlocks);
+            assertBalances(actualHdmdBalances, expectedHdmdBalances);
+         })
+         .catch(err => {
+            return Promise.reject(err);
+         });
+      return p;
    });
 
    it('Identifies dmdIntervals where balances have changed', () => {
@@ -268,49 +287,82 @@ describe('DMD Interval Tests', () => {
 
       var actualChangeFlags = [];
 
-      var p = Promise.resolve();
+      var p = seedDmds().then(() => seedRecons());
 
-      return new Promise((resolve, reject) => {
-         inputDmdBlocks.forEach(dmdBlockNum => {
-            p = p
-               .then(() => {
-                  return didRelativeBalancesChange(dmdBlockNum, tolerance);
-               })
-               .then(hasChanged => {
-                  actualChangeFlags.push(hasChanged);
-               });
-         });
-
-         // Assertions
-         p
+      inputDmdBlocks.forEach(dmdBlockNum => {
+         p = p
             .then(() => {
-               assert.equal(
-                  (a = JSON.stringify(actualChangeFlags)),
-                  (e = JSON.stringify(expectedChangeFlags)),
-                  `actualChangeFlags -> expected ${a} to equal ${e}`
-               );
-               resolve();
+               return didRelativeBalancesChange(dmdBlockNum, tolerance);
             })
-            .catch(err => {
-               reject(err);
+            .then(hasChanged => {
+               actualChangeFlags.push(hasChanged);
             });
       });
+
+      // Assertions
+      p = p
+         .then(() => {
+            assert.equal(
+               (a = JSON.stringify(actualChangeFlags)),
+               (e = JSON.stringify(expectedChangeFlags)),
+               `actualChangeFlags -> expected ${a} to equal ${e}`
+            );
+         })
+         .catch(err => {
+            return Promise.reject(err);
+         });
+      return p;
    });
 
    it('Saves DMD intervals on changed relative balances', () => {
       // Prepare data
-      let dmdIntervalData = [1800, 1810, 1811, 1820, 1829, 1830].map(b => {
-         return { blockNumber: typeConverter.numberDecimal(b) };
+      const tolerance = 0.001;
+      let dmdIntervalData = [].map(b => {
+         return { blockNumber: b };
       });
 
-      function createDmdIntervals(data) {
-         return dmdIntervals.create(data);
-      }
+      let getDmdIntervalNums = () => {
+         return dmdIntervals
+            .aggregate([
+               {
+                  $sort: { blockNumber: 1 }
+               }
+            ])
+            .then(docs => {
+               return docs.map(doc => doc.blockNumber);
+            });
+      };
+
+      let assertDmdIntervals = (actual, expected) => {
+         assert.equal(
+            (a = actual.length),
+            (e = expected.length),
+            `length -> expected ${a} to equal ${e}`
+         );
+         for (let i = 0; i < expected.length; i++) {
+            assert.equal(
+               (a = actual[i]),
+               (e = expected[i]),
+               `DmdInterval.blockNumber -> expected ${a} to equal ${e}`
+            );
+         }
+      };
+
+      var p = seedDmds()
+         .then(() => seedRecons())
+         .then(() => dmdIntervals.create(dmdIntervalData));
 
       // Actions
-      let p = dmdIntervalClient.updateBlockIntervals();
+      p = p.then(() => dmdIntervalClient.updateBlockIntervals(tolerance));
 
       // Assert
-      return p;
+      let expected = [1810, 1820];
+      return p
+         .then(() => {
+            return getDmdIntervalNums();
+         })
+         .then(actual => {
+            assertDmdIntervals(actual, expected);
+         });
    });
 });

@@ -120,10 +120,10 @@ function didRelativeBalancesChange(dmdBlockNum, tolerance) {
    });
 }
 
-function updateBlockIntervals() {
+function updateBlockIntervals(tolerance) {
    let getBlockNumbersForIntervals = queries.dmd.getBlockNumbersForIntervals;
    let createBlockIntervals = queries.dmd.createBlockIntervals;
-   getBlockNumbersForIntervals().then(dmdBlockNumbers => {
+   return getBlockNumbersForIntervals().then(dmdBlockNumbers => {
       var newBlockIntervals = [];
       let p = Promise.resolve();
       dmdBlockNumbers.forEach(dmdBlockNum => {
@@ -137,8 +137,8 @@ function updateBlockIntervals() {
                }
             });
       });
-      return p.then(blockNumbers => {
-         return createBlockIntervals(blockNumbers)
+      return p.then(() => {
+         return createBlockIntervals(newBlockIntervals)
             .then(newlyCreated => {
                return newlyCreated;
             })

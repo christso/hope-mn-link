@@ -336,41 +336,49 @@ var dmd = (function() {
    };
 
    let getMaxIntervalBlockNumber = () => {
-      return dmdIntervals.aggregate([
-         {
-            $group: {
-               _id: null,
-               maxBlockNumber: { $max: '$blockNumber' }
+      return dmdIntervals
+         .aggregate([
+            {
+               $group: {
+                  _id: null,
+                  maxBlockNumber: { $max: '$blockNumber' }
+               }
             }
-         }
-      ]);
+         ])
+         .then(docs => {
+            return docs[0] ? docs[0].maxBlockNumber : null;
+         });
    };
 
    let getBlockNumbersForIntervals = () => {
       return getMaxIntervalBlockNumber().then(blockNumber => {
-         return dmdTxns
-            .aggregate([
-               {
-                  $match: {
-                     $and: [{ blockNumber: { $gt: blockNumber } }]
-                  }
-               },
-               {
-                  $group: {
-                     _id: '$blockNumber'
-                  }
-               },
-               {
-                  $project: {
-                     blockNumber: '$_id'
-                  }
+         let cmd = [
+            {
+               $match: {
+                  $and: [{ blockNumber: { $gt: blockNumber } }, {}]
                }
-            ])
-            .then(docs => {
-               return docs.map(doc => {
-                  return doc.blockNumber;
-               });
+            },
+            {
+               $group: {
+                  _id: '$blockNumber'
+               }
+            },
+            {
+               $project: {
+                  blockNumber: '$_id'
+               }
+            }
+         ];
+
+         if (blockNumber === undefined || blockNumber === null) {
+            cmd[0].$match.$and.splice(0, 1); // delete blockNumber
+         }
+
+         return dmdTxns.aggregate(cmd).then(docs => {
+            return docs.map(doc => {
+               return doc.blockNumber;
             });
+         });
       });
    };
 
@@ -378,6 +386,7 @@ var dmd = (function() {
       var formatted = blockNumbers.map(blockNum => {
          return { blockNumber: blockNum };
       });
+      return dmdIntervals.create(formatted);
    };
 
    return {

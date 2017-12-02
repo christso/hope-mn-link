@@ -27,6 +27,7 @@ const hdmdContractMocker = require('../test_modules/hdmdContractMocker');
 const hdmdClientMocker = require('../test_modules/hdmdClientMocker');
 const dmdClientMocker = require('../test_modules/dmdClientMocker');
 const dmdWalletMocker = require('../test_modules/dmdWalletMocker');
+const dmdDataService = require('../test_modules/dmdDataService');
 
 const contribs = testData.contributions;
 const config = require('../config');
@@ -80,7 +81,7 @@ describe('HDMD Integration Tests', () => {
       hdmdClient = hdmdClientMock.mocked.object;
       dmdWalletMock = dmdWalletMocker();
       dmdWallet = dmdWalletMock.mocked.object;
-      dmdClientMock = dmdClientMocker(dmdTxnsData, dmdWallet);
+      dmdClientMock = dmdClientMocker(dmdDataService(dmdTxnsData), dmdWallet);
       dmdClient = dmdClientMock.mocked.object;
 
       downloadTxns = reconClient.downloadTxns;
@@ -212,6 +213,9 @@ describe('HDMD Integration Tests', () => {
                new BigNumber('50'),
                'dQmpKBcneq1ZF27iuJsUm8dQ2QkUriKWy3'
             );
+         })
+         .then(() => {
+            return downloadTxns();
          })
          .then(() => {
             return synchronizeAll();

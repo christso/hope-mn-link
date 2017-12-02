@@ -318,7 +318,9 @@ function getLastHdmdRecon(dmdBlockNumber) {
 function downloadTxns() {
    return Promise.all([
       downloadDmdTxns().catch(err => {
-         return Promise.reject(new Error('Error downloading DMDs: ' + err));
+         return Promise.reject(
+            new Error('Error downloading DMDs: ' + err.stack)
+         );
       }),
       downloadHdmdTxns()
    ]).then(() => logger.log('Download of DMD and HDMD txns completed.'));
@@ -476,15 +478,99 @@ function synchronizeNext(dmdBlockNumber) {
          });
    }
 
-   function filterHdmdBurns(hdmds) {
+   function getBurnedHdmds(hdmds) {
       return hdmds.filter(hdmd => {
          return hdmd.eventName === hdmdClient.eventNames.burn;
       });
    }
 
-   function excludeHdmdBurns(hdmds) {
+   function excludeBurnedHdmds(hdmds) {
       return hdmds.filter(hdmd => {
          return hdmd.eventName != hdmdClient.eventNames.burn;
+      });
+   }
+
+   function reconcileDmdBurns(dmds, burns) {
+      let burningDmds = [];
+      let burningHdmds = [];
+
+      dmds.forEach(dmd => {
+         let burn = burns.filter(burn => {
+            return burn.dmdTxnHash === dmd.txnHash;
+         })[0];
+         if (burn != undefined) {
+            burningDmds.push(dmd);
+            burningHdmds.push({
+               txnHash: burn.hdmdTxnHash,
+               amount: typeConverter.numberDecimal(
+                  new BigDecimal(burn.amount).times(-1)
+               ),
+               account: burn.account,
+               sendToAddress: burn.sendToAddress,
+               eventName: burn.eventName
+            });
+         }
+      });
+
+      return updateBurnStatus(burns.map(b => b._id), 'complete').then(() =>
+         reconcile(burningDmds, burningHdmds)
+      );
+   }
+
+   /**
+    * Update status of burns
+    * @param {String[]} ids
+    * @param {String[]} status
+    */
+   function updateBurnStatus(ids, status) {
+      if (ids === undefined) {
+         return Promise.resolve();
+      }
+      let p = Promise.resolve();
+      ids.forEach(id => {
+         p = p.then(() => {
+            return burns.update({ _id: id }, { $set: { status: status } });
+         });
+      });
+      return p;
+   }
+
+   /**
+    * Gets burns that match the DMD txn hashes
+    * @param {DmdTxns[]} dmds
+    */
+   function GetBurnsFromDmds(dmds) {
+      let dmdTxnHashes = dmds.map(dmd => {
+         return dmd.txnHash;
+      });
+      return burns.aggregate([
+         {
+            $match: {
+               $and: [
+                  { dmdTxnHash: { $in: dmdTxnHashes } }
+                  // { status: { $eq: 'pending' } }
+               ]
+            }
+         }
+      ]);
+   }
+
+   function getBurnsFromStatus(status) {
+      burns.aggregate([
+         {
+            $match: {
+               status: status
+            }
+         }
+      ]);
+   }
+
+   function completeDmdBurns(dmds) {
+      return GetBurnsFromDmds(dmds).then(burns => {
+         if (burns.length > 0) {
+            return reconcileDmdBurns(dmds, burns).then(() => {});
+            // then return excluded
+         }
       });
    }
 
@@ -500,11 +586,13 @@ function synchronizeNext(dmdBlockNumber) {
          p = p.then(() => {
             return dmdWallet
                .sendToAddress(hdmd.sendToAddress)
-               .then(txnHash => {
+               .then(dmdTxnHash => {
                   stashedBurns.push({
                      timestamp: new Date(),
-                     txnHash: txnHash,
+                     dmdTxnHash: dmdTxnHash,
+                     hdmdTxnHash: hdmd.txnHash,
                      amount: typeConverter.numberDecimal(hdmd.amount),
+                     account: hdmd.account,
                      sendToAddress: hdmd.sendToAddress,
                      status: 'pending',
                      response:
@@ -514,8 +602,10 @@ function synchronizeNext(dmdBlockNumber) {
                .catch(err => {
                   stashedBurns.push({
                      timestamp: new Date(),
-                     txnHash: txnHash,
+                     dmdTxnHash: null,
+                     hdmdTxnHash: hdmd.txnHash,
                      amount: typeConverter.numberDecimal(hdmd.amount),
+                     account: hdmd.account,
                      sendToAddress: hdmd.sendToAddress,
                      status: 'error',
                      response: err.message
@@ -536,8 +626,18 @@ function synchronizeNext(dmdBlockNumber) {
 
    return getUnmatchedTxnsBefore(dmdBlockNumber)
       .then(([dmds, hdmds]) => {
-         let hdmdBurns = filterHdmdBurns(hdmds);
-         let hdmdsExceptBurns = excludeHdmdBurns(hdmds);
+         return GetBurnsFromDmds(dmds).then(burns => {
+            if (burns.length > 0) {
+               return reconcileDmdBurns(dmds, burns).then(() =>
+                  getUnmatchedTxnsBefore(dmdBlockNumber)
+               );
+            }
+            return [dmds, hdmds];
+         });
+      })
+      .then(([dmds, hdmds]) => {
+         let hdmdBurns = getBurnedHdmds(hdmds);
+         let hdmdsExceptBurns = excludeBurnedHdmds(hdmds);
          if (hdmdBurns.length > 0) {
             return fulfilBurns(hdmdBurns).then(() => [dmds, hdmdsExceptBurns]);
          }
@@ -572,17 +672,19 @@ function synchronizeAll() {
    let getUnmatchedDmdBlockIntervals =
       queries.recon.getUnmatchedDmdBlockIntervals;
 
-   return getUnmatchedDmdBlockIntervals().then(dmdBlockNumbers => {
-      let p = Promise.resolve();
-      dmdBlockNumbers.push(null); // null or undefined means there's no next blocknumber to be used in the filter
-      dmdBlockNumbers.push(null); // push again so it gets the updated hdmd and dmds
-      dmdBlockNumbers.forEach(dmdBlockNumber => {
-         //logger.log(`Set synchronization dmdBlockNumber = ${dmdBlockNumber}`);
-         p = p.then(() => synchronizeNext(dmdBlockNumber));
-      });
+   return downloadTxns()
+      .then(() => getUnmatchedDmdBlockIntervals())
+      .then(dmdBlockNumbers => {
+         let p = Promise.resolve();
+         dmdBlockNumbers.push(null); // null or undefined means there's no next blocknumber to be used in the filter
+         dmdBlockNumbers.push(null); // push again so it gets the updated hdmd and dmds
+         dmdBlockNumbers.forEach(dmdBlockNumber => {
+            //logger.log(`Set synchronization dmdBlockNumber = ${dmdBlockNumber}`);
+            p = p.then(() => synchronizeNext(dmdBlockNumber));
+         });
 
-      return p;
-   });
+         return p;
+      });
 }
 
 module.exports = {

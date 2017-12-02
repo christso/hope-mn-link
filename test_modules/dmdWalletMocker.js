@@ -3,7 +3,7 @@ var dmdWallet = require('../client/dmdWallet');
 var Logger = require('../lib/logger');
 var logger = new Logger();
 
-module.exports = function() {
+module.exports = function(txnService) {
    let sandbox = sinon.createSandbox();
    let mocked = sandbox.mock(dmdWallet);
 

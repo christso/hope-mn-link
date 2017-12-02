@@ -69,7 +69,7 @@ module.exports = (function() {
       },
       {
          account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
-         totalAmount: 6729.158443021536
+         totalAmount: 6679.158443021536
       }
    ];
 

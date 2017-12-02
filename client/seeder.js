@@ -28,6 +28,8 @@ const Logger = require('../lib/logger');
 const logger = new Logger('Seed');
 const formatter = require('../lib/formatter');
 
+var hasSeeded = false;
+
 // Initial contributions
 function seedContract(contribData) {
    if (contribData) {
@@ -116,6 +118,10 @@ function seedAll() {
          });
    };
 
+   if (hasSeeded) {
+      return Promise.resolve();
+   }
+
    return pTotal()
       .then(() => {
          if (requireDbSeed) {
@@ -131,6 +137,9 @@ function seedAll() {
          if (syncAfterSeed) {
             return pSync();
          }
+      })
+      .then(() => {
+         hasSeeded = true;
       });
 }
 

@@ -32,8 +32,8 @@ config.dmdWalletPass = 'hope2017';
 config.dmdWatchInterval = 15000; // 15 seconds
 //config.dmdWatchInterval = 5000; // 5 seconds
 
-config.requireDbSeed = true; // WARNING: Ensure this is false unless you're seeding the contract
-config.requireContractSeed = true; // WARNING: Ensure this is false unless you're seeding the contract
+config.requireDbSeed = false; // WARNING: Ensure this is false unless you're seeding the contract
+config.requireContractSeed = false; // WARNING: Ensure this is false unless you're seeding the contract
 config.syncAfterSeed = true;
 
 config.allowThisMinter = true; // force allow this node to mint

@@ -482,6 +482,12 @@ function synchronizeNext(dmdBlockNumber) {
       });
    }
 
+   function excludeHdmdBurns(hdmds) {
+      return hdmds.filter(hdmd => {
+         return hdmd.eventName != hdmdClient.eventNames.burn;
+      });
+   }
+
    /**
     * Fulfil the burn event by invoking dmdWallet.sendTransaction and saving the txn status
     * @param {<HdmdTxns>[]} hdmds - hdmdTxn documents with the 'Burn' eventName
@@ -489,18 +495,33 @@ function synchronizeNext(dmdBlockNumber) {
    function fulfilBurns(hdmds) {
       let p = Promise.resolve();
       let stashedBurns = [];
+
       hdmds.forEach(hdmd => {
-         let dmdAddress = hdmd.burnAddress;
-         p = p.then(() =>
-            dmdWallet.sendToAddress(dmdAddress).then(txnHash => {
-               stashedBurns.push({
-                  txnHash: txnHash,
-                  amount: hdmd.amount,
-                  sendToAddress: dmdAddress,
-                  status: 'pending'
+         p = p.then(() => {
+            return dmdWallet
+               .sendToAddress(hdmd.sendToAddress)
+               .then(txnHash => {
+                  stashedBurns.push({
+                     timestamp: new Date(),
+                     txnHash: txnHash,
+                     amount: typeConverter.numberDecimal(hdmd.amount),
+                     sendToAddress: hdmd.sendToAddress,
+                     status: 'pending',
+                     response:
+                        'Successfully invoked sendToAddress on DMD wallet'
+                  });
+               })
+               .catch(err => {
+                  stashedBurns.push({
+                     timestamp: new Date(),
+                     txnHash: txnHash,
+                     amount: typeConverter.numberDecimal(hdmd.amount),
+                     sendToAddress: hdmd.sendToAddress,
+                     status: 'error',
+                     response: err.message
+                  });
                });
-            })
-         );
+         });
       });
       p = p.then(() => {
          return burns
@@ -516,12 +537,11 @@ function synchronizeNext(dmdBlockNumber) {
    return getUnmatchedTxnsBefore(dmdBlockNumber)
       .then(([dmds, hdmds]) => {
          let hdmdBurns = filterHdmdBurns(hdmds);
+         let hdmdsExceptBurns = excludeHdmdBurns(hdmds);
          if (hdmdBurns.length > 0) {
-            return fulfilBurns(hdmdBurns).then(() => {
-               return getUnmatchedTxnsBefore(dmdBlockNumber);
-            });
+            return fulfilBurns(hdmdBurns).then(() => [dmds, hdmdsExceptBurns]);
          }
-         return [dmds, hdmds];
+         return [dmds, hdmdsExceptBurns];
       })
       .then(([dmds, hdmds]) => {
          let p = Promise.resolve();

@@ -157,14 +157,14 @@ function _unmint(amount) {
 /**
  * Burn amounts on HDMD smart contract
  * @param {<BigNumber>} amount - amount in BigNumber
- * @param {string} dmdAddress - address of DMD wallet to receive the real DMDs
+ * @param {string} sendToAddress - address of DMD wallet to receive the real DMDs
  * @return {Promise} return value of the smart contract function
  */
-function burn(amount, dmdAddress) {
+function burn(amount, sendToAddress) {
    let rawAmount = getRawNumber(amount).toNumber();
 
    return new Promise((resolve, reject) => {
-      contractObj.burn(rawAmount, dmdAddress, (err, res) => {
+      contractObj.burn(rawAmount, sendToAddress, (err, res) => {
          if (err) {
             reject(err);
          } else {

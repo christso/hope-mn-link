@@ -56,8 +56,8 @@ var mint = amount => {
 var unmint = amount => {
    return hdmdContract.unmint(amount);
 };
-var burn = (amount, dmdAddress) => {
-   return hdmdContract.burn(amount, dmdAddress);
+var burn = (amount, sendToAddress) => {
+   return hdmdContract.burn(amount, sendToAddress);
 };
 
 var batchTransfer = (addresses, values) => {
@@ -433,6 +433,10 @@ const unmatchedQueryDefs = {
    }
 };
 
+/**
+ * Get unmatched HDMD txns excluding burns that are pending
+ * @param {Number} blockNumber
+ */
 function getUnmatchedTxns(blockNumber) {
    let matchQueryDef = unmatchedQueryDefs.match();
 

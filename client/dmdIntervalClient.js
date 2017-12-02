@@ -122,7 +122,7 @@ function didRelativeBalancesChange(dmdBlockNum, tolerance) {
 
 function updateBlockIntervals(tolerance) {
    let getBlockNumbersForIntervals = queries.dmd.getBlockNumbersForIntervals;
-   let createBlockIntervals = queries.dmd.createBlockIntervals;
+   let createBlockIntervals = queries.dmd.createBlockIntervalsFromArray;
    return getBlockNumbersForIntervals().then(dmdBlockNumbers => {
       var newBlockIntervals = [];
       let p = Promise.resolve();

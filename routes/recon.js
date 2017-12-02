@@ -8,12 +8,30 @@ var synchronizeNext = reconClient.synchronizeNext;
 var synchronizeAll = reconClient.synchronizeAll;
 var Logger = require('../lib/logger');
 var logger = new Logger();
+var queries = require('../client/databaseQueries');
+var typeConverter = require('../lib/typeConverter');
+var config = require('../config');
 
 router.get('/txns', function(req, res) {
    queries.recon
       .getTransactions()
       .then(docs => {
-         return res.json(docs);
+         return res.json(
+            docs.map(doc => {
+               return {
+                  timestamp: doc.timestamp,
+                  reconId: doc.reconId,
+                  dmdTxnHash: doc.dmdTxnHash,
+                  hdmdTxnHash: doc.hdmdTxnHash,
+                  amount: typeConverter.toBigNumber(doc.amount).toNumber(),
+                  account: doc.account,
+                  blockNumber: doc.blockNumber,
+                  eventName: doc.eventName,
+                  dmdFlag: doc.dmdFlag,
+                  hdmdFlag: doc.hdmdFlag
+               };
+            })
+         );
       })
       .catch(err => {
          return res.json(err);
@@ -40,6 +58,7 @@ router.post('/syncall', function(req, res) {
 });
 
 router.post('/updatedmdintervals', function(req, res) {
+   let tolerance = config.relativeBalanceChangeTolerance;
    dmdIntervalClient
       .updateBlockIntervals(tolerance)
       .then(newlyCreated => {

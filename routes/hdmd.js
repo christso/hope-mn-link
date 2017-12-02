@@ -9,6 +9,7 @@ var queries = require('../client/databaseQueries');
 var hdmdContract = hdmdClient.hdmdContract;
 var web3 = hdmdClient.web3;
 var getBalances = hdmdClient.getBalances;
+var typeConverter = require('../lib/typeConverter');
 
 /*----  API for HDMD ----*/
 
@@ -36,7 +37,18 @@ router.get('/txns', function(req, res) {
    queries.hdmd
       .getTransactions()
       .then(docs => {
-         return res.json(docs);
+         return res.json(
+            docs.map(doc => {
+               return {
+                  txnHash: doc.txnHash,
+                  blockNumber: doc.blockNumber,
+                  amount: typeConverter.toBigNumber(doc.amount).toNumber(),
+                  account: doc.account,
+                  eventName: doc.eventName,
+                  sender: doc.sender
+               };
+            })
+         );
       })
       .catch(err => {
          return res.json(err);

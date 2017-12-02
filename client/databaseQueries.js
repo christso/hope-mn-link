@@ -387,22 +387,34 @@ var dmd = (function() {
       });
    };
 
-   let createBlockIntervals = blockNumbers => {
+   let createBlockIntervalsFromArray = blockNumbers => {
       var formatted = blockNumbers.map(blockNum => {
          return { blockNumber: blockNum };
       });
       return dmdIntervals.create(formatted);
    };
 
+   let createBlockIntervals = docs => {
+      return dmdIntervals.create(docs);
+   };
+
    let getTransactions = () => {
       return dmdTxns.find({});
+   };
+
+   let getBlockIntervals = () => {
+      return dmdIntervals.find({}).sort({
+         blockNumber: 1
+      });
    };
 
    return {
       getNextBlockNumber: getNextBlockNumber,
       getBlockNumbersForIntervals: getBlockNumbersForIntervals,
+      createBlockIntervalsFromArray: createBlockIntervalsFromArray,
       createBlockIntervals: createBlockIntervals,
-      getTransactions: getTransactions
+      getTransactions: getTransactions,
+      getBlockIntervals: getBlockIntervals
    };
 })();
 

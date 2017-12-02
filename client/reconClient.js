@@ -416,7 +416,11 @@ Mint HDMDs up to dmdBlockNumber to make HDMD balance equal to DMD balance
 * @return {Promise} - returns an empty promise if resolved
 */
 function synchronizeNext(dmdBlockNumber) {
-   logger.log(`Synchronizing up to DMD Block ${dmdBlockNumber}`);
+   if (dmdBlockNumber === null || dmdBlockNumber === undefined) {
+      logger.log(`Synchronizing up to latest DMD Block`);
+   } else {
+      logger.log(`Synchronizing up to DMD Block ${dmdBlockNumber}`);
+   }
 
    /**
     * Format balances for distributeMint()

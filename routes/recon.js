@@ -3,6 +3,7 @@
 var express = require('express');
 var router = express.Router();
 var reconClient = require('../client/reconClient');
+var dmdIntervalClient = require('../client/dmdIntervalClient');
 var synchronizeNext = reconClient.synchronizeNext;
 var synchronizeAll = reconClient.synchronizeAll;
 var Logger = require('../lib/logger');
@@ -23,7 +24,18 @@ router.post('/syncall', function(req, res) {
       })
       .catch(err => {
          logger.error('Error synchronizing all: ' + err.stack);
-         res.json(err);
+         return res.json(err);
+      });
+});
+
+router.post('/updatedmdintervals', function(req, res) {
+   dmdIntervalClient
+      .updateBlockIntervals(tolerance)
+      .then(newlyCreated => {
+         return res.json(newlyCreated);
+      })
+      .catch(err => {
+         return res.json(err);
       });
 });
 

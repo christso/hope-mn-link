@@ -467,7 +467,7 @@ function reconcileBurns(dmds, burns) {
    );
 }
 
-function reconcileBurnsInDmds(dmds) {
+function reconcileBurnsWithDmds(dmds) {
    return getBurnsFromDmds(dmds).then(burns => {
       if (burns.length > 0) {
          return reconcileBurns(dmds, burns);
@@ -583,6 +583,14 @@ function settleBurns(hdmds) {
    return p;
 }
 
+function settleBurnsWithHdmds(hdmds) {
+   let burnedHdmds = getBurnedHdmds(hdmds);
+   if (burnedHdmds.length > 0) {
+      return settleBurns(burnedHdmds);
+   }
+   return Promise.resolve();
+}
+
 /**
  * Format balances for distributeMint()
  * @param {*} balances
@@ -633,21 +641,13 @@ function synchronizeNext(dmdBlockNumber) {
 
    return getBeginUnmatchedDmds(dmdBlockNumber)
       .then(dmds => {
-         return getBurnsFromDmds(dmds).then(burns => {
-            if (burns.length > 0) {
-               return reconcileBurns(dmds, burns);
-            }
-         });
+         return reconcileBurnsWithDmds(dmds);
       })
       .then(() => {
          return getBeginUnmatchedTxns(dmdBlockNumber);
       })
       .then(([dmds, hdmds]) => {
-         let burnedHdmds = getBurnedHdmds(hdmds); // excluding what's burned
-         if (burnedHdmds.length > 0) {
-            return settleBurns(burnedHdmds).then(() => [dmds, hdmds]);
-         }
-         return [dmds, hdmds];
+         return settleBurnsWithHdmds(hdmds).then(() => [dmds, hdmds]);
       })
       .then(([dmds, hdmds]) => {
          let p = Promise.resolve();

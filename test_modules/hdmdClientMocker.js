@@ -47,6 +47,7 @@ module.exports = function(newHdmdContract) {
                      blockNumber: event.blockNumber,
                      amount: typeConverter.numberDecimal(event.netAmount),
                      account: event.account,
+                     sendToAddress: event.sendToAddress,
                      eventName: event.eventName
                   });
                });

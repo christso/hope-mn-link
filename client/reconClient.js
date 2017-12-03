@@ -5,20 +5,29 @@ var mongoose = require('mongoose');
 var BigNumber = require('bignumber.js');
 const uuidv4 = require('uuid/v4');
 var Logger = require('../lib/logger');
-var logger = new Logger('RECON');
+var logger = new Logger();
 var mongodb = require('mongodb');
 var typeConverter = require('../lib/typeConverter');
 var toBigNumber = typeConverter.toBigNumber;
+var dmdWallet = require('../client/dmdWallet');
 const decimals = config.hdmdDecimals;
 
 let dmdClient = require('../client/dmdClient');
 let hdmdClient = require('../client/hdmdClient');
 
 var reconTxns = require('../models/reconTxn');
+var hdmdTxns = require('../models/hdmdTxn');
+var burns = require('../models/burn');
 
 const nothingToMint = 'nothing-to-mint';
 const formatter = require('../lib/formatter');
 var queries = require('../client/databaseQueries');
+
+const burnStatus = {
+   pending: 'pending',
+   completed: 'completed',
+   error: 'error'
+};
 
 // Constructor
 function init(newDmdClient, newHdmdClient) {
@@ -36,7 +45,6 @@ function init(newDmdClient, newHdmdClient) {
 
    return assign();
 }
-init();
 
 function downloadDmdTxns() {
    return dmdClient
@@ -123,7 +131,7 @@ function validateRecon(dmds, hdmds) {
    // calculate values
 
    let dmdSum = dmds.map(doc => {
-      return typeConverter.toBigNumber(doc.amount);
+      return new BigNumber(doc.amount);
    });
    dmdSum.push(new BigNumber(0));
    dmdSum = dmdSum.reduce((a, b) => {
@@ -131,7 +139,7 @@ function validateRecon(dmds, hdmds) {
    });
 
    let hdmdSum = hdmds.map(doc => {
-      return typeConverter.toBigNumber(doc.amount);
+      return new BigNumber(doc.amount);
    });
    hdmdSum.push(new BigNumber(0));
    hdmdSum = hdmdSum.reduce((a, b) => {
@@ -177,7 +185,7 @@ function unsafeReconcile(dmds, hdmds) {
          reconId: reconId,
          dmdTxnHash: txn.txnHash,
          hdmdTxnHash: null,
-         amount: txn.amount,
+         amount: typeConverter.numberDecimal(txn.amount),
          account: txn.account,
          blockNumber: txn.blockNumber,
          dmdFlag: true,
@@ -190,7 +198,7 @@ function unsafeReconcile(dmds, hdmds) {
          reconId: reconId,
          dmdTxnHash: null,
          hdmdTxnHash: txn.txnHash,
-         amount: txn.amount,
+         amount: typeConverter.numberDecimal(txn.amount),
          account: txn.account,
          blockNumber: txn.blockNumber,
          eventName: txn.eventName,
@@ -317,27 +325,27 @@ function getLastHdmdRecon(dmdBlockNumber) {
 function downloadTxns() {
    return Promise.all([
       downloadDmdTxns().catch(err => {
-         return Promise.reject(new Error('Error downloading DMDs: ' + err));
+         return Promise.reject(
+            new Error('Error downloading DMDs: ' + err.stack)
+         );
       }),
       downloadHdmdTxns()
    ]).then(() => logger.log('Download of DMD and HDMD txns completed.'));
 }
 
 /**
- * Retrieve unmatched transactions from MongoDB up to the previous block
+ * Retrieve unmatched transactions from MongoDB at the beginning of the block
  * @return {Promise.<[DmdTxn[], HdmdTxn[]]>} - returns resolved promise for unmatched DMDs and HDMDs
  */
-function getUnmatchedTxnsBefore(dmdBlockNumber) {
-   let prevOffset = 1;
-   let prevDmdBlockNumber = dmdBlockNumber
-      ? dmdBlockNumber - prevOffset
-      : undefined;
+function getBeginUnmatchedTxns(dmdBlockNumber) {
+   let getUnmatchedDmds = dmdClient.getBeginUnmatchedTxns;
+   let getUnmatchedHdmds = hdmdClient.getUnmatchedTxns;
 
-   return getUnmatchedTxns(prevDmdBlockNumber);
+   return Promise.all([getUnmatchedDmds(dmdBlockNumber), getUnmatchedHdmds()]);
 }
 
 /**
- * Retrieve unmatched transactions from MongoDB
+ * Retrieve unmatched transactions from MongoDB at the end of the block
  * @return {Promise.<[DmdTxn[], HdmdTxn[]]>} - returns resolved promise for unmatched DMDs and HDMDs
  */
 function getUnmatchedTxns(dmdBlockNumber) {
@@ -410,68 +418,242 @@ function getHdmdBlockNumFromDmd(dmdBlockNum, dmdBackSteps, HdmdBackSteps) {
 }
 
 /**
+ * Download and reconcile new HDMDs with DMDs if the total amounts are equal between both.
+ * @param {dmds} dmds - dmds to reconcile with hdmds
+ */
+function reconcileNewHdmds(dmds) {
+   let getUnmatchedHdmds = hdmdClient.getUnmatchedTxns;
+   return downloadHdmdTxns()
+      .then(() => {
+         return getUnmatchedHdmds();
+      })
+      .then(hdmds => {
+         // Reconcile
+         let hasUnmatched = dmds.length > 0 || hdmds.length > 0;
+         let mintStatus = getMintingRequired(dmds, hdmds);
+         if (hasUnmatched && !mintStatus.required) {
+            return reconcile(dmds, hdmds);
+         }
+      });
+}
+
+function getBurnedHdmds(hdmds) {
+   return hdmds.filter(hdmd => {
+      return hdmd.eventName === hdmdClient.eventNames.burn;
+   });
+}
+
+function reconcileBurns(dmds, burns) {
+   let burnedDmds = [];
+   let burnedHdmds = [];
+
+   dmds.forEach(dmd => {
+      let burn = burns.filter(burn => {
+         return burn.dmdTxnHash === dmd.txnHash;
+      })[0];
+      if (burn != undefined) {
+         burnedDmds.push(dmd);
+         burnedHdmds.push({
+            txnHash: burn.hdmdTxnHash,
+            amount: new BigNumber(burn.amount).times(-1),
+            account: burn.account,
+            sendToAddress: burn.sendToAddress,
+            eventName: burn.eventName
+         });
+      }
+   });
+
+   return updateBurnStatus(burns.map(b => b._id), burnStatus.completed).then(
+      () => reconcile(burnedDmds, burnedHdmds)
+   );
+}
+
+function reconcileBurnsWithDmds(dmds) {
+   return getBurnsFromDmds(dmds).then(burns => {
+      if (burns.length > 0) {
+         return reconcileBurns(dmds, burns);
+      }
+   });
+}
+
+/**
+ * Update status of burns
+ * @param {String[]} ids
+ * @param {String[]} status
+ */
+function updateBurnStatus(ids, status) {
+   if (ids === undefined) {
+      return Promise.resolve();
+   }
+   let p = Promise.resolve();
+   ids.forEach(id => {
+      p = p.then(() => {
+         return burns.update({ _id: id }, { $set: { status: status } });
+      });
+   });
+   return p;
+}
+
+/**
+ * Gets burns that match the DMD txn hashes
+ * @param {DmdTxns[]} dmds
+ */
+function getBurnsFromDmds(dmds) {
+   let dmdTxnHashes = dmds.map(dmd => {
+      return dmd.txnHash;
+   });
+   return burns.aggregate([
+      {
+         $match: {
+            $and: [
+               { dmdTxnHash: { $in: dmdTxnHashes } }
+               // { status: { $eq: 'pending' } }
+            ]
+         }
+      }
+   ]);
+}
+
+/**
+ * Gets burns that match the HDMD txn hashes
+ * @param {HdmdTxns[]} hdmds
+ */
+function getBurnsFromHdmds(hdmds) {
+   let hdmdTxnHashes = hdmds.map(hdmd => {
+      return hdmd.txnHash;
+   });
+   return burns.aggregate([
+      {
+         $match: {
+            $and: [
+               { hdmdTxnHash: { $in: hdmdTxnHashes } }
+               // { status: { $eq: 'pending' } }
+            ]
+         }
+      }
+   ]);
+}
+
+/**
+ * Settle the burn event by invoking dmdWallet.sendTransaction and saving the txn status
+ * @param {<HdmdTxns>[]} hdmds - hdmdTxn documents with the 'Burn' eventName
+ */
+function settleBurns(hdmds) {
+   let p = Promise.resolve();
+   let stashedBurns = [];
+
+   hdmds.forEach(hdmd => {
+      p = p.then(() => {
+         let newAmount = new BigNumber(hdmd.amount).times(-1);
+         return dmdWallet
+            .sendToAddress(hdmd.sendToAddress, newAmount.toNumber())
+            .then(createdTxn => {
+               stashedBurns.push({
+                  timestamp: new Date(),
+                  dmdTxnHash: createdTxn.txnHash,
+                  hdmdTxnHash: hdmd.txnHash,
+                  amount: typeConverter.numberDecimal(newAmount),
+                  account: hdmd.account,
+                  sendToAddress: hdmd.sendToAddress,
+                  status: burnStatus.pending,
+                  response: 'Successfully invoked sendToAddress on DMD wallet'
+               });
+            })
+            .catch(err => {
+               stashedBurns.push({
+                  timestamp: new Date(),
+                  dmdTxnHash: null,
+                  hdmdTxnHash: hdmd.txnHash,
+                  amount: typeConverter.numberDecimal(newAmount),
+                  account: hdmd.account,
+                  sendToAddress: hdmd.sendToAddress,
+                  status: burnStatus.error,
+                  response: err.message
+               });
+            });
+      });
+   });
+   p = p.then(() => {
+      return burns
+         .create(stashedBurns)
+         .then(created => created)
+         .catch(err =>
+            Promise.reject('Error saving burns to DB: ' + err.message)
+         );
+   });
+   return p;
+}
+
+function settleBurnsWithHdmds(hdmds) {
+   let burnedHdmds = getBurnedHdmds(hdmds);
+   if (burnedHdmds.length > 0) {
+      return settleBurns(burnedHdmds);
+   }
+   return Promise.resolve();
+}
+
+/**
+ * Format balances for distributeMint()
+ * @param {*} balances
+ */
+function formatBalances(balances) {
+   return balances.map(bal => {
+      var newBal = {};
+      Object.assign(newBal, bal);
+      newBal.balance = new BigNumber(bal.balance);
+      if (newBal.balance.lessThan(0)) {
+         let acc = newBal.account;
+         let bal = newBal.balance;
+         throw new Error(
+            `Balance of account '${acc}' is ${
+               bal
+            } which is negative and not allowed`
+         );
+      }
+      return newBal;
+   });
+}
+
+/**
+ * Distribute amount to latest HDMD balances
+ * @param {<BigNumber>} mintAmount
+ */
+function distributeMint(mintAmount) {
+   let getHdmdBalances = queries.hdmd.getHdmdBalances;
+   return getHdmdBalances().then(bals => {
+      return distributeMintToBalances(mintAmount, formatBalances(bals));
+   });
+}
+
+/**
 Finds unmatched dmdTxns and hdmdTxns in MongoDB
 then invokes mint and unmint on HDMD eth smart contract
 Mint HDMDs up to dmdBlockNumber to make HDMD balance equal to DMD balance
 * @return {Promise} - returns an empty promise if resolved
 */
 function synchronizeNext(dmdBlockNumber) {
+   let getBeginUnmatchedDmds = dmdClient.getBeginUnmatchedTxns;
+   let getUnmatchedHdmds = hdmdClient.getUnmatchedTxns;
+
    if (dmdBlockNumber === null || dmdBlockNumber === undefined) {
       logger.log(`Synchronizing up to latest DMD Block`);
    } else {
       logger.log(`Synchronizing up to DMD Block ${dmdBlockNumber}`);
    }
 
-   /**
-    * Format balances for distributeMint()
-    * @param {*} balances
-    */
-   function formatBalances(balances) {
-      return balances.map(bal => {
-         var newBal = {};
-         Object.assign(newBal, bal);
-         newBal.balance = new BigNumber(bal.balance);
-         if (newBal.balance.lessThan(0)) {
-            let acc = newBal.account;
-            let bal = newBal.balance;
-            throw new Error(
-               `Balance of account '${acc}' is ${
-                  bal
-               } which is negative and not allowed`
-            );
-         }
-         return newBal;
-      });
-   }
-
-   /**
-    * Distribute amount to latest HDMD balances
-    * @param {<BigNumber>} mintAmount
-    */
-   function distributeMint(mintAmount) {
-      let getHdmdBalances = queries.hdmd.getHdmdBalances;
-      return getHdmdBalances().then(bals => {
-         return distributeMintToBalances(mintAmount, formatBalances(bals));
-      });
-   }
-
-   function reconcileNewHdmds(dmds) {
-      let getUnmatchedHdmds = hdmdClient.getUnmatchedTxns;
-      return downloadHdmdTxns()
-         .then(() => {
-            return getUnmatchedHdmds();
-         })
-         .then(hdmds => {
-            // Reconcile
-            let hasUnmatched = dmds.length > 0 || hdmds.length > 0;
-            let mintStatus = getMintingRequired(dmds, hdmds);
-            if (hasUnmatched && !mintStatus.required) {
-               return reconcile(dmds, hdmds);
-            }
-         });
-   }
-
-   return getUnmatchedTxnsBefore(dmdBlockNumber)
+   return getBeginUnmatchedDmds(dmdBlockNumber)
+      .then(dmds => {
+         return reconcileBurnsWithDmds(dmds);
+      })
+      .then(() => {
+         return getBeginUnmatchedTxns(dmdBlockNumber);
+      })
+      .then(([dmds, hdmds]) => {
+         return settleBurnsWithHdmds(hdmds).then(() => [dmds, hdmds]); // this will update Burns
+      })
+      .then(([dmds, _hdmds]) => {
+         return getUnmatchedHdmds().then(hdmds => [dmds, hdmds]);
+      })
       .then(([dmds, hdmds]) => {
          let p = Promise.resolve();
          let mintStatus = getMintingRequired(dmds, hdmds);
@@ -501,17 +683,19 @@ function synchronizeAll() {
    let getUnmatchedDmdBlockIntervals =
       queries.recon.getUnmatchedDmdBlockIntervals;
 
-   return getUnmatchedDmdBlockIntervals().then(dmdBlockNumbers => {
-      let p = Promise.resolve();
-      dmdBlockNumbers.push(null); // null or undefined means there's no next blocknumber to be used in the filter
-      dmdBlockNumbers.push(null); // push again so it gets the updated hdmd and dmds
-      dmdBlockNumbers.forEach(dmdBlockNumber => {
-         //logger.log(`Set synchronization dmdBlockNumber = ${dmdBlockNumber}`);
-         p = p.then(() => synchronizeNext(dmdBlockNumber));
-      });
+   return downloadTxns()
+      .then(() => getUnmatchedDmdBlockIntervals())
+      .then(dmdBlockNumbers => {
+         let p = Promise.resolve();
+         dmdBlockNumbers.push(null); // null or undefined means there's no next blocknumber to be used in the filter
+         // dmdBlockNumbers.push(null); // push again so it gets the updated hdmd and dmds
+         dmdBlockNumbers.forEach(dmdBlockNumber => {
+            //logger.log(`Set synchronization dmdBlockNumber = ${dmdBlockNumber}`);
+            p = p.then(() => synchronizeNext(dmdBlockNumber));
+         });
 
-      return p;
-   });
+         return p;
+      });
 }
 
 module.exports = {
@@ -519,7 +703,7 @@ module.exports = {
    synchronizeAll: synchronizeAll,
    getLastHdmdRecon: getLastHdmdRecon,
    downloadTxns: downloadTxns,
-   getUnmatchedTxnsBefore: getUnmatchedTxnsBefore,
+   getUnmatchedTxnsBefore: getBeginUnmatchedTxns,
    getUnmatchedTxns: getUnmatchedTxns,
    reconcile: reconcile,
    downloadDmdTxns: downloadDmdTxns,

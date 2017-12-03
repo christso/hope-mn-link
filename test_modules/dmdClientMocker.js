@@ -5,16 +5,29 @@ var typeConverter = require('../lib/typeConverter');
 
 var getLastSavedBlockNumber = dmdClient.getLastSavedBlockNumber;
 
-module.exports = function(dmdTxnsData) {
+/**
+ * @typedef {({find: () => any, create: ([]) => any})}  DmdTxnDataService
+ * @param {DmdTxnDataService} txnDataService
+ * @param {<DmdWallet>} dmdWallet
+ */
+module.exports = function(txnDataService, dmdWallet) {
    let sandbox = sinon.createSandbox();
    let mocked = sandbox.mock(dmdClient);
 
+   if (dmdWallet != undefined) {
+      dmdClient.init(dmdWallet);
+   }
+
    sandbox.stub(mocked.object, 'downloadTxns').callsFake(() => {
-      if (!dmdTxnsData) {
+      if (!txnDataService && !txnDataService.find()) {
          return [];
       }
       return getLastSavedBlockNumber().then(lastBlockNumber => {
-         let data = dmdTxnsData
+         let data = txnDataService.find();
+         if (!data) {
+            return [];
+         }
+         data = data
             .map(txn => {
                let newTxn = {};
                Object.assign(newTxn, txn);
@@ -28,5 +41,10 @@ module.exports = function(dmdTxnsData) {
       });
    });
 
-   return { mocked: mocked, sandbox: sandbox };
+   return {
+      mocked: mocked,
+      sandbox: sandbox,
+      txnDataService: txnDataService,
+      dmdWallet: dmdWallet
+   };
 };

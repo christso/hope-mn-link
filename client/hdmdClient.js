@@ -19,6 +19,13 @@ const wallet = require('../client/dmdWallet');
 const contribs = require('../data/hdmdContributions');
 const contribAccounts = contribs.accounts;
 
+var eventNames = {
+   burn: 'Burn',
+   mint: 'Mint',
+   unmint: 'Unmint',
+   transfer: 'Transfer'
+};
+
 var contractAddress = config.hdmdContractAddress;
 var gasLimit = config.ethGasLimit;
 var decimals = config.hdmdDecimals;
@@ -49,12 +56,15 @@ var mint = amount => {
 var unmint = amount => {
    return hdmdContract.unmint(amount);
 };
+var burn = (amount, sendToAddress) => {
+   return hdmdContract.burn(amount, sendToAddress);
+};
 
-let batchTransfer = (addresses, values) => {
+var batchTransfer = (addresses, values) => {
    return hdmdContract.batchTransfer(addresses, values);
 };
 
-let reverseBatchTransfer = (addresses, values) => {
+var reverseBatchTransfer = (addresses, values) => {
    return hdmdContract.reverseBatchTransfer(addresses, values);
 };
 
@@ -122,7 +132,7 @@ function parseEventLog(eventLog) {
       };
 
       let parsers = [];
-      parsers['Mint'] = (event, decoded) => {
+      parsers[eventNames.mint] = (event, decoded) => {
          let newTxn = {};
          assignBaseTxn(newTxn, event, decoded);
          newTxn.sender = decoded.events[0].value;
@@ -130,7 +140,7 @@ function parseEventLog(eventLog) {
          newTxn.amount = toDbNumberDecimal(decoded.events[1].value);
          newTxns.push(newTxn);
       };
-      parsers['Unmint'] = (event, decoded) => {
+      parsers[eventNames.unmint] = (event, decoded) => {
          let newTxn = {};
          assignBaseTxn(newTxn, event, decoded);
          newTxn.sender = decoded.events[0].value;
@@ -138,7 +148,7 @@ function parseEventLog(eventLog) {
          newTxn.amount = toDbNumberDecimal(decoded.events[1].value * -1);
          newTxns.push(newTxn);
       };
-      parsers['Burn'] = (event, decoded) => {
+      parsers[eventNames.burn] = (event, decoded) => {
          let newTxn = {};
          assignBaseTxn(newTxn, event, decoded);
          newTxn.sender = decoded.events[0].value;
@@ -147,7 +157,7 @@ function parseEventLog(eventLog) {
          newTxn.amount = toDbNumberDecimal(decoded.events[2].value * -1);
          newTxns.push(newTxn);
       };
-      parsers['Transfer'] = (event, decoded) => {
+      parsers[eventNames.transfer] = (event, decoded) => {
          let amount = decoded.events[2].value;
          let fromAccount = decoded.events[0].value;
          let toAccount = decoded.events[1].value;
@@ -392,48 +402,55 @@ function saveTotalSupplyDiff(account) {
    });
 }
 
-const unmatchedQueryDefs = {
-   lookup: () => {
-      return {
-         $lookup: {
-            from: 'recontxns',
-            localField: 'txnHash',
-            foreignField: 'hdmdTxnHash',
-            as: 'recontxns'
-         }
-      };
-   },
-   match: () => {
-      return {
-         $match: {
-            recontxns: {
-               $eq: []
-            }
-         }
-      };
-   },
-   group: () => {
-      return {
-         $group: {
-            _id: null,
-            totalAmount: { $sum: '$amount' },
-            count: { $sum: 1 }
-         }
-      };
-   }
-};
-
+/**
+ * Get unmatched HDMD txns excluding burns that are pending
+ * @param {Number} blockNumber
+ */
 function getUnmatchedTxns(blockNumber) {
-   let matchQueryDef = unmatchedQueryDefs.match();
+   let reconMatchQueryDef = {
+      $match: {
+         recontxns: {
+            $eq: []
+         }
+      }
+   };
+
+   let reconLookupQueryDef = {
+      $lookup: {
+         from: 'recontxns',
+         localField: 'txnHash',
+         foreignField: 'hdmdTxnHash',
+         as: 'recontxns'
+      }
+   };
+
+   let burnLookupQueryDef = {
+      $lookup: {
+         from: 'burns',
+         localField: 'txnHash',
+         foreignField: 'hdmdTxnHash',
+         as: 'burns'
+      }
+   };
+
+   let burnMatchQueryDef = {
+      $match: {
+         burns: {
+            $eq: []
+         }
+      }
+   };
 
    if (blockNumber) {
-      matchQueryDef.$match.blockNumber = { $lte: blockNumber };
+      reconMatchQueryDef.$match.blockNumber = { $lte: blockNumber };
    }
 
-   let lookupQueryDef = unmatchedQueryDefs.lookup();
-   let groupQueryDef = unmatchedQueryDefs.group();
-
-   let queryDef = [lookupQueryDef, matchQueryDef];
+   let queryDef = [
+      reconLookupQueryDef,
+      reconMatchQueryDef,
+      burnLookupQueryDef,
+      burnMatchQueryDef
+   ];
 
    return hdmdTxns.aggregate(queryDef);
 }
@@ -498,6 +515,7 @@ module.exports = {
    reverseBatchTransfer: reverseBatchTransfer,
    mint: mint,
    unmint: unmint,
+   burn: burn,
    downloadTxns: downloadTxns,
    getTotalSupply: getTotalSupply,
    getTotalSupplySaved: getTotalSupplySaved,
@@ -510,5 +528,6 @@ module.exports = {
    defaultAccount: defaultAccount,
    saveTotalSupplyDiff: saveTotalSupplyDiff,
    allowThisMinter: allowThisMinter,
-   getAllBalances: getAllBalances
+   getAllBalances: getAllBalances,
+   eventNames: eventNames
 };

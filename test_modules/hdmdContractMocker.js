@@ -96,6 +96,21 @@ module.exports = function(initialSupply) {
       });
    });
 
+   sandbox.stub(mocked.object, 'burn').callsFake((amount, sendToAddress) => {
+      let eventAmount = amount ? amount.toNumber() : 0;
+      return getLastHdmdBlockNumber().then(blockNumber => {
+         return hdmdEvents.create({
+            txnHash: formatter.formatUuidv1(uuidv1()),
+            blockNumber: blockNumber + 1,
+            amount: typeConverter.numberDecimal(eventAmount),
+            netAmount: typeConverter.numberDecimal(eventAmount * -1),
+            account: ownerAccount,
+            sendToAddress: sendToAddress,
+            eventName: 'Burn'
+         });
+      });
+   });
+
    sandbox.stub(mocked.object, 'unmint').callsFake(amount => {
       let eventAmount = amount ? amount.toNumber() : 0;
       return getLastHdmdBlockNumber().then(blockNumber =>

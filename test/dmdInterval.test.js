@@ -121,30 +121,6 @@ describe('DMD Interval Tests', () => {
          `actualHdmdBlocks -> expected ${a} to equal ${e}`
       );
    }
-   function dropCollections() {
-      let p = Promise.resolve();
-      for (let model of [dmdTxns, reconTxns, dmdIntervals]) {
-         p = p.then(() =>
-            model.db.db
-               .listCollections({
-                  name: model.collection.name
-               })
-               .toArray()
-         );
-
-         p = p.then(list => {
-            if (list.length != 0) {
-               return model.collection.drop();
-            } else {
-               //    console.log(
-               //       'collection %s does not exist',
-               //       model.collection.name
-               //    );
-            }
-         });
-      }
-      return p;
-   }
 
    before(() => {
       return createMocks().then(() => createDatabase());
@@ -158,7 +134,7 @@ describe('DMD Interval Tests', () => {
    });
 
    beforeEach(() => {
-      return dropCollections();
+      return database.dropCollections([dmdTxns, reconTxns, dmdIntervals]);
    });
 
    it('Gets reconciled HDMD block from DMD block number - 1 DMD steps back', () => {

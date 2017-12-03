@@ -54,7 +54,7 @@ module.exports = (function() {
       }
    ];
 
-   var expectedReconAmounts = [
+   var expectedReconAmounts_c0 = [
       {
          account: '0x114bcdDaB25dE00884755cf8643ED1ceA4093Fd1',
          totalAmount: 416.448981605084
@@ -69,7 +69,26 @@ module.exports = (function() {
       },
       {
          account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
-         totalAmount: 6729.158443021536
+         totalAmount: 6679.158443021536
+      }
+   ];
+
+   var expectedReconAmounts_c1 = [
+      {
+         account: '0x114bcdDaB25dE00884755cf8643ED1ceA4093Fd1',
+         totalAmount: 416.448981605084
+      },
+      {
+         account: '0x1dd0ef06bAe0226C8165f3507F13c2ad8493e1e3',
+         totalAmount: 1124.41225037573
+      },
+      {
+         account: '0xA7Bb5D4d546067782Dd4B5356D9e9771deBB06a3',
+         totalAmount: 2329.98032499765
+      },
+      {
+         account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
+         totalAmount: 6729.158443
       }
    ];
 
@@ -88,7 +107,8 @@ module.exports = (function() {
       dmdBlockIntervals: dmdBlockIntervals,
       dmdTxnsData: dmdTxnsData,
       hdmdEventsData: hdmdEventsData,
-      expectedReconAmounts: expectedReconAmounts,
+      expectedReconAmounts_c0: expectedReconAmounts_c0,
+      expectedReconAmounts_c1: expectedReconAmounts_c1,
       contributions: contributions
    };
 })();

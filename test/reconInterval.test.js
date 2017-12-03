@@ -26,6 +26,7 @@ const hdmdEvents = require('../test_modules/hdmdEventModel');
 const hdmdContractMocker = require('../test_modules/hdmdContractMocker');
 const hdmdClientMocker = require('../test_modules/hdmdClientMocker');
 const dmdClientMocker = require('../test_modules/dmdClientMocker');
+const dmdDataService = require('../test_modules/dmdDataService');
 
 const config = require('../config');
 
@@ -167,7 +168,7 @@ describe('Recon Interval Tests', () => {
       hdmdContractMock = hdmdContractMocker(testData.initialSupply);
       hdmdClientMock = hdmdClientMocker(hdmdContractMock.mocked.object);
       hdmdClient = hdmdClientMock.mocked.object;
-      dmdClientMock = dmdClientMocker(dmdTxnsData);
+      dmdClientMock = dmdClientMocker(dmdDataService(dmdTxnsData));
       dmdClient = dmdClientMock.mocked.object;
 
       downloadTxns = reconClient.downloadTxns;

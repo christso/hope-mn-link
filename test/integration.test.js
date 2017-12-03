@@ -53,7 +53,7 @@ describe('HDMD Integration Tests', () => {
    var connection;
 
    var dmdBlockIntervals = testData.dmdBlockIntervals;
-   var dmdTxnsData = testData.dmdTxnsData;
+   var dmdTxnsData = {};
    var hdmdEventsData = testData.hdmdEventsData;
 
    var initMocks = () => {
@@ -75,7 +75,8 @@ describe('HDMD Integration Tests', () => {
       return seeder.seedHdmd(contribs);
    };
 
-   before(() => {
+   beforeEach(() => {
+      dmdTxnsData = testData.dmdTxnsData.map(el => el);
       var dataService = dmdDataService(dmdTxnsData);
       hdmdContractMock = hdmdContractMocker(testData.initialSupply);
       hdmdClientMock = hdmdClientMocker(hdmdContractMock.mocked.object);
@@ -87,21 +88,21 @@ describe('HDMD Integration Tests', () => {
 
       downloadTxns = reconClient.downloadTxns;
       downloadHdmdTxns = hdmdClient.downloadTxns;
-
       return initMocks().then(() => createDatabase());
    });
 
-   after(done => {
+   afterEach(done => {
       if (cleanup) {
          database.dropDatabase();
       }
       hdmdContractMock.sandbox.restore();
       hdmdClientMock.sandbox.restore();
       dmdClientMock.sandbox.restore();
+      dmdWalletMock.sandbox.restore();
       done();
    });
 
-   it('Seed HDMD events to database', () => {
+   function seedHdmdEvents() {
       let data = hdmdEventsData.map(event => {
          let newEvent = {};
          Object.assign(newEvent, event);
@@ -112,14 +113,118 @@ describe('HDMD Integration Tests', () => {
       return hdmdEvents
          .create(data)
          .then(created => {
-            assert.notEqual(created, undefined);
+            return Promise.resolve(created);
          })
-         .catch(err => assert.fail(err));
-   });
+         .catch(err => Promise.reject(err));
+   }
 
-   it('Downloads HDMD events into database', () => {
-      return downloadHdmdTxns();
-   });
+   function runSynchronizeTestSteps() {
+      let synchronizeAll = reconClient.synchronizeAll;
+      let saveTotalSupplyDiff = hdmdClient.saveTotalSupplyDiff;
+      let ownerAccount = testData.ownerAccount;
+
+      let syncTask = () => {
+         return downloadTxns().then(() => synchronizeAll());
+      };
+
+      let seedTask = () => {
+         return downloadTxns().then(() => saveTotalSupplyDiff(ownerAccount));
+      };
+
+      return seedTask()
+         .then(() => seedHdmdEvents())
+         .then(() => dmdIntervals.create(dmdBlockIntervals))
+         .then(() => {
+            return seedHdmd();
+         })
+         .then(() => {
+            return syncTask();
+         })
+         .then(() => {
+            return hdmdClient.burn(
+               new BigNumber('50'),
+               'dQmpKBcneq1ZF27iuJsUm8dQ2QkUriKWy3'
+            );
+         })
+         .then(() => {
+            return syncTask();
+         })
+         .then(() => {
+            return syncTask(); // required to redownload DMD chain and reconcile the burn
+         });
+   }
+
+   function assertReconAmounts(expectedReconAmounts) {
+      const decimalTolerance = 2;
+      /**
+       * Get reconciled HDMD account movements by block number and account
+       */
+      let getReconAmounts = () => {
+         return reconTxns.aggregate([
+            {
+               $match: {
+                  $and: [
+                     { hdmdTxnHash: { $ne: null } },
+                     { hdmdTxnHash: { $ne: '' } }
+                  ]
+               }
+            },
+            {
+               $group: {
+                  _id: { account: '$account' },
+                  totalAmount: { $sum: '$amount' }
+               }
+            },
+            {
+               $project: {
+                  account: '$_id.account',
+                  totalAmount: '$totalAmount'
+               }
+            },
+            {
+               $sort: {
+                  account: 1
+               }
+            }
+         ]);
+      };
+      return getReconAmounts().then(actuals => {
+         assert.equal(
+            (a = actuals.length),
+            (e = expectedReconAmounts.length),
+            `Assertion error -> expected actuals.length ${a} to equal ${e}`
+         );
+         for (var i = 0; i < expectedReconAmounts.length; i++) {
+            let expected = expectedReconAmounts[i];
+            let actual = actuals[i];
+            assert.equal(
+               (a = actual.account),
+               (e = expected.account),
+               `Assertion error -> expected recontxn.account ${a} to equal ${
+                  e
+               } at iteration ${i}`
+            );
+            assert.equal(
+               (a = actual.blockNumber),
+               (e = expected.blockNumber),
+               `Assertion error -> expected recontxn.blockNumber ${
+                  a
+               } to equal ${e} at iteration ${i}`
+            );
+            assert.equal(
+               (a = new BigNumber(actual.totalAmount.toString()).toFixed(
+                  config.hdmdDecimals - decimalTolerance
+               )),
+               (e = new BigNumber(expected.totalAmount.toString()).toFixed(
+                  config.hdmdDecimals - decimalTolerance
+               )),
+               `Assertion error -> expected recontxn.totalAmount ${
+                  a
+               } to equal ${e} at iteration ${i}`
+            );
+         }
+      });
+   }
 
    /**
     * Test hdmdClient.saveTotalSupplyDiff(ownerAccount)
@@ -139,7 +244,11 @@ describe('HDMD Integration Tests', () => {
       let getTotalSupplyNotSaved = hdmdClient.getTotalSupplyNotSaved;
       let ownerAccount = testData.ownerAccount;
 
-      return getHdmdSavedTotal()
+      return dmdIntervals
+         .create(dmdBlockIntervals)
+         .then(() => seedHdmdEvents())
+         .then(() => downloadHdmdTxns())
+         .then(() => getHdmdSavedTotal())
          .then(total => {
             return (initialHdmdSavedTotal = total[0]
                ? total[0].totalAmount
@@ -169,133 +278,22 @@ describe('HDMD Integration Tests', () => {
                hdmdTotal[0] ? hdmdTotal[0].totalAmount : 0
             );
          })
-         .catch(err => reject(err));
+         .catch(err => Promise.reject(err));
    });
 
-   it('Get initial DMD block interval', () => {
-      return dmdIntervals
-         .create(dmdBlockIntervals)
-         .then(intervals => {
-            assert.notEqual(
-               intervals,
-               undefined,
-               'No intervals were saved to DB'
-            );
-         })
-         .then(() => dmdClient.getLastSavedBlockInterval())
-         .then(block => {
-            assert.equal(block, dmdBlockIntervals[0].blockNumber);
-         });
+   it('Synchronizes at each DMD block interval - case: ideal', () => {
+      dmdWalletMock.setFakeError(false); // TODO: change to false
+
+      return runSynchronizeTestSteps().then(() =>
+         assertReconAmounts(testData.expectedReconAmounts_c0)
+      );
    });
 
-   it('Mints and apportions at each DMD block interval', () => {
-      let dmdReconTotal = queries.recon.getDmdTotal;
-      let hdmdReconTotal = queries.recon.getHdmdTotal;
-      let synchronizeAll = reconClient.synchronizeAll;
+   it('Synchronizes at each DMD block interval - case: wallet error', () => {
       dmdWalletMock.setFakeError(true); // TODO: change to false
 
-      /**
-       * Mint HDMDs up to dmdBlockNumber to make HDMD balance equal to DMD balance
-       * @param {Number} dmdBlockNumber - THe maximum DMD Block number that minting will apply up to.
-       * @returns {([<DmdTxn>[], <HdmdTxn>[], {Object}])} - DmdTxn[] and HdmdTxn[] are txns that were reconciled
-       */
-      let mintNewToDmd = reconClient.mintNewToDmd;
-      let balancesResult = [];
-
-      // Actions
-      let syncTask = () => {
-         return downloadTxns().then(() => synchronizeAll());
-      };
-      let p = seedHdmd()
-         .then(() => syncTask())
-         .then(() => {
-            return hdmdClient.burn(
-               new BigNumber('50'),
-               'dQmpKBcneq1ZF27iuJsUm8dQ2QkUriKWy3'
-            );
-         })
-         .then(() => {
-            return syncTask();
-         })
-         .then(() => {
-            return syncTask(); // required to redownload DMD chain and reconcile the burn
-         });
-
-      // Assertions
-
-      let assertReconAmounts = () => {
-         const decimalTolerance = 2;
-         var expectedReconAmounts = testData.expectedReconAmounts;
-         /**
-          * Get reconciled HDMD account movements by block number and account
-          */
-         let getReconAmounts = () => {
-            return reconTxns.aggregate([
-               {
-                  $match: {
-                     $and: [
-                        { hdmdTxnHash: { $ne: null } },
-                        { hdmdTxnHash: { $ne: '' } }
-                     ]
-                  }
-               },
-               {
-                  $group: {
-                     _id: { account: '$account' },
-                     totalAmount: { $sum: '$amount' }
-                  }
-               },
-               {
-                  $project: {
-                     account: '$_id.account',
-                     totalAmount: '$totalAmount'
-                  }
-               },
-               {
-                  $sort: {
-                     account: 1
-                  }
-               }
-            ]);
-         };
-         return getReconAmounts().then(actuals => {
-            assert.equal(
-               (a = actuals.length),
-               (e = expectedReconAmounts.length),
-               `Assertion error -> expected actuals.length ${a} to equal ${e}`
-            );
-            for (var i = 0; i < expectedReconAmounts.length; i++) {
-               let expected = expectedReconAmounts[i];
-               let actual = actuals[i];
-               assert.equal(
-                  (a = actual.account),
-                  (e = expected.account),
-                  `Assertion error -> expected recontxn.account ${a} to equal ${
-                     e
-                  } at iteration ${i}`
-               );
-               assert.equal(
-                  (a = actual.blockNumber),
-                  (e = expected.blockNumber),
-                  `Assertion error -> expected recontxn.blockNumber ${
-                     a
-                  } to equal ${e} at iteration ${i}`
-               );
-               assert.equal(
-                  (a = new BigNumber(actual.totalAmount.toString()).toFixed(
-                     config.hdmdDecimals - decimalTolerance
-                  )),
-                  (e = new BigNumber(expected.totalAmount.toString()).toFixed(
-                     config.hdmdDecimals - decimalTolerance
-                  )),
-                  `Assertion error -> expected recontxn.totalAmount ${
-                     a
-                  } to equal ${e} at iteration ${i}`
-               );
-            }
-         });
-      };
-
-      return p.then(() => assertReconAmounts());
+      return runSynchronizeTestSteps().then(() =>
+         assertReconAmounts(testData.expectedReconAmounts_c1)
+      );
    });
 });

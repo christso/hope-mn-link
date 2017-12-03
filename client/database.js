@@ -76,10 +76,36 @@ function dropDatabaseAndDisconnect(connection) {
    });
 }
 
+function dropCollections(collections) {
+   let p = Promise.resolve();
+   for (let model of collections) {
+      p = p.then(() =>
+         model.db.db
+            .listCollections({
+               name: model.collection.name
+            })
+            .toArray()
+      );
+
+      p = p.then(list => {
+         if (list.length != 0) {
+            return model.collection.drop();
+         } else {
+            //    console.log(
+            //       'collection %s does not exist',
+            //       model.collection.name
+            //    );
+         }
+      });
+   }
+   return p;
+}
+
 module.exports = {
    connect: connect,
    createTestConnection: createTestConnection,
    dropDatabase: dropDatabase,
    disconnect: disconnect,
-   dropAndCreateTestDatabase: dropAndCreateTestDatabase
+   dropAndCreateTestDatabase: dropAndCreateTestDatabase,
+   dropCollections: dropCollections
 };

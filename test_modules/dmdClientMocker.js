@@ -23,8 +23,11 @@ module.exports = function(txnDataService, dmdWallet) {
          return [];
       }
       return getLastSavedBlockNumber().then(lastBlockNumber => {
-         let data = txnDataService
-            .find()
+         let data = txnDataService.find();
+         if (!data) {
+            return [];
+         }
+         data = data
             .map(txn => {
                let newTxn = {};
                Object.assign(newTxn, txn);

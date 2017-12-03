@@ -92,6 +92,25 @@ module.exports = (function() {
       }
    ];
 
+   var expectedReconAmounts_c2 = [
+      {
+         account: '0x114bcdDaB25dE00884755cf8643ED1ceA4093Fd1',
+         totalAmount: 412.556935045084
+      },
+      {
+         account: '0x1dd0ef06bAe0226C8165f3507F13c2ad8493e1e3',
+         totalAmount: 1113.90372465573
+      },
+      {
+         account: '0xA7Bb5D4d546067782Dd4B5356D9e9771deBB06a3',
+         totalAmount: 2308.20480795765
+      },
+      {
+         account: '0xe9ce49476F3F2BFE9f0aD21D40D94c6F99990DfC',
+         totalAmount: 6765.334532341536
+      }
+   ];
+
    var contributions = {
       accounts: [
          '0xA7Bb5D4d546067782Dd4B5356D9e9771deBB06a3',
@@ -109,6 +128,7 @@ module.exports = (function() {
       hdmdEventsData: hdmdEventsData,
       expectedReconAmounts_c0: expectedReconAmounts_c0,
       expectedReconAmounts_c1: expectedReconAmounts_c1,
+      expectedReconAmounts_c2: expectedReconAmounts_c2,
       contributions: contributions
    };
 })();

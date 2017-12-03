@@ -118,7 +118,7 @@ function seedAll() {
          });
    };
 
-   if (hasSeeded) {
+   if (hasSeeded || !config.activated) {
       return Promise.resolve();
    }
 

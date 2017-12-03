@@ -449,7 +449,7 @@ var hdmd = (function() {
     * @param {Number} blockNumber
     */
    let getHdmdBalances = blockNumber => {
-      let cmd = [
+      let mainCmd = [
          {
             $match: {
                $and: [
@@ -474,10 +474,29 @@ var hdmd = (function() {
          }
       ];
       if (blockNumber === undefined || blockNumber === null) {
-         cmd[0].$match.$and.splice(0, 1); // delete blockNumber
+         mainCmd[0].$match.$and.splice(0, 1); // delete blockNumber
       }
+
+      let excludeBurnsCmd = [
+         {
+            $lookup: {
+               from: 'burns',
+               localField: 'txnHash',
+               foreignField: 'hdmdTxnHash',
+               as: 'burns'
+            }
+         },
+         {
+            $match: {
+               burns: {
+                  $eq: []
+               }
+            }
+         }
+      ];
+
       return hdmdTxns
-         .aggregate(cmd)
+         .aggregate([...excludeBurnsCmd, ...mainCmd])
          .then(result => {
             return result;
          })

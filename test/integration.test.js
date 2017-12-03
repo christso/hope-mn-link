@@ -118,14 +118,14 @@ describe('HDMD Integration Tests', () => {
          .catch(err => Promise.reject(err));
    }
 
-   function runSynchronizeTestSteps() {
+   function syncTask() {
       let synchronizeAll = reconClient.synchronizeAll;
+      return downloadTxns().then(() => synchronizeAll());
+   }
+
+   function runSynchronizeTestSteps() {
       let saveTotalSupplyDiff = hdmdClient.saveTotalSupplyDiff;
       let ownerAccount = testData.ownerAccount;
-
-      let syncTask = () => {
-         return downloadTxns().then(() => synchronizeAll());
-      };
 
       let seedTask = () => {
          return downloadTxns().then(() => saveTotalSupplyDiff(ownerAccount));
@@ -226,6 +226,21 @@ describe('HDMD Integration Tests', () => {
       });
    }
 
+   it('Synchronizes with balance before failed burn', () => {
+      dmdWalletMock.setFakeError(true);
+
+      return runSynchronizeTestSteps()
+         .then(() => {
+            return hdmdClient.mint(new BigNumber('100'));
+         })
+         .then(() => {
+            return syncTask();
+         })
+         .then(() => {
+            return assertReconAmounts(testData.expectedReconAmounts_c2);
+         });
+   });
+
    /**
     * Test hdmdClient.saveTotalSupplyDiff(ownerAccount)
     */
@@ -282,7 +297,7 @@ describe('HDMD Integration Tests', () => {
    });
 
    it('Synchronizes at each DMD block interval - case: ideal', () => {
-      dmdWalletMock.setFakeError(false); // TODO: change to false
+      dmdWalletMock.setFakeError(false);
 
       return runSynchronizeTestSteps().then(() =>
          assertReconAmounts(testData.expectedReconAmounts_c0)
@@ -290,7 +305,7 @@ describe('HDMD Integration Tests', () => {
    });
 
    it('Synchronizes at each DMD block interval - case: wallet error', () => {
-      dmdWalletMock.setFakeError(true); // TODO: change to false
+      dmdWalletMock.setFakeError(true);
 
       return runSynchronizeTestSteps().then(() =>
          assertReconAmounts(testData.expectedReconAmounts_c1)

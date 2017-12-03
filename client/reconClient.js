@@ -100,7 +100,7 @@ function downloadHdmdTxns() {
  * @param {<HdmdTxn>[]} hdmds - HDMD transactions that needs to be matched
  * @return {<BigNumber>} amount that needs to be minted
  */
-function getMintingRequired(dmds, hdmds) {
+function getUpdateRequired(dmds, hdmds) {
    let required = false;
 
    dmdTotal = new BigNumber(0);
@@ -430,8 +430,8 @@ function reconcileNewHdmds(dmds) {
       .then(hdmds => {
          // Reconcile
          let hasUnmatched = dmds.length > 0 || hdmds.length > 0;
-         let mintStatus = getMintingRequired(dmds, hdmds);
-         if (hasUnmatched && !mintStatus.required) {
+         let updateRequired = getUpdateRequired(dmds, hdmds);
+         if (hasUnmatched && !updateRequired.required) {
             return reconcile(dmds, hdmds);
          }
       });
@@ -538,7 +538,7 @@ function getBurnsFromHdmds(hdmds) {
  * Settle the burn event by invoking dmdWallet.sendTransaction and saving the txn status
  * @param {<HdmdTxns>[]} hdmds - hdmdTxn documents with the 'Burn' eventName
  */
-function settleBurns(hdmds) {
+function settleBurnsToDmd(hdmds) {
    let p = Promise.resolve();
    let stashedBurns = [];
 
@@ -584,11 +584,15 @@ function settleBurns(hdmds) {
    return p;
 }
 
-function settleBurnsWithHdmds(hdmds) {
+function settleBurnsToDmdWithHdmds(hdmds) {
    let burnedHdmds = getBurnedHdmds(hdmds);
    if (burnedHdmds.length > 0) {
-      return settleBurns(burnedHdmds);
+      return settleBurnsToDmd(burnedHdmds);
    }
+   return Promise.resolve();
+}
+
+function settleBurnsToHdmd(updateRequired) {
    return Promise.resolve();
 }
 
@@ -642,6 +646,15 @@ function distributeMint(mintAmount) {
    });
 }
 
+function update(updateRequired, dmdBlock) {
+   if (dmdBlock.eventName === 'Mint') {
+      return settleMint(updateRequired);
+   } else if (dmdBlock.eventName === 'Burn') {
+      return settleBurnsToHdmd(updateRequired);
+   }
+   return settleMint(updateRequired);
+}
+
 /**
 Finds unmatched dmdTxns and hdmdTxns in MongoDB
 then invokes mint and unmint on HDMD eth smart contract
@@ -669,14 +682,14 @@ function synchronizeNext(dmdBlock) {
          return getBeginUnmatchedTxns(dmdBlockNumber);
       })
       .then(([dmds, hdmds]) => {
-         return settleBurnsWithHdmds(hdmds).then(() => [dmds, hdmds]); // this will update Burns
+         return settleBurnsToDmdWithHdmds(hdmds).then(() => [dmds, hdmds]); // this will update Burns
       })
       .then(([dmds, _hdmds]) => {
          return getUnmatchedHdmds().then(hdmds => [dmds, hdmds]);
       })
       .then(([dmds, hdmds]) => {
-         let mintStatus = getMintingRequired(dmds, hdmds);
-         return settleMint(mintStatus).then(() => dmds);
+         let updateRequired = getUpdateRequired(dmds, hdmds);
+         return update(updateRequired, dmdBlock).then(() => dmds);
       })
       .then(dmds => {
          return reconcileNewHdmds(dmds);

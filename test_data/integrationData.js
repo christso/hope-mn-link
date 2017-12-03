@@ -7,19 +7,19 @@ module.exports = (function() {
    var dmdBlockIntervals = [
       {
          blockNumber: 18386,
-         eventName: 'mint'
+         eventName: 'Mint'
       },
       {
          blockNumber: 18388,
-         eventName: 'mint'
+         eventName: 'Mint'
       },
       {
          blockNumber: 18584,
-         eventName: 'mint'
+         eventName: 'Mint'
       },
       {
          blockNumber: 23730,
-         eventName: 'mint'
+         eventName: 'Mint'
       }
    ];
 

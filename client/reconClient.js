@@ -5,7 +5,7 @@ var mongoose = require('mongoose');
 var BigNumber = require('bignumber.js');
 const uuidv4 = require('uuid/v4');
 var Logger = require('../lib/logger');
-var logger = new Logger('RECON');
+var logger = new Logger();
 var mongodb = require('mongodb');
 var typeConverter = require('../lib/typeConverter');
 var toBigNumber = typeConverter.toBigNumber;
@@ -442,25 +442,7 @@ function getBurnedHdmds(hdmds) {
    });
 }
 
-// TODO:
-function getNewBurnedHdmds() {
-   // filter HDMDS using IN objectID
-   // filter HDMDS using NOT IN hdmdTxnHash
-   let burnEventName = hdmdClient.eventNames.burn;
-   return hdmdTxns.aggregate([
-      {
-         $match: { eventName: burnEventName }
-      }
-   ]);
-}
-
-function excludeBurnedHdmds(hdmds) {
-   return hdmds.filter(hdmd => {
-      return hdmd.eventName != hdmdClient.eventNames.burn;
-   });
-}
-
-function reconcileDmdBurns(dmds, burns) {
+function reconcileBurns(dmds, burns) {
    let burnedDmds = [];
    let burnedHdmds = [];
 
@@ -483,6 +465,14 @@ function reconcileDmdBurns(dmds, burns) {
    return updateBurnStatus(burns.map(b => b._id), burnStatus.completed).then(
       () => reconcile(burnedDmds, burnedHdmds)
    );
+}
+
+function reconcileBurnsInDmds(dmds) {
+   return getBurnsFromDmds(dmds).then(burns => {
+      if (burns.length > 0) {
+         return reconcileBurns(dmds, burns);
+      }
+   });
 }
 
 /**
@@ -543,30 +533,11 @@ function getBurnsFromHdmds(hdmds) {
    ]);
 }
 
-function getBurnsFromStatus(status) {
-   burns.aggregate([
-      {
-         $match: {
-            status: status
-         }
-      }
-   ]);
-}
-
-function completeDmdBurns(dmds) {
-   return getBurnsFromDmds(dmds).then(burns => {
-      if (burns.length > 0) {
-         return reconcileDmdBurns(dmds, burns).then(() => {});
-         // TODO: then return excluded
-      }
-   });
-}
-
 /**
- * Fulfil the burn event by invoking dmdWallet.sendTransaction and saving the txn status
+ * Settle the burn event by invoking dmdWallet.sendTransaction and saving the txn status
  * @param {<HdmdTxns>[]} hdmds - hdmdTxn documents with the 'Burn' eventName
  */
-function fulfilBurns(hdmds) {
+function settleBurns(hdmds) {
    let p = Promise.resolve();
    let stashedBurns = [];
 
@@ -664,7 +635,7 @@ function synchronizeNext(dmdBlockNumber) {
       .then(dmds => {
          return getBurnsFromDmds(dmds).then(burns => {
             if (burns.length > 0) {
-               return reconcileDmdBurns(dmds, burns);
+               return reconcileBurns(dmds, burns);
             }
          });
       })
@@ -674,7 +645,7 @@ function synchronizeNext(dmdBlockNumber) {
       .then(([dmds, hdmds]) => {
          let burnedHdmds = getBurnedHdmds(hdmds); // excluding what's burned
          if (burnedHdmds.length > 0) {
-            return fulfilBurns(burnedHdmds).then(() => [dmds, hdmds]);
+            return settleBurns(burnedHdmds).then(() => [dmds, hdmds]);
          }
          return [dmds, hdmds];
       })
@@ -712,7 +683,7 @@ function synchronizeAll() {
       .then(dmdBlockNumbers => {
          let p = Promise.resolve();
          dmdBlockNumbers.push(null); // null or undefined means there's no next blocknumber to be used in the filter
-         dmdBlockNumbers.push(null); // push again so it gets the updated hdmd and dmds
+         // dmdBlockNumbers.push(null); // push again so it gets the updated hdmd and dmds
          dmdBlockNumbers.forEach(dmdBlockNumber => {
             //logger.log(`Set synchronization dmdBlockNumber = ${dmdBlockNumber}`);
             p = p.then(() => synchronizeNext(dmdBlockNumber));

@@ -192,7 +192,7 @@ describe('HDMD Integration Tests', () => {
       let dmdReconTotal = queries.recon.getDmdTotal;
       let hdmdReconTotal = queries.recon.getHdmdTotal;
       let synchronizeAll = reconClient.synchronizeAll;
-      dmdWalletMock.setFakeError(true);
+      dmdWalletMock.setFakeError(true); // TODO: change to false
 
       /**
        * Mint HDMDs up to dmdBlockNumber to make HDMD balance equal to DMD balance

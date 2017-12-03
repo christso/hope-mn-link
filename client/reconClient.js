@@ -25,7 +25,8 @@ var queries = require('../client/databaseQueries');
 
 const burnStatus = {
    pending: 'pending',
-   completed: 'completed'
+   completed: 'completed',
+   error: 'error'
 };
 
 // Constructor
@@ -566,7 +567,7 @@ function settleBurns(hdmds) {
                   amount: typeConverter.numberDecimal(newAmount),
                   account: hdmd.account,
                   sendToAddress: hdmd.sendToAddress,
-                  status: 'error',
+                  status: burnStatus.error,
                   response: err.message
                });
             });
@@ -632,6 +633,7 @@ Mint HDMDs up to dmdBlockNumber to make HDMD balance equal to DMD balance
 */
 function synchronizeNext(dmdBlockNumber) {
    let getBeginUnmatchedDmds = dmdClient.getBeginUnmatchedTxns;
+   let getUnmatchedHdmds = hdmdClient.getUnmatchedTxns;
 
    if (dmdBlockNumber === null || dmdBlockNumber === undefined) {
       logger.log(`Synchronizing up to latest DMD Block`);
@@ -647,7 +649,10 @@ function synchronizeNext(dmdBlockNumber) {
          return getBeginUnmatchedTxns(dmdBlockNumber);
       })
       .then(([dmds, hdmds]) => {
-         return settleBurnsWithHdmds(hdmds).then(() => [dmds, hdmds]);
+         return settleBurnsWithHdmds(hdmds).then(() => [dmds, hdmds]); // this will update Burns
+      })
+      .then(([dmds, _hdmds]) => {
+         return getUnmatchedHdmds().then(hdmds => [dmds, hdmds]);
       })
       .then(([dmds, hdmds]) => {
          let p = Promise.resolve();

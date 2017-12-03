@@ -9,7 +9,7 @@ config.mongodbUriTest = 'mongodb://localhost:27017/hdmdlinktest';
 
 config.ethNodeAddress = 'http://localhost:8545';
 
-config.hdmdContractAddress = '0xcc43869d1887b20b5bd3504e2d28d79c5e355692'; // christso testRPC
+config.hdmdContractAddress = '0x9700cd971361744df2df8789c6b526d02ac6993a'; // christso testRPC
 //config.hdmdContractAddress = '0x5b45cb92A968329A83Cd3f2FBFB1bF206043d70C'; // rinkeby
 
 config.hdmdDecimals = 8;
@@ -32,8 +32,8 @@ config.dmdWalletPass = 'hope2017';
 config.dmdWatchInterval = 15000; // 15 seconds
 //config.dmdWatchInterval = 5000; // 5 seconds
 
-config.requireDbSeed = false; // WARNING: Ensure this is false unless you're seeding the contract
-config.requireContractSeed = false; // WARNING: Ensure this is false unless you're seeding the contract
+config.requireDbSeed = true; // WARNING: Ensure this is false unless you're seeding the contract
+config.requireContractSeed = true; // WARNING: Ensure this is false unless you're seeding the contract
 config.syncAfterSeed = true;
 
 config.allowThisMinter = true; // force allow this node to mint

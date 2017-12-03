@@ -16,13 +16,23 @@ module.exports = function(dataService) {
 
    let sandbox = sinon.createSandbox();
    let mocked = sandbox.mock(dmdWallet);
+   let fakeError = false;
+   let setFakeError = value => {
+      fakeError = value;
+   };
 
    sandbox
       .stub(mocked.object, 'sendToAddress')
       .callsFake((dmdAddress, value) => {
+         if (fakeError) {
+            return Promise.reject(new Error('Fake error'));
+         }
          var newValue = new BigNumber(value);
+
          if (newValue.lessThan(0)) {
-            throw new Error('dmdWalletError: cannot send negative amount.');
+            return Promise.reject(
+               new Error('dmdWalletError: cannot send negative amount.')
+            );
          }
          logger.log(
             `DMD wallet sendToAddress(${dmdAddress}, ${newValue}) invoked`
@@ -34,5 +44,5 @@ module.exports = function(dataService) {
          return Promise.resolve(created);
       });
 
-   return { mocked: mocked, sandbox: sandbox };
+   return { mocked: mocked, sandbox: sandbox, setFakeError: setFakeError };
 };

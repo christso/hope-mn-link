@@ -175,6 +175,18 @@ function burn(amount, sendToAddress) {
 }
 
 /**
+ * Unburn amounts on HDMD smart contract
+ * @param {<BigNumber>} amount - amount in BigNumber
+ * @return {Promise} return value of the smart contract function
+ */
+function unburn(address, amount) {
+   let rawAmount = getRawNumber(amount).toNumber();
+   return mint(amount).then(() => {
+      return transfer(address, amount);
+   });
+}
+
+/**
  * Mint amounts on HDMD smart contract
  * @param {<BigNumber>} amount - amount in BigNumber
  * @return {Promise} return value of the smart contract function
@@ -216,6 +228,20 @@ function unmint(amount) {
       .catch(err => {
          return Promise.reject(err);
       });
+}
+
+function transfer(address, value) {
+   let rawAmount = getRawNumber(amount).toNumber();
+
+   return new Promise((resolve, reject) => {
+      contractObj.transfer(address, value, (err, res) => {
+         if (err) {
+            reject(err);
+         } else {
+            resolve(res);
+         }
+      });
+   });
 }
 
 /**

@@ -614,6 +614,23 @@ function formatBalances(balances) {
    });
 }
 
+function settleMint(mintStatus) {
+   let mintAmount = mintStatus.amount;
+   let mintRequired = mintStatus.required;
+
+   let p = Promise.resolve();
+   if (mintRequired && mintAmount.greaterThan(0)) {
+      p = p
+         .then(() => netMint(mintAmount))
+         .then(() => distributeMint(mintAmount));
+   } else if (mintRequired && mintAmount.lessThan(0)) {
+      p = p
+         .then(() => distributeMint(mintAmount))
+         .then(() => netMint(mintAmount));
+   }
+   return p;
+}
+
 /**
  * Distribute amount to latest HDMD balances
  * @param {<BigNumber>} mintAmount
@@ -629,6 +646,8 @@ function distributeMint(mintAmount) {
 Finds unmatched dmdTxns and hdmdTxns in MongoDB
 then invokes mint and unmint on HDMD eth smart contract
 Mint HDMDs up to dmdBlockNumber to make HDMD balance equal to DMD balance
+* @typedef {({blockNumber: number, eventName: string})} DmdInterval
+* @param {DmdInterval} dmdBlock
 * @return {Promise} - returns an empty promise if resolved
 */
 function synchronizeNext(dmdBlock) {
@@ -656,21 +675,8 @@ function synchronizeNext(dmdBlock) {
          return getUnmatchedHdmds().then(hdmds => [dmds, hdmds]);
       })
       .then(([dmds, hdmds]) => {
-         let p = Promise.resolve();
          let mintStatus = getMintingRequired(dmds, hdmds);
-         let mintAmount = mintStatus.amount;
-         let mintRequired = mintStatus.required;
-
-         if (mintRequired && mintAmount.greaterThan(0)) {
-            p = p
-               .then(() => netMint(mintAmount))
-               .then(() => distributeMint(mintAmount));
-         } else if (mintRequired && mintAmount.lessThan(0)) {
-            p = p
-               .then(() => distributeMint(mintAmount))
-               .then(() => netMint(mintAmount));
-         }
-         return p.then(() => dmds);
+         return settleMint(mintStatus).then(() => dmds);
       })
       .then(dmds => {
          return reconcileNewHdmds(dmds);

@@ -673,14 +673,10 @@ function synchronizeNext(dmdBlockNumber) {
       })
       .then(([dmds, hdmds]) => {
          let burnedHdmds = getBurnedHdmds(hdmds); // excluding what's burned
-         let hdmdsExceptBurns = excludeBurnedHdmds(hdmds);
          if (burnedHdmds.length > 0) {
-            return fulfilBurns(burnedHdmds).then(() => [
-               dmds,
-               hdmdsExceptBurns
-            ]);
+            return fulfilBurns(burnedHdmds).then(() => [dmds, hdmds]);
          }
-         return [dmds, hdmdsExceptBurns];
+         return [dmds, hdmds];
       })
       .then(([dmds, hdmds]) => {
          let p = Promise.resolve();

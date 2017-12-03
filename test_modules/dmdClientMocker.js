@@ -7,10 +7,10 @@ var getLastSavedBlockNumber = dmdClient.getLastSavedBlockNumber;
 
 /**
  * @typedef {({find: () => any, create: ([]) => any})}  DmdTxnDataService
- * @param {DmdTxnDataService} dataService
+ * @param {DmdTxnDataService} txnDataService
  * @param {<DmdWallet>} dmdWallet
  */
-module.exports = function(dataService, dmdWallet) {
+module.exports = function(txnDataService, dmdWallet) {
    let sandbox = sinon.createSandbox();
    let mocked = sandbox.mock(dmdClient);
 
@@ -19,11 +19,11 @@ module.exports = function(dataService, dmdWallet) {
    }
 
    sandbox.stub(mocked.object, 'downloadTxns').callsFake(() => {
-      if (!dataService && !dataService.find()) {
+      if (!txnDataService && !txnDataService.find()) {
          return [];
       }
       return getLastSavedBlockNumber().then(lastBlockNumber => {
-         let data = dataService
+         let data = txnDataService
             .find()
             .map(txn => {
                let newTxn = {};
@@ -38,5 +38,10 @@ module.exports = function(dataService, dmdWallet) {
       });
    });
 
-   return { mocked: mocked, sandbox: sandbox, dmdTxnsData: dataService };
+   return {
+      mocked: mocked,
+      sandbox: sandbox,
+      txnDataService: txnDataService,
+      dmdWallet: dmdWallet
+   };
 };

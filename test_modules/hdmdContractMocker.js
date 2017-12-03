@@ -96,7 +96,7 @@ module.exports = function(initialSupply) {
       });
    });
 
-   sandbox.stub(mocked.object, 'burn').callsFake((amount, dmdAddress) => {
+   sandbox.stub(mocked.object, 'burn').callsFake((amount, sendToAddress) => {
       let eventAmount = amount ? amount.toNumber() : 0;
       return getLastHdmdBlockNumber().then(blockNumber => {
          return hdmdEvents.create({
@@ -105,7 +105,7 @@ module.exports = function(initialSupply) {
             amount: typeConverter.numberDecimal(eventAmount),
             netAmount: typeConverter.numberDecimal(eventAmount * -1),
             account: ownerAccount,
-            dmdAddress: dmdAddress,
+            sendToAddress: sendToAddress,
             eventName: 'Burn'
          });
       });

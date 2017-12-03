@@ -402,52 +402,55 @@ function saveTotalSupplyDiff(account) {
    });
 }
 
-const unmatchedQueryDefs = {
-   lookup: () => {
-      return {
-         $lookup: {
-            from: 'recontxns',
-            localField: 'txnHash',
-            foreignField: 'hdmdTxnHash',
-            as: 'recontxns'
-         }
-      };
-   },
-   match: () => {
-      return {
-         $match: {
-            recontxns: {
-               $eq: []
-            }
-         }
-      };
-   },
-   group: () => {
-      return {
-         $group: {
-            _id: null,
-            totalAmount: { $sum: '$amount' },
-            count: { $sum: 1 }
-         }
-      };
-   }
-};
-
 /**
  * Get unmatched HDMD txns excluding burns that are pending
  * @param {Number} blockNumber
  */
 function getUnmatchedTxns(blockNumber) {
-   let matchQueryDef = unmatchedQueryDefs.match();
+   let reconMatchQueryDef = {
+      $match: {
+         recontxns: {
+            $eq: []
+         }
+      }
+   };
+
+   let reconLookupQueryDef = {
+      $lookup: {
+         from: 'recontxns',
+         localField: 'txnHash',
+         foreignField: 'hdmdTxnHash',
+         as: 'recontxns'
+      }
+   };
+
+   let burnLookupQueryDef = {
+      $lookup: {
+         from: 'burns',
+         localField: 'txnHash',
+         foreignField: 'hdmdTxnHash',
+         as: 'burns'
+      }
+   };
+
+   let burnMatchQueryDef = {
+      $match: {
+         burns: {
+            $eq: []
+         }
+      }
+   };
 
    if (blockNumber) {
-      matchQueryDef.$match.blockNumber = { $lte: blockNumber };
+      reconMatchQueryDef.$match.blockNumber = { $lte: blockNumber };
    }
 
-   let lookupQueryDef = unmatchedQueryDefs.lookup();
-   let groupQueryDef = unmatchedQueryDefs.group();
-
-   let queryDef = [lookupQueryDef, matchQueryDef];
+   let queryDef = [
+      reconLookupQueryDef,
+      reconMatchQueryDef,
+      burnLookupQueryDef,
+      burnMatchQueryDef
+   ];
 
    return hdmdTxns.aggregate(queryDef);
 }

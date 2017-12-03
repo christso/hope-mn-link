@@ -8,7 +8,7 @@ var hdmdEventSchema = new mongoose.Schema({
    amount: mongoose.SchemaTypes.Decimal128,
    netAmount: mongoose.SchemaTypes.Decimal128,
    account: String,
-   dmdAddress: String,
+   sendToAddress: String,
    eventName: String
 });
 module.exports = mongoose.model('HdmdEvent', hdmdEventSchema);

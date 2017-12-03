@@ -141,6 +141,21 @@ function getUnmatchedTxns(blockNumber) {
    return dmdTxns.aggregate(queryDef);
 }
 
+function getBeginUnmatchedTxns(blockNumber) {
+   let matchQueryDef = unmatchedQueryDefs.match();
+
+   if (blockNumber) {
+      matchQueryDef.$match.blockNumber = { $lt: blockNumber };
+   }
+
+   let lookupQueryDef = unmatchedQueryDefs.lookup();
+   let groupQueryDef = unmatchedQueryDefs.group();
+
+   let queryDef = [lookupQueryDef, matchQueryDef];
+
+   return dmdTxns.aggregate(queryDef);
+}
+
 function getLastSavedBlockInterval(minBlockNumber) {
    // TODO: the first DMD block is at 18386
    // This will find the minimum dmdBlockInterval that is greater than the last reconciled DMD block.
@@ -159,6 +174,7 @@ function getLastSavedBlockInterval(minBlockNumber) {
 module.exports = {
    downloadTxns: downloadTxns,
    getUnmatchedTxns: getUnmatchedTxns,
+   getBeginUnmatchedTxns: getBeginUnmatchedTxns,
    getLastSavedBlockNumber: getLastSavedBlockNumber,
    getLastSavedBlockInterval: getLastSavedBlockInterval,
    formatSavedBlockNumber: formatSavedBlockNumber,

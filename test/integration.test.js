@@ -76,12 +76,13 @@ describe('HDMD Integration Tests', () => {
    };
 
    before(() => {
+      var dataService = dmdDataService(dmdTxnsData);
       hdmdContractMock = hdmdContractMocker(testData.initialSupply);
       hdmdClientMock = hdmdClientMocker(hdmdContractMock.mocked.object);
       hdmdClient = hdmdClientMock.mocked.object;
-      dmdWalletMock = dmdWalletMocker();
+      dmdWalletMock = dmdWalletMocker(dataService);
       dmdWallet = dmdWalletMock.mocked.object;
-      dmdClientMock = dmdClientMocker(dmdDataService(dmdTxnsData), dmdWallet);
+      dmdClientMock = dmdClientMocker(dataService, dmdWallet);
       dmdClient = dmdClientMock.mocked.object;
 
       downloadTxns = reconClient.downloadTxns;
@@ -201,13 +202,11 @@ describe('HDMD Integration Tests', () => {
       let balancesResult = [];
 
       // Actions
+      let syncTask = () => {
+         return downloadTxns().then(() => synchronizeAll());
+      };
       let p = seedHdmd()
-         .then(() => {
-            return downloadTxns();
-         })
-         .then(() => {
-            return synchronizeAll();
-         })
+         .then(() => syncTask())
          .then(() => {
             return hdmdClient.burn(
                new BigNumber('50'),
@@ -215,10 +214,10 @@ describe('HDMD Integration Tests', () => {
             );
          })
          .then(() => {
-            return downloadTxns();
+            return syncTask();
          })
          .then(() => {
-            return synchronizeAll();
+            return syncTask(); // required to redownload DMD chain and reconcile the burn
          });
 
       // Assertions

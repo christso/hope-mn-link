@@ -631,9 +631,10 @@ then invokes mint and unmint on HDMD eth smart contract
 Mint HDMDs up to dmdBlockNumber to make HDMD balance equal to DMD balance
 * @return {Promise} - returns an empty promise if resolved
 */
-function synchronizeNext(dmdBlockNumber) {
+function synchronizeNext(dmdBlock) {
    let getBeginUnmatchedDmds = dmdClient.getBeginUnmatchedTxns;
    let getUnmatchedHdmds = hdmdClient.getUnmatchedTxns;
+   let dmdBlockNumber = dmdBlock.blockNumber;
 
    if (dmdBlockNumber === null || dmdBlockNumber === undefined) {
       logger.log(`Synchronizing up to latest DMD Block`);
@@ -685,13 +686,13 @@ function synchronizeAll() {
 
    return downloadTxns()
       .then(() => getUnmatchedDmdBlockIntervals())
-      .then(dmdBlockNumbers => {
+      .then(dmdBlocks => {
          let p = Promise.resolve();
-         dmdBlockNumbers.push(null); // null or undefined means there's no next blocknumber to be used in the filter
+         dmdBlocks.push({ blockNumber: null }); // null or undefined means there's no next blocknumber to be used in the filter
          // dmdBlockNumbers.push(null); // push again so it gets the updated hdmd and dmds
-         dmdBlockNumbers.forEach(dmdBlockNumber => {
+         dmdBlocks.forEach(dmdBlock => {
             //logger.log(`Set synchronization dmdBlockNumber = ${dmdBlockNumber}`);
-            p = p.then(() => synchronizeNext(dmdBlockNumber));
+            p = p.then(() => synchronizeNext(dmdBlock));
          });
 
          return p;

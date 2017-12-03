@@ -593,7 +593,16 @@ function settleBurnsToDmdWithHdmds(hdmds) {
 }
 
 function settleBurnsToHdmd(updateRequired) {
-   return Promise.resolve();
+   let amount = updateRequired.amount;
+   let required = updateRequired.required;
+
+   let p = Promise.resolve();
+   if (required && amount.greaterThan(0)) {
+      p = p.then(() => netMint(amount));
+   } else if (required && amount.lessThan(0)) {
+      p = p.then(() => netMint(amount));
+   }
+   return p;
 }
 
 /**

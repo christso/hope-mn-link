@@ -46,7 +46,17 @@ router.get('/intervals', function(req, res) {
    queries.dmd
       .getBlockIntervals()
       .then(docs => {
-         res.json(docs.map(doc => doc.blockNumber));
+         res.json(
+            docs.map(doc => {
+               return {
+                  blockNumber: doc.blockNumber,
+                  eventName: doc.eventName,
+                  account: doc.account,
+                  sender: doc.sender,
+                  sendToAddress: doc.sendToAddress
+               };
+            })
+         );
       })
       .catch(err => {
          res.json(err);

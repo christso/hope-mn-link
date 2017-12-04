@@ -153,7 +153,7 @@ function parseEventLog(eventLog) {
          assignBaseTxn(newTxn, event, decoded);
          newTxn.sender = decoded.events[0].value;
          newTxn.account = decoded.events[0].value;
-         newTxn.dmdAddress = decoded.events[1].value;
+         newTxn.sendToAddress = decoded.events[1].value;
          newTxn.amount = toDbNumberDecimal(decoded.events[2].value * -1);
          newTxns.push(newTxn);
       };

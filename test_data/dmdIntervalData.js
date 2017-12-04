@@ -3,10 +3,6 @@ var typeConverter = require('../lib/typeConverter');
 module.exports = (function() {
    var initialSupply = 12000;
 
-   var dmdBlockIntervals = [].map(b => {
-      return { blockNumber: typeConverter.numberDecimal(b) };
-   });
-
    var contribution = [
       {
          accounts: accounts,
@@ -375,7 +371,6 @@ module.exports = (function() {
    };
 
    return {
-      dmdBlockIntervals: dmdBlockIntervals,
       reconTxns: reconTxns,
       expectedHdmdBalances_b0: expectedHdmdBalances_b0,
       expectedHdmdBalances_b1: expectedHdmdBalances_b1,

@@ -100,7 +100,7 @@ function downloadHdmdTxns() {
  * @param {<HdmdTxn>[]} hdmds - HDMD transactions that needs to be matched
  * @return {<BigNumber>} amount that needs to be minted
  */
-function getMintingRequired(dmds, hdmds) {
+function getUpdateRequired(dmds, hdmds) {
    let required = false;
 
    dmdTotal = new BigNumber(0);
@@ -430,8 +430,8 @@ function reconcileNewHdmds(dmds) {
       .then(hdmds => {
          // Reconcile
          let hasUnmatched = dmds.length > 0 || hdmds.length > 0;
-         let mintStatus = getMintingRequired(dmds, hdmds);
-         if (hasUnmatched && !mintStatus.required) {
+         let updateRequired = getUpdateRequired(dmds, hdmds);
+         if (hasUnmatched && !updateRequired.required) {
             return reconcile(dmds, hdmds);
          }
       });
@@ -538,7 +538,7 @@ function getBurnsFromHdmds(hdmds) {
  * Settle the burn event by invoking dmdWallet.sendTransaction and saving the txn status
  * @param {<HdmdTxns>[]} hdmds - hdmdTxn documents with the 'Burn' eventName
  */
-function settleBurns(hdmds) {
+function settleBurnsToDmd(hdmds) {
    let p = Promise.resolve();
    let stashedBurns = [];
 
@@ -584,12 +584,25 @@ function settleBurns(hdmds) {
    return p;
 }
 
-function settleBurnsWithHdmds(hdmds) {
+function settleBurnsToDmdWithHdmds(hdmds) {
    let burnedHdmds = getBurnedHdmds(hdmds);
    if (burnedHdmds.length > 0) {
-      return settleBurns(burnedHdmds);
+      return settleBurnsToDmd(burnedHdmds);
    }
    return Promise.resolve();
+}
+
+function settleBurnsToHdmd(updateRequired) {
+   let amount = updateRequired.amount;
+   let required = updateRequired.required;
+
+   let p = Promise.resolve();
+   if (required && amount.greaterThan(0)) {
+      p = p.then(() => netMint(amount));
+   } else if (required && amount.lessThan(0)) {
+      p = p.then(() => netMint(amount));
+   }
+   return p;
 }
 
 /**
@@ -614,6 +627,23 @@ function formatBalances(balances) {
    });
 }
 
+function settleMint(mintStatus) {
+   let mintAmount = mintStatus.amount;
+   let mintRequired = mintStatus.required;
+
+   let p = Promise.resolve();
+   if (mintRequired && mintAmount.greaterThan(0)) {
+      p = p
+         .then(() => netMint(mintAmount))
+         .then(() => distributeMint(mintAmount));
+   } else if (mintRequired && mintAmount.lessThan(0)) {
+      p = p
+         .then(() => distributeMint(mintAmount))
+         .then(() => netMint(mintAmount));
+   }
+   return p;
+}
+
 /**
  * Distribute amount to latest HDMD balances
  * @param {<BigNumber>} mintAmount
@@ -625,15 +655,27 @@ function distributeMint(mintAmount) {
    });
 }
 
+function update(updateRequired, dmdBlock) {
+   if (dmdBlock.eventName === 'Mint') {
+      return settleMint(updateRequired);
+   } else if (dmdBlock.eventName === 'Burn') {
+      return settleBurnsToHdmd(updateRequired);
+   }
+   return settleMint(updateRequired);
+}
+
 /**
 Finds unmatched dmdTxns and hdmdTxns in MongoDB
 then invokes mint and unmint on HDMD eth smart contract
 Mint HDMDs up to dmdBlockNumber to make HDMD balance equal to DMD balance
+* @typedef {({blockNumber: number, eventName: string})} DmdInterval
+* @param {DmdInterval} dmdBlock
 * @return {Promise} - returns an empty promise if resolved
 */
-function synchronizeNext(dmdBlockNumber) {
+function synchronizeNext(dmdBlock) {
    let getBeginUnmatchedDmds = dmdClient.getBeginUnmatchedTxns;
    let getUnmatchedHdmds = hdmdClient.getUnmatchedTxns;
+   let dmdBlockNumber = dmdBlock.blockNumber;
 
    if (dmdBlockNumber === null || dmdBlockNumber === undefined) {
       logger.log(`Synchronizing up to latest DMD Block`);
@@ -649,27 +691,14 @@ function synchronizeNext(dmdBlockNumber) {
          return getBeginUnmatchedTxns(dmdBlockNumber);
       })
       .then(([dmds, hdmds]) => {
-         return settleBurnsWithHdmds(hdmds).then(() => [dmds, hdmds]); // this will update Burns
+         return settleBurnsToDmdWithHdmds(hdmds).then(() => [dmds, hdmds]); // this will update Burns
       })
       .then(([dmds, _hdmds]) => {
          return getUnmatchedHdmds().then(hdmds => [dmds, hdmds]);
       })
       .then(([dmds, hdmds]) => {
-         let p = Promise.resolve();
-         let mintStatus = getMintingRequired(dmds, hdmds);
-         let mintAmount = mintStatus.amount;
-         let mintRequired = mintStatus.required;
-
-         if (mintRequired && mintAmount.greaterThan(0)) {
-            p = p
-               .then(() => netMint(mintAmount))
-               .then(() => distributeMint(mintAmount));
-         } else if (mintRequired && mintAmount.lessThan(0)) {
-            p = p
-               .then(() => distributeMint(mintAmount))
-               .then(() => netMint(mintAmount));
-         }
-         return p.then(() => dmds);
+         let updateRequired = getUpdateRequired(dmds, hdmds);
+         return update(updateRequired, dmdBlock).then(() => dmds);
       })
       .then(dmds => {
          return reconcileNewHdmds(dmds);
@@ -685,13 +714,13 @@ function synchronizeAll() {
 
    return downloadTxns()
       .then(() => getUnmatchedDmdBlockIntervals())
-      .then(dmdBlockNumbers => {
+      .then(dmdBlocks => {
          let p = Promise.resolve();
-         dmdBlockNumbers.push(null); // null or undefined means there's no next blocknumber to be used in the filter
+         dmdBlocks.push({ blockNumber: null }); // null or undefined means there's no next blocknumber to be used in the filter
          // dmdBlockNumbers.push(null); // push again so it gets the updated hdmd and dmds
-         dmdBlockNumbers.forEach(dmdBlockNumber => {
+         dmdBlocks.forEach(dmdBlock => {
             //logger.log(`Set synchronization dmdBlockNumber = ${dmdBlockNumber}`);
-            p = p.then(() => synchronizeNext(dmdBlockNumber));
+            p = p.then(() => synchronizeNext(dmdBlock));
          });
 
          return p;

@@ -35,7 +35,7 @@ config.dmdWatchInterval = 15000; // 15 seconds
 config.requireDbSeed = true; // WARNING: Ensure this is false unless you're seeding the contract
 config.requireContractSeed = true; // WARNING: Ensure this is false unless you're seeding the contract
 config.syncAfterSeed = true;
-config.activated = false;
+config.activated = true; // set to false to disable seeding and syncing
 
 config.allowThisMinter = true; // force allow this node to mint
 config.saveInitialSupply = true; // save the difference in total supply to agree MongoDB to HDMD blockchain

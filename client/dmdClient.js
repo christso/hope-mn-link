@@ -1,5 +1,4 @@
 var config = require('../config');
-var port = config.port;
 var axios = require('axios').default;
 var dmdTxns = require('../models/dmdTxn');
 var mongoose = require('mongoose');

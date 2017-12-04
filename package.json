@@ -4,7 +4,8 @@
    "description": "",
    "main": "app.js",
    "scripts": {
-      "start": "set PORT=8080 && node ./app.js",
+      "start": "node ./app.js",
+      "start-mock": "node ./test_modules/dmdExplorer",
       "test": "mocha"
    },
    "author": "",
